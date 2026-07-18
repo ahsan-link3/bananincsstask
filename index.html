@@ -228,13 +228,14 @@ onValue(ticketsRef, (snapshot) => {
 .sb-logo{padding:12px 10px 12px 8px;display:flex;align-items:center;gap:9px;background:transparent;position:relative;}
 .sb-logo-box{background:transparent;border-radius:10px;width:56px;height:56px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2.5px solid rgba(255,255,255,.9);box-shadow:0 0 0 3px rgba(31,125,255,.4),0 4px 16px rgba(0,0,0,.4);overflow:hidden;padding:0;}
 .sb-logo-box span{font-size:12px;font-weight:900;color:var(--navy);text-align:center;font-family:'Montserrat',sans-serif}
-.sb-logo-info{flex:1}
+.sb-logo-info{flex:0 1 auto;text-align:center;}
 .sb-co{font-size:1.08rem;font-weight:900;color:#fff;font-family:'Outfit',sans-serif;line-height:1.2;letter-spacing:.2px;white-space:nowrap;
   text-shadow:
     0 0 14px rgba(31,125,255,.5),
     0 2px 6px rgba(0,0,0,.5);
 }
-.sb-zone{display:inline-flex;align-items:center;gap:5px;margin-top:4px;font-family:'Montserrat',sans-serif;font-size:.66rem;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:#fff;background:linear-gradient(90deg,#124fce,#1f7dff);border:2px solid rgba(255,255,255,.35);padding:2px 8px;border-radius:20px;box-shadow:0 2px 10px rgba(10,26,107,.4);white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.35);}
+@keyframes zoneGlow{0%,100%{box-shadow:0 2px 10px rgba(10,26,107,.4),0 0 6px rgba(95,168,255,.5),0 0 0px rgba(95,168,255,.35);border-color:rgba(255,255,255,.35)}50%{box-shadow:0 2px 14px rgba(10,26,107,.5),0 0 16px rgba(95,168,255,.95),0 0 26px rgba(95,168,255,.55);border-color:rgba(150,205,255,.9)}}
+.sb-zone{display:inline-flex;align-items:center;gap:5px;margin-top:4px;font-family:'Montserrat',sans-serif;font-size:.66rem;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:#fff;background:linear-gradient(90deg,#124fce,#1f7dff);border:2px solid rgba(255,255,255,.35);padding:2px 8px;border-radius:20px;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.35);animation:zoneGlow 2.2s ease-in-out infinite;}
 .sb-user{margin:10px 10px 0;padding:8px 15px;border-radius:11px;background:linear-gradient(135deg,#051233,#0a1a6b);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;gap:10px;box-shadow:0 4px 14px rgba(0,0,0,.35);}
 .sb-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1f7dff,#5fa8ff);display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:900;color:#fff;flex-shrink:0;font-family:'Montserrat',sans-serif;}
 .sb-uname{font-size:.73rem;font-weight:700;color:#fff;font-family:'Montserrat',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -255,24 +256,24 @@ onValue(ticketsRef, (snapshot) => {
 }
 .nav-sec{display:none}
 .nav-sep{display:none}
-.nav-item{margin:1px 10px;padding:0 12px;height:36px;flex-shrink:0;display:flex;align-items:center;gap:12px;cursor:pointer;border-radius:8px;border-left:3px solid transparent;position:relative;overflow:hidden;transition:background .25s ease,border-color .25s ease,box-shadow .25s ease;text-decoration:none;}
+.nav-item{margin:1px 10px;padding:0 12px;height:36px;flex-shrink:0;display:flex;align-items:center;gap:12px;cursor:pointer;border-radius:8px;border-left:3px solid transparent;position:relative;overflow:hidden;transition:background .25s ease,border-color .25s ease,box-shadow .25s ease,transform .2s ease;text-decoration:none;}
 
 /* Shimmer sweep on hover */
 .nav-item::after{content:'';position:absolute;bottom:0;left:50%;width:0;height:2px;background:#5fa8ff;transform:translateX(-50%);transition:width .3s ease;border-radius:2px;pointer-events:none;box-shadow:0 0 8px rgba(95,168,255,.8);}
 .nav-item:hover::after{width:60%}
 
-.nav-item:hover{background:rgba(255,255,255,.14);border-left-color:rgba(95,168,255,.7);box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.nav-item:hover{background:rgba(255,255,255,.14);border-left-color:rgba(95,168,255,.7);box-shadow:0 4px 14px rgba(0,0,0,.25);transform:translateX(3px);}
 
 /* Active state with animated left border glow */
 .nav-item.active{background:rgba(255,255,255,.18);border-left-color:#5fa8ff;box-shadow:0 2px 10px rgba(10,26,107,.25);}
 .nav-item.active::after{width:60%}
 
 /* Icon wrap transition */
-.nav-icon-wrap{width:26px;height:26px;border-radius:6px;;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.12);transition:background .25s ease,box-shadow .25s ease;}
-.nav-item:hover .nav-icon-wrap{background:rgba(255,255,255,.24);box-shadow:0 2px 6px rgba(0,0,0,.2);}
-.nav-item.active .nav-icon-wrap{background:linear-gradient(135deg,rgba(95,168,255,.55),rgba(31,125,255,.35));box-shadow:0 0 8px rgba(95,168,255,.35);}
-.nav-icon-wrap i{font-size:.75rem;color:#fff;transition:color .2s;}
-.nav-item:hover .nav-icon-wrap i{color:#fff;}
+.nav-icon-wrap{width:26px;height:26px;border-radius:6px;;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.12);transition:background .25s ease,box-shadow .25s ease,transform .25s cubic-bezier(.34,1.56,.64,1);}
+.nav-item:hover .nav-icon-wrap{background:rgba(255,255,255,.26);box-shadow:0 2px 8px rgba(0,0,0,.25);transform:scale(1.12) rotate(-4deg);}
+.nav-item.active .nav-icon-wrap{background:linear-gradient(135deg,rgba(95,168,255,.55),rgba(31,125,255,.35));box-shadow:0 0 10px rgba(95,168,255,.45);}
+.nav-icon-wrap i{font-size:.75rem;transition:color .2s,filter .2s;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));}
+.nav-item:hover .nav-icon-wrap i{filter:drop-shadow(0 1px 4px rgba(0,0,0,.5)) brightness(1.15);}
 .nav-item.active .nav-icon-wrap i{color:#fff;}
 
 /* Label transition */
@@ -354,7 +355,7 @@ onValue(ticketsRef, (snapshot) => {
 .top-title-wrap{position:absolute;left:50%;transform:translateX(-50%);text-align:center}
 .top-title-row{display:flex;align-items:center;justify-content:center;gap:10px}
 .top-title{font-size:1.65rem;font-weight:900;color:#fff;letter-spacing:2px;font-family:'Montserrat',sans-serif;text-shadow:0 2px 0 rgba(0,0,0,.35),0 4px 18px rgba(0,0,0,.35),0 0 40px rgba(31,125,255,.6);text-transform:uppercase;line-height:1}
-.top-sub{font-size:.95rem;color:rgba(255,255,255,.92);letter-spacing:2px;margin-top:4px;font-family:'Outfit',sans-serif;font-weight:900;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.45),0 0 20px rgba(255,255,255,.15)}
+.top-sub{font-size:.95rem;color:rgba(255,255,255,.92);letter-spacing:2px;margin-top:4px;font-family:'Outfit',sans-serif;font-weight:900;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.45),0 0 20px rgba(255,255,255,.15);-webkit-text-stroke:.6px rgba(255,255,255,.85)}
 .top-right{display:flex;align-items:center;gap:14px;margin-left:auto;position:relative;z-index:1}
 .fb-status{display:flex;align-items:center;gap:6px;padding:3px 12px;border-radius:20px;font-size:.6rem;font-weight:800;font-family:'Montserrat',sans-serif;letter-spacing:.8px;text-transform:uppercase}
 .fb-status.connected{background:rgba(22,163,74,.2);color:#4ade80;border:1px solid rgba(22,163,74,.4)}
@@ -484,7 +485,8 @@ input[type=date]::-webkit-calendar-picker-indicator{opacity:.7;cursor:pointer;fi
 .mis-stat-tab.active{background:linear-gradient(135deg,#0a1642,#15318c,#2f9bff);border-color:#0a1642;color:#fff;box-shadow:0 3px 10px rgba(10,22,66,.3)}
 
 /* TABLE CARD */
-.tbl-card{background:#fff;border-radius:14px;border:1px solid rgba(160,210,255,.45);overflow:hidden;box-shadow:0 4px 22px rgba(21,49,140,.09);}
+.tbl-card{background:#fff;border-radius:14px;border:1px solid rgba(160,210,255,.45);overflow:hidden;box-shadow:0 4px 22px rgba(21,49,140,.09);transition:box-shadow .25s ease,transform .25s ease;}
+.tbl-card:hover{box-shadow:0 8px 28px rgba(21,49,140,.16);}
 .tbl-top{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,#eef6ff,#fff)}
 .tbl-title{font-size:.82rem;font-weight:700;color:var(--navy);font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:7px}
 .tbl-title i{color:var(--accent)}
@@ -571,8 +573,11 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 
 /* USER TABLE */
 .um-table{width:100%;border-collapse:collapse}
-.um-table th{font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.5px;padding:10px 14px;background:linear-gradient(135deg,#0f2778 0%,#1a5dbf 55%,#0a8fd4 100%);border-bottom:3px solid rgba(255,255,255,.18);border-right:1px solid rgba(255,255,255,.15);text-align:left;text-shadow:0 1px 3px rgba(0,0,0,.3)}
-.um-table td{padding:9px 14px;border-bottom:1px solid #deeaf7;font-size:.8rem;color:#1a2340;vertical-align:middle;font-family:'Outfit',sans-serif;transition:background .12s}
+.um-table th{font-family:'Montserrat',sans-serif;font-size:.66rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.5px;padding:6px 10px;background:linear-gradient(135deg,#0f2778 0%,#1a5dbf 55%,#0a8fd4 100%);border-bottom:3px solid rgba(255,255,255,.18);border-right:1px solid rgba(255,255,255,.15);text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+.um-table td{padding:5px 10px;border-bottom:1px solid #deeaf7;font-size:.7rem;color:#1a2340;vertical-align:middle;font-family:'Outfit',sans-serif;transition:background .12s}
+.um-table td,.um-table td *{font-size:.7rem !important}
+.um-table td .um-badge-admin,.um-table td .um-badge-eng{font-size:.58rem !important;padding:2px 9px !important}
+.um-table td button{font-size:.6rem !important;padding:4px 10px !important}
 .um-table tr:nth-child(odd) td{background:#ffffff}
 .um-table tr:nth-child(even) td{background:rgba(229,242,255,.52)}
 .um-table tr:last-child td{border-bottom:none}
@@ -816,6 +821,17 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   .wd-chart-card .wd-card-hd{font-size:.62rem !important}
   .wd-chart-card .wd-card-sub{font-size:.56rem !important;padding:2px 6px !important}
 }
+
+@media (max-width:380px){
+  :root{--nav-w:82vw}
+  .nav-item{margin:1px 6px;padding:0 10px;height:38px;gap:10px}
+  .nav-icon-wrap{width:24px;height:24px}
+  .nav-label{font-size:.7rem;letter-spacing:.2px}
+  .sb-logo-txt,.top-title{font-size:.8rem}
+  .form-card{padding:16px 12px 12px 12px !important}
+  .page-ttl{font-size:.82rem}
+  .tbl-card:hover{transform:none}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -903,25 +919,25 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   <nav class="sb-nav">
     <div class="nav-sec"></div>
     <div class="nav-item" id="nav-workdash" onclick="showPage('workdash',this)">
-      <div class="nav-icon-wrap"><i class="fas fa-chart-column"></i></div><span class="nav-label">Dashboard</span>
+      <div class="nav-icon-wrap"><i class="fas fa-chart-column" style="color:#4fc3f7"></i></div><span class="nav-label">Task Dashboard</span>
     </div>
-    <div class="nav-item eng-visible" id="nav-mis" onclick="showPage('mis',this)"><div class="nav-icon-wrap"><i class="fas fa-file-excel"></i></div><span class="nav-label">MIS Update</span></div>
-    <div class="nav-item eng-visible" id="nav-misreport" onclick="showPage('misreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-pie"></i></div><span class="nav-label">MIS Task Report</span></div>
-    <div class="nav-item eng-visible" id="nav-engreport" onclick="showPage('engreport',this)"><div class="nav-icon-wrap"><i class="fas fa-user-clock"></i></div><span class="nav-label">Engineer Report</span></div>
-    <div class="nav-item admin-only" id="nav-users" onclick="showPage('users',this)"><div class="nav-icon-wrap"><i class="fas fa-users-cog"></i></div><span class="nav-label">User Management</span></div>
+    <div class="nav-item eng-visible" id="nav-mis" onclick="showPage('mis',this)"><div class="nav-icon-wrap"><i class="fas fa-file-upload" style="color:#4ade80"></i></div><span class="nav-label">MIS Data Update</span></div>
+    <div class="nav-item eng-visible" id="nav-misreport" onclick="showPage('misreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-pie" style="color:#fbbf24"></i></div><span class="nav-label">MIS Task Report</span></div>
+    <div class="nav-item eng-visible" id="nav-engreport" onclick="showPage('engreport',this)"><div class="nav-icon-wrap"><i class="fas fa-user-clock" style="color:#2dd4bf"></i></div><span class="nav-label">Engineer Report</span></div>
+    <div class="nav-item admin-only" id="nav-users" onclick="showPage('users',this)"><div class="nav-icon-wrap"><i class="fas fa-users-cog" style="color:#c084fc"></i></div><span class="nav-label">User Management</span></div>
     <div class="nav-item nav-parent admin-only" id="nav-format-one" onclick="toggleNavGroup('format-one',this)">
-      <div class="nav-icon-wrap"><i class="fas fa-layer-group"></i></div><span class="nav-label">Format One</span><i class="fas fa-chevron-down nav-chevron"></i>
+      <div class="nav-icon-wrap"><i class="fas fa-layer-group" style="color:#94a3b8"></i></div><span class="nav-label">Previous Format</span><i class="fas fa-chevron-down nav-chevron"></i>
     </div>
     <div class="nav-submenu admin-only" id="submenu-format-one">
-      <div class="nav-item" onclick="showPage('maindash',this)"><div class="nav-icon-wrap"><i class="fas fa-tachometer-alt"></i></div><span class="nav-label">Dashboard</span></div>
-      <div class="nav-item active" onclick="showPage('dashboard',this)"><div class="nav-icon-wrap"><i class="fas fa-ticket-alt"></i></div><span class="nav-label">Ticket Entry</span></div>
-      <div class="nav-item" onclick="showPage('mytask',this)"><div class="nav-icon-wrap"><i class="fas fa-calendar-check"></i></div><span class="nav-label">My Task</span></div>
-      <div class="nav-item" onclick="showPage('taskreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-bar"></i></div><span class="nav-label">Task Report</span></div>
-      <div class="nav-item eng-visible" id="nav-alltask" onclick="showPage('alltask',this)"><div class="nav-icon-wrap"><i class="fas fa-clipboard-list"></i></div><span class="nav-label">All Completed Tasks</span></div>
-      <div class="nav-item eng-visible" id="nav-devices" onclick="showPage('devices',this)"><div class="nav-icon-wrap"><i class="fas fa-network-wired"></i></div><span class="nav-label">Used Devices</span></div>
-      <div class="nav-item eng-visible" id="nav-wifi" onclick="showPage('wifi',this)"><div class="nav-icon-wrap"><i class="fas fa-wifi"></i></div><span class="nav-label">WiFi Scoring</span></div>
+      <div class="nav-item" onclick="showPage('maindash',this)"><div class="nav-icon-wrap"><i class="fas fa-tachometer-alt" style="color:#4fc3f7"></i></div><span class="nav-label">Dashboard</span></div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)"><div class="nav-icon-wrap"><i class="fas fa-ticket-alt" style="color:#f472b6"></i></div><span class="nav-label">Ticket Entry</span></div>
+      <div class="nav-item" onclick="showPage('mytask',this)"><div class="nav-icon-wrap"><i class="fas fa-calendar-check" style="color:#4ade80"></i></div><span class="nav-label">My Task</span></div>
+      <div class="nav-item" onclick="showPage('taskreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-bar" style="color:#fb923c"></i></div><span class="nav-label">Task Report</span></div>
+      <div class="nav-item eng-visible" id="nav-alltask" onclick="showPage('alltask',this)"><div class="nav-icon-wrap"><i class="fas fa-clipboard-list" style="color:#2dd4bf"></i></div><span class="nav-label">All Completed Tasks</span></div>
+      <div class="nav-item eng-visible" id="nav-devices" onclick="showPage('devices',this)"><div class="nav-icon-wrap"><i class="fas fa-network-wired" style="color:#818cf8"></i></div><span class="nav-label">Used Devices</span></div>
+      <div class="nav-item eng-visible" id="nav-wifi" onclick="showPage('wifi',this)"><div class="nav-icon-wrap"><i class="fas fa-wifi" style="color:#22d3ee"></i></div><span class="nav-label">WiFi Scoring</span></div>
       <div class="nav-item admin-only" id="nav-import" onclick="showPage('import',this)">
-      <div class="nav-icon-wrap"><i class="fas fa-file-import"></i></div><span class="nav-label">Import Data</span></div>
+      <div class="nav-icon-wrap"><i class="fas fa-file-import" style="color:#facc15"></i></div><span class="nav-label">Import Data</span></div>
     </div>
     <div class="nav-sep"></div>
   </nav>
@@ -1509,7 +1525,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 <!-- ===== MIS UPDATE (Admin only) ===== -->
 <div class="page" id="page-mis">
   <div class="form-card">
-    <div class="page-ttl" style="margin-bottom:14px"><i class="fas fa-file-excel" style="color:var(--accent)"></i> MIS Update — Excel File</div>
+    <div class="page-ttl" style="margin-bottom:14px"><i class="fas fa-file-excel" style="color:var(--accent)"></i> MIS Data Update — Excel File</div>
 
     <div style="background:#f5f9ff;border:1.5px dashed #8cc7f7;border-radius:12px;padding:16px 18px;margin-bottom:14px">
       <div style="font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;color:var(--blue);margin-bottom:8px"><i class="fas fa-info-circle"></i> Instructions:</div>
@@ -1520,7 +1536,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <label for="mis-file-input" style="background:linear-gradient(135deg,#0a1642,#2452e8,#2f9bff);color:#fff;border:none;padding:11px 28px;border-radius:10px;font-size:.82rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:9px;letter-spacing:.5px;font-family:'Montserrat',sans-serif;box-shadow:0 5px 16px rgba(21,49,140,.32);transition:all .25s">
-        <i class="fas fa-upload"></i> <span id="mis-upload-label">Update Excel File</span>
+        <i class="fas fa-upload"></i> <span id="mis-upload-label">Upload Excel File</span>
       </label>
       <input type="file" id="mis-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleMisFile(this)">
       <button onclick="clearMisData()" style="background:#fff;color:#6b7280;border:1.5px solid #d1d5db;padding:11px 20px;border-radius:10px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif">
@@ -1533,6 +1549,30 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 
 <!-- ===== MIS TASK REPORT (Admin only) ===== -->
 <div class="page" id="page-misreport">
+  <!-- Delete ALL MIS Data Modal -->
+  <div id="mis-delall-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+    <div style="background:#fff;border-radius:18px;padding:28px 30px;width:100%;max-width:400px;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+      <div id="mis-delall-stage1">
+        <div style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:8px"><i class="fas fa-triangle-exclamation" style="color:#dc2626"></i> Delete All Data</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:.85rem;color:var(--text)" id="mis-delall-msg">Do you want to delete all data?</div>
+        <div style="display:flex;gap:10px;margin-top:22px">
+          <button onclick="closeDeleteAllModal()" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:9px;background:#f5f9ff;color:var(--blue);font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif">Cancel</button>
+          <button onclick="deleteAllStage2()" style="flex:1;padding:10px;background:linear-gradient(135deg,#7f1d1d,#b91c1c);color:#fff;border:none;border-radius:9px;font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif">Yes</button>
+        </div>
+      </div>
+      <div id="mis-delall-stage2" style="display:none">
+        <div style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;gap:8px"><i class="fas fa-lock" style="color:#dc2626"></i> Confirm Your Password</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:.8rem;color:var(--muted);margin-bottom:16px">Enter your account password to permanently delete all MIS data.</div>
+        <div class="fg"><label><i class="fas fa-lock"></i>Password</label><input type="password" id="mis-delall-pass" placeholder="Enter your password"></div>
+        <div id="mis-delall-err" style="display:none;background:#fff1f2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:.72rem;font-weight:700;color:#991b1b;font-family:'Montserrat',sans-serif;margin-top:12px"></div>
+        <div style="display:flex;gap:10px;margin-top:18px">
+          <button onclick="closeDeleteAllModal()" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:9px;background:#f5f9ff;color:var(--blue);font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif">Cancel</button>
+          <button onclick="confirmDeleteAllWithPassword()" style="flex:1.6;padding:10px;background:linear-gradient(135deg,#7f1d1d,#b91c1c);color:#fff;border:none;border-radius:9px;font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif"><i class="fas fa-trash-alt"></i> Delete All Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="form-card" id="mis-filter-card" style="padding:10px 16px;margin-bottom:10px;display:none">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:800;color:var(--blue)"><i class="fas fa-filter"></i> FILTER</span>
@@ -1564,7 +1604,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
         <button onclick="openDownloadModal()" id="btn-download-task-report" style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:0 14px;background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff;border:none;border-radius:8px;font-size:.67rem;font-weight:800;cursor:pointer;height:30px;font-family:'Montserrat',sans-serif;box-shadow:0 3px 10px rgba(20,184,166,.35);letter-spacing:.3px;white-space:nowrap" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-file-excel"></i> Download Task Report</button>
         <button onclick="toggleMisSelectMode()" id="btn-mis-toggle-sel" style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:0 13px;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;border-radius:8px;font-size:.67rem;font-weight:800;cursor:pointer;height:30px;font-family:'Montserrat',sans-serif;box-shadow:0 3px 8px rgba(220,38,38,.3);white-space:nowrap" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''"><i class="fas fa-check-square"></i> Delete</button>
         <button id="btn-mis-del-selected" onclick="deleteMisSelected()" style="flex-shrink:0;display:none;align-items:center;gap:6px;padding:0 13px;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;border-radius:8px;font-size:.67rem;font-weight:800;cursor:pointer;height:30px;font-family:'Montserrat',sans-serif;box-shadow:0 3px 8px rgba(220,38,38,.3);white-space:nowrap"><i class="fas fa-trash"></i> Delete Selected (<span id="mis-sel-count">0</span>)</button>
-        <button id="btn-mis-del-all" onclick="deleteAllMisData()" style="flex-shrink:0;display:none;align-items:center;gap:6px;padding:0 13px;background:linear-gradient(135deg,#7f1d1d,#b91c1c);color:#fff;border:none;border-radius:8px;font-size:.67rem;font-weight:800;cursor:pointer;height:30px;font-family:'Montserrat',sans-serif;box-shadow:0 3px 10px rgba(185,28,28,.45);white-space:nowrap" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-trash-alt"></i> Delete ALL</button>
+        <button id="btn-mis-del-all" onclick="openDeleteAllModal()" style="flex-shrink:0;display:none;align-items:center;gap:6px;padding:0 13px;background:linear-gradient(135deg,#7f1d1d,#b91c1c);color:#fff;border:none;border-radius:8px;font-size:.67rem;font-weight:800;cursor:pointer;height:30px;font-family:'Montserrat',sans-serif;box-shadow:0 3px 10px rgba(185,28,28,.45);white-space:nowrap" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-trash-alt"></i> Delete ALL</button>
       </div>
     </div>
     <div class="tbl-wrap"><table>
@@ -1581,7 +1621,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
     </table></div>
   </div>
   <div class="form-card" id="mis-empty-card">
-    <div class="empty-box"><span class="ei">📊</span><p>No Excel file uploaded yet. Go to "MIS Update" to upload a file.</p></div>
+    <div class="empty-box"><span class="ei">📊</span><p>No Excel file uploaded yet. Go to "MIS Data Update" to upload a file.</p></div>
   </div>
 </div>
 
@@ -1672,6 +1712,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
           <div style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:20px;display:flex;align-items:center;gap:8px"><i class="fas fa-user-plus" style="color:var(--accent)"></i> Create New User</div>
           <div style="display:flex;flex-direction:column;gap:12px">
             <div class="fg"><label><i class="fas fa-user"></i>Display Name</label><input type="text" id="um-name" placeholder="e.g. John Doe"></div>
+            <div class="fg"><label><i class="fas fa-id-card"></i>Link3 ID <span style="color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0">(optional — leave blank for login-only user)</span></label><input type="text" id="um-link3id" placeholder="e.g. L3T2210" style="text-transform:uppercase"></div>
             <div class="fg"><label><i class="fas fa-id-badge"></i>Username (login)</label><input type="text" id="um-uname" placeholder="e.g. johndoe" style="text-transform:lowercase"></div>
             <div class="fg"><label><i class="fas fa-lock"></i>Password</label><input type="password" id="um-pass" placeholder="Min 4 characters"></div>
             <div class="fg"><label><i class="fas fa-shield-alt"></i>Role</label>
@@ -1703,10 +1744,24 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
         </div>
       </div>
 
+      <!-- Edit Link3 ID Modal -->
+      <div id="um-link3-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+        <div style="background:#fff;border-radius:18px;padding:28px 30px;width:100%;max-width:380px;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+          <div style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;gap:8px"><i class="fas fa-id-card" style="color:var(--accent)"></i> Set Link3 ID</div>
+          <div id="um-link3-name" style="font-family:'Outfit',sans-serif;font-size:.82rem;color:var(--muted);margin-bottom:18px"></div>
+          <div class="fg"><label><i class="fas fa-id-card"></i>Link3 ID <span style="color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0">(leave blank to remove mapping)</span></label><input type="text" id="um-link3-input" placeholder="e.g. L3T2210" style="text-transform:uppercase"></div>
+          <div id="um-link3-err" style="display:none;background:#fff1f2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:.72rem;font-weight:700;color:#991b1b;font-family:'Montserrat',sans-serif;margin-top:12px"></div>
+          <div style="display:flex;gap:10px;margin-top:18px">
+            <button onclick="closeLink3Modal()" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:9px;background:#f5f9ff;color:var(--blue);font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif">Cancel</button>
+            <button onclick="doSaveLink3()" style="flex:2;padding:10px;background:linear-gradient(135deg,#0a1642,#2f9bff);color:#fff;border:none;border-radius:9px;font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif;letter-spacing:.3px"><i class="fas fa-id-card"></i> Save Link3 ID</button>
+          </div>
+        </div>
+      </div>
+
       <div class="tbl-card" style="margin-top:10px;flex:1;display:flex;flex-direction:column;min-height:0">
         <div class="tbl-top"><span class="tbl-title"><i class="fas fa-list-ul"></i>All Users</span><span class="tbl-badge" id="usr-cnt">0 users</span></div>
         <div class="tbl-wrap" style="flex:1;overflow-y:auto"><table class="um-table">
-          <thead><tr><th>#</th><th>Display Name</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead><tr><th>#</th><th>Display Name</th><th>Link3 ID</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="usr-tbody"></tbody>
         </table></div>
       </div>
@@ -1726,21 +1781,21 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 // ===== USER DATABASE =====
 const DEFAULT_USERS = {
   admin:      { name:'Admin',                     role:'admin',    pass:'admin123' },
-  prince:     { name:'Prince Hedayet Zaman',      role:'admin',    pass:'prince123' },
-  mostafizur: { name:'Md. Mostafizur Rahman',     role:'engineer', pass:'mostafizur123' },
-  nabiul:     { name:'Nabiul Ahsan Bakshi',       role:'engineer', pass:'nabiul123' },
-  asad:       { name:'Md. Asad',                  role:'engineer', pass:'asad123' },
-  taibul:     { name:'Taibul Hoque Zehad',        role:'engineer', pass:'taibul123' },
-  subroto:    { name:'Subroto Saha',              role:'engineer', pass:'subroto123' },
-  hasnat:     { name:'Abu Hasnat',                role:'engineer', pass:'hasnat123' },
-  rabiul:     { name:'Muhammed Rabiul Islam',     role:'engineer', pass:'rabiul123' },
-  sojol:      { name:'Md. Azizul Haque Sojol',    role:'engineer', pass:'sojol123' },
-  rubel:      { name:'Ainul Hoque Rubel',         role:'engineer', pass:'rubel123' },
-  juel:       { name:'Md Juel Hossain',           role:'engineer', pass:'juel123' },
-  mrithunjoy: { name:'Mrithunjoy Das',            role:'engineer', pass:'mrithunjoy123' },
-  badrul:     { name:'Mohammad Badrul Islam',     role:'engineer', pass:'badrul123' },
-  abir:       { name:'Abir Roy',                  role:'engineer', pass:'abir123' },
-  shams:      { name:'Syed Ash Shams',            role:'engineer', pass:'shams123' },
+  prince:     { name:'Prince Hedayet Zaman',      role:'admin',    pass:'prince123',     link3Id:'L3T709' },
+  mostafizur: { name:'Md. Mostafizur Rahman',     role:'engineer', pass:'mostafizur123', link3Id:'L3T1141' },
+  nabiul:     { name:'Nabiul Ahsan Bakshi',       role:'engineer', pass:'nabiul123',     link3Id:'L3T1743' },
+  asad:       { name:'Md. Asad',                  role:'engineer', pass:'asad123',       link3Id:'L3T2025' },
+  taibul:     { name:'Taibul Hoque Zehad',        role:'engineer', pass:'taibul123',     link3Id:'L3T1829' },
+  subroto:    { name:'Subroto Saha',              role:'engineer', pass:'subroto123',    link3Id:'L3T2083' },
+  hasnat:     { name:'Abu Hasnat',                role:'engineer', pass:'hasnat123',     link3Id:'L3T805' },
+  rabiul:     { name:'Muhammed Rabiul Islam',     role:'engineer', pass:'rabiul123',     link3Id:'L3T2503' },
+  sojol:      { name:'Md. Azizul Haque Sojol',    role:'engineer', pass:'sojol123',      link3Id:'L3T2141' },
+  rubel:      { name:'Ainul Hoque Rubel',         role:'engineer', pass:'rubel123',      link3Id:'L3T1971' },
+  juel:       { name:'Md Juel Hossain',           role:'engineer', pass:'juel123',       link3Id:'L3T1590' },
+  mrithunjoy: { name:'Mrithunjoy Das',            role:'engineer', pass:'mrithunjoy123', link3Id:'L3T2159' },
+  badrul:     { name:'Mohammad Badrul Islam',     role:'engineer', pass:'badrul123',     link3Id:'L3T002' },
+  abir:       { name:'Abir Roy',                  role:'engineer', pass:'abir123',       link3Id:'L3T1907' },
+  shams:      { name:'Syed Ash Shams',            role:'engineer', pass:'shams123',      link3Id:'L3T1630' },
   test1:      { name:'Test1',                     role:'admin',    pass:'test321' }
 };
 
@@ -1770,11 +1825,13 @@ function getUsers() {
 function saveUsers(u) {
   _cachedUsers = u;
   localStorage.setItem('l3_users', JSON.stringify(u));
+  if(typeof syncEngineersFromUsers === 'function') syncEngineersFromUsers();
 }
 
 async function saveUsersToFirebase(u) {
   _cachedUsers = u;
   localStorage.setItem('l3_users', JSON.stringify(u));
+  if(typeof syncEngineersFromUsers === 'function') syncEngineersFromUsers();
   for (const [uname, udata] of Object.entries(u)) {
     await window._fbSaveUser(uname, udata);
   }
@@ -1788,6 +1845,7 @@ async function syncUsersFromFirebase() {
     if (fbUsers && Object.keys(fbUsers).length > 0) {
       _cachedUsers = fbUsers;
       localStorage.setItem('l3_users', JSON.stringify(fbUsers));
+      if(typeof syncEngineersFromUsers === 'function') syncEngineersFromUsers();
     }
   } catch(e) {
     console.warn('Firebase sync skipped:', e.message);
@@ -1823,6 +1881,7 @@ async function doLogin() {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app-screen').style.display = 'block';
       setupUserUI();
+      if(typeof backfillLink3IdsForKnownEngineers==='function') await backfillLink3IdsForKnownEngineers();
       renderUserTable();
       setDateDefaults();
       setTimeout(()=>showPage('engreport', document.getElementById('nav-engreport')), 80);
@@ -2082,6 +2141,7 @@ async function savePassword() {
 
 // ===== USER TABLE (Admin) =====
 let resetTargetKey = null;
+let link3TargetKey = null;
 
 function renderUserTable() {
   if (!currentUser || currentUser.role !== 'admin') return;
@@ -2094,13 +2154,17 @@ function renderUserTable() {
     return `<tr>
       <td style="color:var(--muted);font-weight:700;font-family:'Montserrat',sans-serif">${i+1}</td>
       <td style="font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy)">${u.name}</td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--blue);font-size:.76rem;font-weight:600">${uname}</td>
+      <td>${u.link3Id
+        ? `<span style="font-family:'Montserrat',sans-serif;background:#eef5ff;color:var(--navy);padding:3px 9px;border-radius:6px;font-size:.8rem;font-weight:700;border:1px solid #d8ebff">${u.link3Id}</span>`
+        : `<span style="color:var(--muted);font-size:.72rem;font-family:'Outfit',sans-serif">— login only</span>`}</td>
+      <td style="font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy)">${uname}</td>
       <td>${u.role==='admin'
         ?'<span class="um-badge-admin"><i class="fas fa-shield-alt"></i> Admin</span>'
         :'<span class="um-badge-eng"><i class="fas fa-hard-hat"></i> Engineer</span>'}</td>
       <td><span class="chip chip-yes"><i class="fas fa-circle" style="font-size:.4rem;vertical-align:middle"></i> Active</span></td>
       <td>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <button onclick="openLink3Modal('${uname}','${u.name}','${u.link3Id||''}')" style="background:linear-gradient(135deg,#0a1642,#2f9bff);color:#fff;border:none;padding:5px 12px;border-radius:7px;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px;transition:filter .2s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-id-card"></i> ${u.link3Id?'Edit':'Set'} ID</button>
           <button onclick="openResetModal('${uname}','${u.name}')" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;padding:5px 12px;border-radius:7px;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px;transition:filter .2s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-key"></i> Reset PW</button>
           ${canDelete ? `<button onclick="doDeleteUser('${uname}','${u.name}')" style="background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;padding:5px 12px;border-radius:7px;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px;transition:filter .2s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-trash"></i> Delete</button>` : ''}
         </div>
@@ -2112,6 +2176,7 @@ function renderUserTable() {
 
 function openCreateUser() {
   document.getElementById('um-name').value='';
+  document.getElementById('um-link3id').value='';
   document.getElementById('um-uname').value='';
   document.getElementById('um-pass').value='';
   document.getElementById('um-role').value='engineer';
@@ -2120,8 +2185,69 @@ function openCreateUser() {
 }
 function closeCreateUser() { document.getElementById('um-modal').style.display='none'; }
 
+// Normalize a Link3 ID for case/space/hyphen-insensitive comparisons
+function normLink3Id(v){ return String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+
+// A Link3 ID is "taken" if it's already a preset engineer ID (ID_NAME_MAP) or already
+// assigned to another user account. excludeUname lets an existing user keep their own ID.
+function isLink3IdTaken(normId, excludeUname){
+  if(!normId) return false;
+  if(ID_NAME_MAP_NORM[normId]) return true;
+  const users = getUsers();
+  return Object.entries(users).some(([uname,u]) => uname!==excludeUname && u.link3Id && normLink3Id(u.link3Id)===normId);
+}
+
+// Merge the static preset ID→Name map with any Link3 IDs assigned through User Management,
+// so misLookupNameById() (used while parsing MIS Excel uploads) resolves both.
+function getIdNameMapDynamic(){
+  const merged = {...ID_NAME_MAP_NORM};
+  const users = getUsers();
+  Object.values(users).forEach(u=>{
+    if(u.link3Id){
+      const norm = normLink3Id(u.link3Id);
+      if(norm) merged[norm] = u.name;
+    }
+  });
+  return merged;
+}
+
+// After a Link3 ID is newly assigned to a user, retroactively fix any MIS rows that were
+// already uploaded under that ID (previously showing as "Unknown" or the raw ID) so they
+// now show the engineer's proper name — everywhere the data is used.
+// Re-render whichever engineer-related pages are currently active, so a newly linked
+// engineer's name (added to ENGINEERS via syncEngineersFromUsers) shows up immediately —
+// even before any MIS data referencing their Link3 ID has been uploaded.
+function refreshEngineerDependentPages(){
+  ['mis','misreport'].forEach(pg=>{
+    const el = document.getElementById('page-'+pg);
+    if(el && el.classList.contains('active') && typeof renderMis==='function') renderMis();
+  });
+  const engEl = document.getElementById('page-engreport');
+  if(engEl && engEl.classList.contains('active') && typeof renderEngReport==='function') renderEngReport();
+  const wdEl = document.getElementById('page-workdash');
+  if(wdEl && wdEl.classList.contains('active') && typeof renderWorkDash==='function') renderWorkDash();
+  const mdEl = document.getElementById('page-maindash');
+  if(mdEl && mdEl.classList.contains('active') && typeof renderDash==='function') renderDash();
+}
+
+async function resolveMisNamesForId(link3Id, name){
+  const norm = normLink3Id(link3Id);
+  if(!norm) return;
+  const matches = misRows.filter(r => normLink3Id(r.id) === norm && r.engineerName !== name);
+  if(!matches.length) return;
+  for(const r of matches){
+    r.engineerName = name;
+    if(r.firebaseKey && typeof window._fbSetMisRow === 'function'){
+      const {firebaseKey, ...rowData} = r;
+      await window._fbSetMisRow(firebaseKey, rowData);
+    }
+  }
+  toast(`✅ ${matches.length} existing MIS record(s) updated with "${name}"`);
+}
+
 async function doCreateUser() {
   const name  = document.getElementById('um-name').value.trim();
+  const link3idRaw = document.getElementById('um-link3id').value.trim();
   const uname = document.getElementById('um-uname').value.trim().toLowerCase().replace(/\s+/g,'');
   const pass  = document.getElementById('um-pass').value;
   const role  = document.getElementById('um-role').value;
@@ -2132,14 +2258,57 @@ async function doCreateUser() {
   if(pass.length<4){errEl.textContent='❌ Password must be at least 4 characters!';errEl.style.display='block';return;}
   const users=getUsers();
   if(users[uname]){errEl.textContent='❌ Username already exists!';errEl.style.display='block';return;}
-  users[uname]={name,role,pass};
-  saveUsers(users);
+  let link3Id = '';
+  if(link3idRaw){
+    const norm = normLink3Id(link3idRaw);
+    if(isLink3IdTaken(norm, null)){errEl.textContent='❌ This Link3 ID is already assigned to another engineer!';errEl.style.display='block';return;}
+    link3Id = link3idRaw.toUpperCase();
+  }
+  users[uname]={name,role,pass,link3Id: link3Id || null};
+  saveUsers(users); // also runs syncEngineersFromUsers(), adding this name to ENGINEERS if link3Id is set
   closeCreateUser();
   renderUserTable();
+  refreshEngineerDependentPages();
   toast('⏳ User saving to Firebase...');
-  const ok = await window._fbSaveUser(uname, {name,role,pass});
-  if(ok) toast(`✅ User "${name}" created & saved to Firebase!`);
+  const ok = await window._fbSaveUser(uname, users[uname]);
+  if(ok) toast(`✅ User "${name}" created & saved to Firebase!` + (link3Id ? ` (Link3 ID: ${link3Id})` : ' (login only, no Link3 ID)'));
   else toast(`⚠ User created locally, Firebase sync failed!`);
+  if(link3Id) await resolveMisNamesForId(link3Id, name);
+  refreshEngineerDependentPages();
+}
+
+function openLink3Modal(uname, displayName, currentId){
+  link3TargetKey = uname;
+  document.getElementById('um-link3-input').value = currentId || '';
+  document.getElementById('um-link3-err').style.display='none';
+  document.getElementById('um-link3-name').textContent = `Setting Link3 ID for: ${displayName} (${uname})`;
+  document.getElementById('um-link3-modal').style.display='flex';
+}
+function closeLink3Modal(){ document.getElementById('um-link3-modal').style.display='none'; link3TargetKey=null; }
+
+async function doSaveLink3(){
+  const raw = document.getElementById('um-link3-input').value.trim();
+  const errEl = document.getElementById('um-link3-err');
+  errEl.style.display='none';
+  const users = getUsers();
+  if(!link3TargetKey || !users[link3TargetKey]){ closeLink3Modal(); return; }
+  let link3Id = '';
+  if(raw){
+    const norm = normLink3Id(raw);
+    if(isLink3IdTaken(norm, link3TargetKey)){errEl.textContent='❌ This Link3 ID is already assigned to another engineer!';errEl.style.display='block';return;}
+    link3Id = raw.toUpperCase();
+  }
+  users[link3TargetKey].link3Id = link3Id || null;
+  saveUsers(users); // also runs syncEngineersFromUsers()
+  closeLink3Modal();
+  renderUserTable();
+  refreshEngineerDependentPages();
+  toast('⏳ Saving Link3 ID to Firebase...');
+  const ok = await window._fbSaveUser(link3TargetKey, users[link3TargetKey]);
+  if(ok) toast(link3Id ? `✅ Link3 ID "${link3Id}" linked to ${users[link3TargetKey].name}!` : '✅ Link3 ID removed.');
+  else toast('⚠ Saved locally, Firebase sync failed!');
+  if(link3Id) await resolveMisNamesForId(link3Id, users[link3TargetKey].name);
+  refreshEngineerDependentPages();
 }
 
 function openResetModal(uname, displayName) {
@@ -2183,7 +2352,7 @@ let tickets = [];
 const titles = {
   maindash:'Dashboard', workdash:'Dashboard', dashboard:'Ticket Entry', mytask:'My Task', taskreport:'Task Report',
   alltask:'All Completed Tasks', devices:'Used Devices', wifi:'WiFi Scoring',
-  users:'User Management', import:'Import Data', mis:'MIS Update', misreport:'MIS Task Report', engreport:'Engineer Report'
+  users:'User Management', import:'Import Data', mis:'MIS Data Update', misreport:'MIS Task Report', engreport:'Engineer Report'
 };
 
 function pad(n){return String(n).padStart(2,'0')}
@@ -2805,8 +2974,56 @@ const ID_NAME_MAP_NORM = {};
 Object.keys(ID_NAME_MAP).forEach(k=>{
   ID_NAME_MAP_NORM[k.toUpperCase().replace(/[^A-Z0-9]/g,'')] = ID_NAME_MAP[k];
 });
+
+// Keep ENGINEERS in sync with any user accounts that have a Link3 ID assigned via
+// User Management (Create User / Set ID) — so a newly-linked engineer immediately
+// shows up in Engineer Report, the bar chart, Work Dashboard, etc., even before any
+// MIS Excel data referencing their ID has been uploaded. ENGINEERS is const but its
+// array contents can still be mutated (push), which is what we do here.
+function syncEngineersFromUsers(){
+  const users = getUsers();
+  Object.values(users).forEach(u=>{
+    if(u && u.link3Id && u.name && !ENGINEERS.includes(u.name)){
+      ENGINEERS.push(u.name);
+    }
+  });
+}
+syncEngineersFromUsers();
+
+// One-time auto-heal: any already-existing user account whose Display Name exactly
+// matches one of the known engineers (ID_NAME_MAP) but doesn't have a link3Id saved yet
+// gets it filled in automatically — covers accounts created/synced before the Link3 ID
+// feature existed. Accounts like "Admin" or other non-matching names are untouched,
+// since their name simply won't be found in ID_NAME_MAP.
+async function backfillLink3IdsForKnownEngineers(){
+  const NAME_TO_ID = {};
+  Object.entries(ID_NAME_MAP).forEach(([id,name])=>{ NAME_TO_ID[name]=id; });
+  const users = getUsers();
+  const touched = [];
+  Object.entries(users).forEach(([uname,u])=>{
+    if(u && !u.link3Id && NAME_TO_ID[u.name]){
+      u.link3Id = NAME_TO_ID[u.name];
+      touched.push(uname);
+    }
+  });
+  if(!touched.length) return;
+  saveUsers(users);
+  if(typeof window._fbSaveUser === 'function'){
+    for(const uname of touched){
+      try{ await window._fbSaveUser(uname, users[uname]); }catch(e){}
+    }
+  }
+  const usersPage = document.getElementById('page-users');
+  if(usersPage && usersPage.classList.contains('active') && typeof renderUserTable==='function') renderUserTable();
+}
+
+
 function misLookupNameById(rawId){
   const norm = String(rawId||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(!norm) return null;
+  // getIdNameMapDynamic (defined later, in the User Management section) merges the
+  // static preset map with any Link3 IDs assigned through Create User / Set ID.
+  if(typeof getIdNameMapDynamic === 'function') return getIdNameMapDynamic()[norm] || null;
   return ID_NAME_MAP_NORM[norm] || null;
 }
 const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -2973,7 +3190,7 @@ function handleMisFile(input){
 
       if(!json.length){
         toast('⚠ No data found in the Excel file!');
-        document.getElementById('mis-upload-label').textContent='Update Excel File';
+        document.getElementById('mis-upload-label').textContent='Upload Excel File';
         return;
       }
 
@@ -3029,7 +3246,7 @@ function handleMisFile(input){
       if(missing.length){
         const foundCols = Object.values(headerMap).join(', ');
         toast('❌ Required columns not found: ' + missing.join(', ') + '\nColumns present in file: ' + foundCols.slice(0,120));
-        document.getElementById('mis-upload-label').textContent='Update Excel File';
+        document.getElementById('mis-upload-label').textContent='Upload Excel File';
         return;
       }
 
@@ -3092,7 +3309,7 @@ function handleMisFile(input){
         addOk = await window._fbPushMisRows(toAdd);
       }
 
-      document.getElementById('mis-upload-label').textContent='Update Excel File';
+      document.getElementById('mis-upload-label').textContent='Upload Excel File';
       if(!updateFail && addOk){
         document.getElementById('mis-file-status').textContent = `${file.name} — ${toAdd.length} new, ${toUpdate.length} updated (${uploaderName})`;
         if(unknownIdSet.size){
@@ -3107,7 +3324,7 @@ function handleMisFile(input){
     }catch(err){
       console.error(err);
       toast('❌ Failed to read the Excel file!');
-      document.getElementById('mis-upload-label').textContent='Update Excel File';
+      document.getElementById('mis-upload-label').textContent='Upload Excel File';
     }
   };
   reader.readAsArrayBuffer(file);
@@ -3265,7 +3482,7 @@ function renderMis(){
     <td>${fmtDateDisp(r.entryDate)||r.entryDate||'—'}</td>
     <td style="font-weight:700;color:var(--navy)">${r.engineerName||'—'}</td>
     <td>${r.ticketId||'—'}</td>
-    <td><span class="chip chip-cat">${r.supportType||'—'}</span></td>
+    <td>${r.supportType||'—'}</td>
     <td>${r.taskStatus||'—'}</td>
   </tr>`).join('');
   renderMisPagination(filtered.length, totalPages);
@@ -3373,18 +3590,45 @@ async function deleteMisSelected(){
   renderMis();
 }
 
-async function deleteAllMisData(){
+function openDeleteAllModal(){
   if(!currentUser || currentUser.role !== 'admin'){ toast('❌ Only Admin can delete data!'); return; }
   if(!misRows.length){ toast('⚠ No data to delete!'); return; }
-  const confirmed = confirm(`⚠ এই কাজটি সমস্ত MIS data মুছে দেবে (${misRows.length} rows)। নিশ্চিত?`);
-  if(!confirmed) return;
+  document.getElementById('mis-delall-msg').textContent = `Do you want to delete all data? (${misRows.length} rows)`;
+  document.getElementById('mis-delall-stage1').style.display='block';
+  document.getElementById('mis-delall-stage2').style.display='none';
+  document.getElementById('mis-delall-pass').value='';
+  document.getElementById('mis-delall-err').style.display='none';
+  document.getElementById('mis-delall-modal').style.display='flex';
+}
+function closeDeleteAllModal(){
+  document.getElementById('mis-delall-modal').style.display='none';
+}
+function deleteAllStage2(){
+  document.getElementById('mis-delall-stage1').style.display='none';
+  document.getElementById('mis-delall-stage2').style.display='block';
+  document.getElementById('mis-delall-pass').focus();
+}
+async function confirmDeleteAllWithPassword(){
+  const pass  = document.getElementById('mis-delall-pass').value;
+  const errEl = document.getElementById('mis-delall-err');
+  errEl.style.display='none';
+  if(!currentUser || currentUser.pass !== pass){
+    errEl.textContent='❌ Incorrect password!';
+    errEl.style.display='block';
+    return;
+  }
+  closeDeleteAllModal();
+  await performDeleteAllMisData();
+}
+async function performDeleteAllMisData(){
+  const rowCount = misRows.length;
   const btn = document.getElementById('btn-mis-del-all');
   const orig = btn.innerHTML;
   btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Deleting...';
   btn.disabled=true;
   try{
     await window._fbDeleteAllMis(); // wipe entire misdata node at once
-    toast(`✅ সব MIS data (${misRows.length} rows) মুছে দেওয়া হয়েছে।`);
+    toast(`✅ All MIS data (${rowCount} rows) deleted.`);
   } catch(e){
     toast('❌ Delete failed: ' + e.message);
   }
@@ -3643,9 +3887,9 @@ function renderEngReport(){
   };
 
   thead.innerHTML=`<tr style="background:linear-gradient(90deg,#15318c,#1560ba)">
-    <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);width:170px;min-width:170px;text-align:left;padding:4px 9px;font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:900;letter-spacing:.3px;white-space:nowrap">Engineer Name</th>
-    ${supportTypes.map((t,i)=>`<th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);width:${colWidth(t)};min-width:${colWidth(t)};text-align:center;padding:3px 4px;font-family:'Montserrat',sans-serif;font-size:.54rem;font-weight:800;line-height:1.3;vertical-align:bottom;word-break:normal;overflow-wrap:normal;background:rgba(255,255,255,${i%2===0?'.06':'.02'})">${wrapHdr(t)}</th>`).join('')}
-    <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);width:44px;text-align:center;padding:3px 3px;font-family:'Montserrat',sans-serif;font-size:.58rem;font-weight:900;white-space:nowrap;vertical-align:bottom">Total</th>
+    <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);width:170px;min-width:170px;text-align:center;padding:4px 9px;font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:900;letter-spacing:.3px;white-space:nowrap;vertical-align:middle">Engineer Name</th>
+    ${supportTypes.map((t,i)=>`<th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);width:${colWidth(t)};min-width:${colWidth(t)};text-align:center;padding:3px 4px;font-family:'Montserrat',sans-serif;font-size:.54rem;font-weight:800;line-height:1.3;vertical-align:middle;word-break:normal;overflow-wrap:normal;background:rgba(255,255,255,${i%2===0?'.06':'.02'})">${wrapHdr(t)}</th>`).join('')}
+    <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);width:44px;text-align:center;padding:3px 3px;font-family:'Montserrat',sans-serif;font-size:.58rem;font-weight:900;white-space:nowrap;vertical-align:middle">Total</th>
   </tr>`;
 
   const ranged = erRowsInRange();
@@ -3719,7 +3963,7 @@ function renderEngDetail(){
   thead.innerHTML=`<tr style="background:linear-gradient(90deg,#15318c,#1560ba)">
     <th style="width:72px;color:#fff;border-bottom:2px solid rgba(255,255,255,.25);border-right:2px solid rgba(255,255,255,.3);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;vertical-align:middle;padding:5px 6px;white-space:nowrap">${erView==='day'?'Date':'Month'}</th>
     <th style="width:120px;color:#fff;border-bottom:2px solid rgba(255,255,255,.25);border-right:2px solid rgba(255,255,255,.4);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;vertical-align:middle;padding:5px 6px;white-space:nowrap">Support Type</th>
-    ${statuses.map(s=>{const ws=s.trim().split(/\s+/);const ml=Math.max(...ws.map(w=>w.length));const dw=Math.max(Math.ceil(ml*6+8),20)+'px';return`<th style="width:${dw};min-width:${dw};color:#ffe9b3;border-bottom:2px solid rgba(255,255,255,.25);border-right:1px solid rgba(255,255,255,.15);text-align:center;font-family:'Montserrat',sans-serif;font-size:.58rem;font-weight:700;padding:3px 2px;vertical-align:bottom"><div style="white-space:normal;word-break:normal;overflow-wrap:normal;line-height:1.25">${s}</div></th>`;}).join('')}
+    ${statuses.map(s=>{const ws=s.trim().split(/\s+/);const ml=Math.max(...ws.map(w=>w.length));const dw=Math.max(Math.ceil(ml*6+8),20)+'px';return`<th style="width:${dw};min-width:${dw};color:#ffe9b3;border-bottom:2px solid rgba(255,255,255,.25);border-right:1px solid rgba(255,255,255,.15);text-align:center;font-family:'Montserrat',sans-serif;font-size:.58rem;font-weight:700;padding:3px 2px;vertical-align:middle"><div style="white-space:normal;word-break:normal;overflow-wrap:normal;line-height:1.25;text-align:center">${s}</div></th>`;}).join('')}
     <th style="width:44px;color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:900;vertical-align:middle;padding:5px 4px;white-space:nowrap">Total</th>
   </tr>`;
 
@@ -3767,21 +4011,37 @@ function renderEngDetail(){
       const dateCell = ti===0
         ? `<td rowspan="${supportTypes.length}" style="text-align:center;font-weight:800;font-family:'Montserrat',sans-serif;color:var(--navy);font-size:.72rem;padding:4px 6px;white-space:nowrap;border-right:2px solid #c7dcf8;border-bottom:3px solid #4a90d9;vertical-align:middle;background:#e8f3ff">${label}</td>`
         : '';
-      const countCells = counts.map(v=>`<td style="text-align:center;font-family:'Outfit',sans-serif;font-size:.74rem;font-weight:${v>0?'800':'400'};padding:3px 3px;border-right:1px solid #e8f0f8;color:${v>0?'#1a2340':'#cdd5e0'}">${v>0?v:'\u2014'}</td>`).join('');
+      const countCells = counts.map(v=>`<td style="text-align:center;padding:3px 3px;border-right:1px solid #e8f0f8">
+  <span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;border-radius:5px;font-size:.72rem;font-weight:800;padding:0 4px;font-family:'Outfit',sans-serif;
+  background:${v>0?pal.bg:'transparent'};
+  color:${v>0?pal.color:'#c0cce0'};
+  border:${v>0?'1.5px solid '+pal.border:'none'};">${v>0?v:'\u2014'}</span></td>`).join('');
       const rowBorder = ti===supportTypes.length-1 ? '3px solid #4a90d9' : '1px solid #e8f0f8';
       return `<tr style="border-bottom:${rowBorder};transition:background .15s" onmouseover="this.style.background='rgba(47,155,255,.05)'" onmouseout="this.style.background=''">
         ${dateCell}
         <td style="font-weight:700;font-family:'Montserrat',sans-serif;font-size:.67rem;padding:3px 8px;border-right:2px solid #c7dcf8;white-space:nowrap;background:${pal.bg};color:${pal.color};border-left:3px solid ${pal.border}">${t}</td>
         ${countCells}
-        <td style="text-align:center;font-weight:900;color:${total>0?'#c2410c':'#cdd5e0'};font-family:'Outfit',sans-serif;font-size:.78rem;padding:3px 5px;background:${total>0?'rgba(254,215,170,.3)':'transparent'}">${total>0?total:'\u2014'}</td>
+        <td style="text-align:center;padding:3px 5px">
+  <span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:20px;border-radius:5px;font-size:.76rem;font-weight:900;padding:0 4px;font-family:'Outfit',sans-serif;
+  background:${total>0?'linear-gradient(135deg,#fed7aa,#fdba74)':'transparent'};
+  color:${total>0?'#c2410c':'#cdd5e0'};
+  border:${total>0?'2px solid #fb923c':'none'};">${total>0?total:'\u2014'}</span></td>
       </tr>`;
     }).join('');
     // Subtotal row pinned below each day / month group
     const dayTotal = dayColTotals.reduce((a,b)=>a+b,0);
     const subtotalRow=`<tr style="background:linear-gradient(90deg,rgba(21,49,140,.09),rgba(47,155,255,.06));border-top:1px solid #93c5fd;border-bottom:3px solid #2452e8">
       <td colspan="2" style="font-weight:900;font-family:'Montserrat',sans-serif;font-size:.6rem;color:#1e3a8a;letter-spacing:.5px;padding:3px 10px;border-right:2px solid #93c5fd;white-space:nowrap;text-align:right;text-transform:uppercase">${erView==='day'?'Day':'Month'} Total</td>
-      ${dayColTotals.map(v=>`<td style="text-align:center;font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:${v>0?'900':'400'};padding:3px 3px;border-right:1px solid #bfdbfe;color:${v>0?'#1e3a8a':'#cdd5e0'};background:${v>0?'rgba(219,234,254,.45)':'transparent'}">${v>0?v:'\u2014'}</td>`).join('')}
-      <td style="text-align:center;font-weight:900;font-family:'Outfit',sans-serif;font-size:.78rem;padding:3px 5px;color:${dayTotal>0?'#9a3412':'#cdd5e0'};background:${dayTotal>0?'rgba(254,215,170,.5)':'transparent'}">${dayTotal>0?dayTotal:'\u2014'}</td>
+      ${dayColTotals.map(v=>`<td style="text-align:center;padding:3px 3px;border-right:1px solid #bfdbfe">
+  <span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;border-radius:5px;font-size:.72rem;font-weight:900;padding:0 4px;font-family:'Outfit',sans-serif;
+  background:${v>0?'rgba(219,234,254,.9)':'transparent'};
+  color:${v>0?'#1e3a8a':'#cdd5e0'};
+  border:${v>0?'1.5px solid #93c5fd':'none'};">${v>0?v:'\u2014'}</span></td>`).join('')}
+      <td style="text-align:center;padding:3px 5px">
+  <span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:20px;border-radius:5px;font-size:.78rem;font-weight:900;padding:0 4px;font-family:'Outfit',sans-serif;
+  background:${dayTotal>0?'linear-gradient(135deg,#fed7aa,#fdba74)':'transparent'};
+  color:${dayTotal>0?'#9a3412':'#cdd5e0'};
+  border:${dayTotal>0?'2px solid #fb923c':'none'};">${dayTotal>0?dayTotal:'\u2014'}</span></td>
     </tr>`;
     return supportRows + subtotalRow;
   }).join('');
@@ -4163,6 +4423,7 @@ document.getElementById('l-user').addEventListener('keydown', e => { if(e.key===
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'block';
     setupUserUI();
+    if(typeof backfillLink3IdsForKnownEngineers==='function') backfillLink3IdsForKnownEngineers();
     renderUserTable();
     setDateDefaults();
     setTimeout(()=>showPage('engreport', document.getElementById('nav-engreport')), 80);
@@ -4468,7 +4729,7 @@ function destroyWorkDashCharts(){
 function renderWorkDash(){
   if(!misRows.length){
     document.getElementById('wd-total-badge').textContent='0 tasks';
-    document.getElementById('wd-stat-row').innerHTML=`<div class="tbl-card" style="grid-column:1/-1;padding:18px;text-align:center;font-family:'Outfit',sans-serif;font-size:.78rem;color:var(--muted)"><i class="fas fa-chart-column" style="font-size:1.1rem;opacity:.4;display:block;margin-bottom:6px"></i>No MIS Excel data has been uploaded yet (Engineer Report er data theke ei dashboard toiri hoy — MIS Update theke Excel upload korun).</div>`;
+    document.getElementById('wd-stat-row').innerHTML=`<div class="tbl-card" style="grid-column:1/-1;padding:18px;text-align:center;font-family:'Outfit',sans-serif;font-size:.78rem;color:var(--muted)"><i class="fas fa-chart-column" style="font-size:1.1rem;opacity:.4;display:block;margin-bottom:6px"></i>No MIS Excel data has been uploaded yet (this dashboard is built from Engineer Report data — please upload an Excel file from MIS Data Update).</div>`;
     const catTotalSubEl = document.getElementById('wd-cat-total-sub');
     const catCenterNumEl = document.getElementById('wd-cat-center-num');
     const catLegendEl2 = document.getElementById('wd-cat-legend');

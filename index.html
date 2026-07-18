@@ -26,6 +26,7 @@
   const db = getDatabase(app);
   const ticketsRef = ref(db, 'tickets');
 const usersRef = ref(db, 'users');
+const misDataRef = ref(db, 'misdata');
 
 window._fbSaveUser = async function(username, userData) {
   try {
@@ -69,8 +70,8 @@ onValue(ticketsRef, (snapshot) => {
       });
       tickets.sort((a, b) => (b.id || 0) - (a.id || 0));
     }
-    // শুধু active page টাই render করবে
-    const pages = ['mytask','alltask','devices','wifi','taskreport'];
+    // Only render the active page
+    const pages = ['mytask','alltask','devices','wifi','taskreport','workdash'];
     pages.forEach(pg => {
       if(document.getElementById('page-'+pg).classList.contains('active')){
         if(pg==='mytask') renderMyTask();
@@ -78,6 +79,7 @@ onValue(ticketsRef, (snapshot) => {
         if(pg==='devices') renderDevices();
         if(pg==='wifi') renderWifi();
         if(pg==='taskreport') renderReport();
+        if(pg==='workdash') renderWorkDash();
       }
     });
     updateFirebaseStatus(true);
@@ -105,6 +107,77 @@ onValue(ticketsRef, (snapshot) => {
       return false;
     }
   }
+
+  // ===== MIS DATA (shared across all users, tracks who uploaded each row) =====
+  window._fbPushMisRows = async function(rowsArray) {
+    try {
+      for (const row of rowsArray) {
+        await push(misDataRef, row);
+      }
+      return true;
+    } catch(e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  window._fbClearMisData = async function() {
+    try {
+      await set(misDataRef, null);
+      return true;
+    } catch(e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  // Update (overwrite) a single existing MIS row by its firebase key — used so that
+  // re-uploading an Excel file for the same Ticket ID *updates* the row instead of
+  // creating a duplicate.
+  window._fbSetMisRow = async function(firebaseKey, rowData) {
+    try {
+      await set(ref(db, 'misdata/' + firebaseKey), rowData);
+      return true;
+    } catch(e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  // Delete a single MIS row by its firebase key — used by the bulk-delete option
+  // on the MIS Task Report table.
+  window._fbDeleteMisRow = async function(firebaseKey) {
+    try {
+      await remove(ref(db, 'misdata/' + firebaseKey));
+      return true;
+    } catch(e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  // Wipe the entire misdata node at once — used by Delete ALL Data button.
+  window._fbDeleteAllMis = async function() {
+    await set(misDataRef, null);
+  };
+
+  onValue(misDataRef, (snapshot) => {
+    const data = snapshot.val();
+    misRows = [];
+    if (data) {
+      Object.entries(data).forEach(([key, val]) => {
+        const _entry = { ...val, firebaseKey: key };
+        if(_entry.supportType) _entry.supportType = normSupportType(_entry.supportType);
+        misRows.push(_entry);
+      });
+    }
+    if (typeof renderMis === 'function' && document.getElementById('page-mis') && document.getElementById('page-mis').classList.contains('active')) renderMis();
+    if (typeof renderMis === 'function' && document.getElementById('page-misreport') && document.getElementById('page-misreport').classList.contains('active')) renderMis();
+    if (typeof renderEngReport === 'function' && document.getElementById('page-engreport') && document.getElementById('page-engreport').classList.contains('active')) renderEngReport();
+    if (typeof renderWorkDash === 'function' && document.getElementById('page-workdash') && document.getElementById('page-workdash').classList.contains('active')) renderWorkDash();
+  }, (error) => {
+    console.error("Firebase MIS error:", error);
+  });
 </script>
 
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Roboto+Serif:wght@400;700;900&display=swap" rel="stylesheet">
@@ -203,7 +276,7 @@ onValue(ticketsRef, (snapshot) => {
 .nav-item.active .nav-icon-wrap i{color:#fff;}
 
 /* Label transition */
-.nav-label{font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:700;color:#fff;letter-spacing:.4px;white-space:nowrap;text-transform:uppercase;transition:color .25s,letter-spacing .25s;text-shadow:0 2px 4px rgba(0,0,0,.6);}
+.nav-label{font-family:'Montserrat',sans-serif;font-size:.76rem;font-weight:700;color:#fff;letter-spacing:.4px;white-space:nowrap;text-transform:uppercase;transition:color .25s,letter-spacing .25s;text-shadow:0 2px 4px rgba(0,0,0,.6);}
 .nav-item:hover .nav-label{color:#fff;letter-spacing:.5px;text-shadow:0 2px 4px rgba(0,0,0,.6);}
 .nav-item.active .nav-label{color:#fff;font-weight:800;text-shadow:0 2px 4px rgba(0,0,0,.6);}
 
@@ -215,6 +288,18 @@ onValue(ticketsRef, (snapshot) => {
 
 .nav-item.admin-only{display:none}
 .nav-item.eng-visible{display:none}
+.nav-submenu.admin-only{display:none}
+
+/* Format One collapsible group */
+.nav-parent .nav-chevron{margin-left:auto;font-size:.62rem;color:rgba(255,255,255,.85);transition:transform .3s ease;flex-shrink:0;}
+.nav-parent.open .nav-chevron{transform:rotate(180deg);}
+.nav-submenu{max-height:0;overflow:hidden;transition:max-height .35s ease;display:flex;flex-direction:column;gap:1px;}
+.nav-submenu.open{max-height:320px;}
+.nav-submenu .nav-item{margin:0px 6px;margin-left:14px;padding-left:8px;height:28px;}
+.nav-submenu .nav-item .nav-icon-wrap{width:18px;height:18px;border-radius:4px;}
+.nav-submenu .nav-item .nav-icon-wrap i{font-size:.62rem;}
+.nav-submenu .nav-item .nav-label{font-size:.63rem;letter-spacing:.2px;}
+
 .sb-bottom{padding:4px 10px;border-top:1px solid rgba(255,255,255,.18);flex-shrink:0;}
 .sb-link{margin:0;padding:0 10px;height:24px;display:flex;align-items:center;gap:8px;cursor:pointer;border-radius:11px;border:1px solid transparent;transition:all .22s;font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:700;color:#fff;}
 .sb-link:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3);color:#fff}
@@ -267,6 +352,7 @@ onValue(ticketsRef, (snapshot) => {
   z-index:0;
 }
 .top-title-wrap{position:absolute;left:50%;transform:translateX(-50%);text-align:center}
+.top-title-row{display:flex;align-items:center;justify-content:center;gap:10px}
 .top-title{font-size:1.65rem;font-weight:900;color:#fff;letter-spacing:2px;font-family:'Montserrat',sans-serif;text-shadow:0 2px 0 rgba(0,0,0,.35),0 4px 18px rgba(0,0,0,.35),0 0 40px rgba(31,125,255,.6);text-transform:uppercase;line-height:1}
 .top-sub{font-size:.95rem;color:rgba(255,255,255,.92);letter-spacing:2px;margin-top:4px;font-family:'Outfit',sans-serif;font-weight:900;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.45),0 0 20px rgba(255,255,255,.15)}
 .top-right{display:flex;align-items:center;gap:14px;margin-left:auto;position:relative;z-index:1}
@@ -380,33 +466,44 @@ input[type=date]::-webkit-calendar-picker-indicator{opacity:.7;cursor:pointer;fi
 .btn-del-sel:hover{filter:brightness(1.1)}
 
 /* STAT CARDS */
-.stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-bottom:8px}
-.stat-card{background:linear-gradient(135deg,#fff,#f5f9ff);border-radius:9px;border:1.5px solid var(--border);padding:4px 8px;text-align:center;cursor:pointer;transition:all .22s;user-select:none;box-shadow:0 2px 8px rgba(21,49,140,.07);display:flex;align-items:center;justify-content:center;gap:7px;height:40px;}
-.stat-card:hover:not(.active){box-shadow:0 4px 14px rgba(21,49,140,.14);border-color:#8cc7f7;background:linear-gradient(135deg,#f5f9ff,#dbeafe)}
-.stat-card.active{background:linear-gradient(135deg,#0a1642,#15318c,#2f9bff) !important;border-color:#0a1642 !important;box-shadow:0 4px 18px rgba(10,22,66,.4) !important;}
-.stat-icon{font-size:.72rem;opacity:.75;flex-shrink:0;display:none}
+.stat-row{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px}
+.stat-card{background:linear-gradient(135deg,#fff,#f5f9ff);border-radius:7px;border:1.5px solid var(--border);padding:3px 6px;text-align:center;cursor:pointer;transition:all .22s;user-select:none;box-shadow:0 1px 5px rgba(21,49,140,.06);display:flex;align-items:center;justify-content:center;gap:4px;height:27px;}
+.stat-card:hover:not(.active){box-shadow:0 3px 10px rgba(21,49,140,.13);border-color:#8cc7f7;background:linear-gradient(135deg,#f5f9ff,#dbeafe)}
+.stat-card.active{background:linear-gradient(135deg,#0a1642,#15318c,#2f9bff) !important;border-color:#0a1642 !important;box-shadow:0 3px 14px rgba(10,22,66,.38) !important;}
+.stat-icon{font-size:.58rem;opacity:.75;flex-shrink:0}
 .stat-card.active .stat-icon{opacity:1}
-.stat-num{font-size:1.1rem;font-weight:900;color:var(--navy);font-family:'Montserrat',sans-serif;line-height:1;transition:color .2s;flex-shrink:0}
+.stat-num{font-size:.78rem;font-weight:900;color:var(--navy);font-family:'Montserrat',sans-serif;line-height:1;transition:color .2s;flex-shrink:0}
 .stat-card.active .stat-num{color:#fff}
-.stat-lbl{font-size:.68rem;font-weight:900;color:var(--muted);letter-spacing:.6px;font-family:'Montserrat',sans-serif;text-transform:uppercase;transition:color .2s}
+.stat-lbl{font-size:.52rem;font-weight:900;color:var(--muted);letter-spacing:.3px;font-family:'Montserrat',sans-serif;text-transform:uppercase;transition:color .2s}
 .stat-card.active .stat-lbl{color:rgba(255,255,255,.95);font-weight:900}
 
+/* ===== MIS Support Type / Task Status TABS ===== */
+.mis-stat-tabs{display:flex;gap:6px;margin-bottom:7px}
+.mis-stat-tab{display:flex;align-items:center;gap:6px;padding:0 14px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:linear-gradient(135deg,#fff,#f5f9ff);color:var(--blue);font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:800;letter-spacing:.3px;cursor:pointer;transition:all .2s;user-select:none;}
+.mis-stat-tab:hover:not(.active){border-color:#8cc7f7;background:linear-gradient(135deg,#f5f9ff,#dbeafe)}
+.mis-stat-tab.active{background:linear-gradient(135deg,#0a1642,#15318c,#2f9bff);border-color:#0a1642;color:#fff;box-shadow:0 3px 10px rgba(10,22,66,.3)}
+
 /* TABLE CARD */
-.tbl-card{background:#fff;border-radius:14px;border:1px solid rgba(190,227,248,.75);overflow:hidden;box-shadow:none;}
-.tbl-top{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,#f5f9ff,#fff)}
+.tbl-card{background:#fff;border-radius:14px;border:1px solid rgba(160,210,255,.45);overflow:hidden;box-shadow:0 4px 22px rgba(21,49,140,.09);}
+.tbl-top{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,#eef6ff,#fff)}
 .tbl-title{font-size:.82rem;font-weight:700;color:var(--navy);font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:7px}
 .tbl-title i{color:var(--accent)}
 .tbl-badge{font-size:.65rem;background:var(--light);color:var(--blue);padding:3px 12px;border-radius:20px;font-weight:700;font-family:'Montserrat',sans-serif;border:1px solid var(--border)}
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:.78rem;table-layout:auto}
-thead tr{background:linear-gradient(90deg,#eaf3ff,#f5f9ff)}
-th{padding:4px 5px;text-align:center;font-weight:800;font-size:.65rem;color:#14532d;border-bottom:2px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;letter-spacing:.2px;font-family:'Montserrat',sans-serif;text-transform:uppercase;text-shadow:none;box-shadow:none}
-td{padding:4px 5px;border-bottom:1px solid #eaf1fb;border-right:1px solid #eaf1fb;color:var(--navy);vertical-align:middle;font-size:.68rem;font-family:'Outfit',sans-serif;font-weight:600;white-space:nowrap;text-align:center}
+/* Colorful gradient header */
+thead tr{background:linear-gradient(135deg,#0f2778 0%,#1a5dbf 50%,#0a8fd4 100%)}
+th{padding:8px 5px;text-align:center;font-weight:800;font-size:.65rem;color:#fff;border-bottom:3px solid rgba(255,255,255,.18);border-right:1px solid rgba(255,255,255,.16);white-space:nowrap;letter-spacing:.35px;font-family:'Montserrat',sans-serif;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.35);vertical-align:middle}
+th:nth-child(even){background:rgba(255,255,255,.07)}
+/* Alternating body rows */
+tbody tr:nth-child(odd) td{background:#ffffff}
+tbody tr:nth-child(even) td{background:rgba(229,242,255,.52)}
+td{padding:5px 5px;border-bottom:1px solid #deeaf7;border-right:1px solid #e8f0f8;color:#1a2340;vertical-align:middle;font-size:.69rem;font-family:'Outfit',sans-serif;font-weight:600;white-space:nowrap;text-align:center;transition:background .12s}
 tr:last-child td{border-bottom:none}
-tbody tr:hover td{background:#f5f9ff}
-#tr-summary-tbody tr:nth-child(even) td{background:rgba(232,244,253,0.5);}
+tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:#c5ddf8}
+#tr-summary-tbody tr:nth-child(even) td{background:rgba(229,242,255,.52);}
 #tr-summary-tbody tr:nth-child(odd) td{background:#ffffff;}
-#tr-summary-tbody tr:hover td{background:rgba(47,155,255,0.08) !important;}
+#tr-summary-tbody tr:hover td{background:rgba(26,93,191,.09) !important;}
 .chip{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.65rem;font-weight:700;font-family:'Montserrat',sans-serif;letter-spacing:.3px}
 .chip-yes{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7}
 .chip-no{background:#f1f5f9;color:var(--muted);border:1px solid #e2e8f0}
@@ -474,10 +571,12 @@ tbody tr:hover td{background:#f5f9ff}
 
 /* USER TABLE */
 .um-table{width:100%;border-collapse:collapse}
-.um-table th{font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;color:#15318c;text-transform:uppercase;letter-spacing:.5px;padding:9px 14px;background:linear-gradient(90deg,#eaf3ff,#f5f9ff);border-bottom:2px solid var(--border);text-align:left;}
-.um-table td{padding:10px 14px;border-bottom:1px solid #eaf1fb;font-size:.8rem;color:var(--text);vertical-align:middle;font-family:'Outfit',sans-serif}
+.um-table th{font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.5px;padding:10px 14px;background:linear-gradient(135deg,#0f2778 0%,#1a5dbf 55%,#0a8fd4 100%);border-bottom:3px solid rgba(255,255,255,.18);border-right:1px solid rgba(255,255,255,.15);text-align:left;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+.um-table td{padding:9px 14px;border-bottom:1px solid #deeaf7;font-size:.8rem;color:#1a2340;vertical-align:middle;font-family:'Outfit',sans-serif;transition:background .12s}
+.um-table tr:nth-child(odd) td{background:#ffffff}
+.um-table tr:nth-child(even) td{background:rgba(229,242,255,.52)}
 .um-table tr:last-child td{border-bottom:none}
-.um-table tr:hover td{background:#f5f9ff}
+.um-table tr:hover td{background:rgba(26,93,191,.09) !important}
 .um-badge-admin{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#0a1642,#2452e8);color:#fff;border-radius:20px;padding:2px 10px;font-size:.6rem;font-weight:800;font-family:'Montserrat',sans-serif;letter-spacing:.3px;}
 .um-badge-eng{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border-radius:20px;padding:2px 10px;font-size:.6rem;font-weight:800;font-family:'Montserrat',sans-serif;letter-spacing:.3px;}
 /* REPLACE WITH: */
@@ -556,8 +655,170 @@ tbody tr:hover td{background:#f5f9ff}
 .cdd-btn span#cdd-cat-label,
 .cdd-btn span#cdd-tt-label,
 .cdd-btn span#cdd-tm-label{font-weight:900 !important;color:var(--navy) !important;font-size:.85rem !important;}
+
+/* ===== Work Dashboard — upgraded chart cards ===== */
+@keyframes wdCardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.wd-chart-card{
+  position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#ffffff 0%,#f9fcff 100%);
+  transition:transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease, border-color .28s ease;
+  animation:wdCardIn .45s ease both;
+}
+.wd-chart-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--wd-accent,linear-gradient(90deg,#2452e8,#2f9bff));
+  opacity:.9;
+}
+.wd-chart-card:hover{
+  transform:translateY(-4px);
+  border-color:rgba(47,155,255,.55) !important;
+  box-shadow:0 16px 34px rgba(21,49,140,.16) !important;
+}
+.wd-chart-card .wd-card-hd{position:relative;z-index:1}
+.wd-chart-card .wd-card-icn{
+  transition:transform .3s ease;
+}
+.wd-chart-card:hover .wd-card-icn{transform:scale(1.12) rotate(-4deg);}
+.wd-chart-card .wd-card-sub{
+  font-family:'Outfit',sans-serif;font-size:.6rem;font-weight:600;color:var(--muted);
+  margin-left:auto;background:#eef5ff;border:1px solid #d8ebff;padding:2px 8px;border-radius:20px;
+  letter-spacing:.2px;
+}
+#wd-chart-date,#wd-chart-eng{filter:drop-shadow(0 6px 10px rgba(21,49,140,.06));}
+
+/* ===== Category Wise donut card (Work Dashboard) ===== */
+.wd-cat-card{
+  position:relative;overflow:hidden;margin-top:12px;padding:14px 18px;
+  background:linear-gradient(180deg,#ffffff 0%,#f9fcff 100%);
+  border:1px solid rgba(190,227,248,.75);border-radius:14px;
+  box-shadow:0 6px 20px rgba(21,49,140,.08);
+  animation:wdCardIn .45s ease both;
+  transition:box-shadow .28s ease, transform .28s ease;
+}
+.wd-cat-card:hover{box-shadow:0 16px 36px rgba(21,49,140,.16);transform:translateY(-3px)}
+.wd-cat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,#185FA5,#2f9bff,#A32D2D);
+  opacity:.9;
+}
+.wd-cat-hd{
+  font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;color:var(--navy);
+  margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.wd-cat-icn{
+  width:24px;height:24px;border-radius:7px;flex-shrink:0;
+  background:linear-gradient(135deg,#185FA5,#2f9bff);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-size:.66rem;
+  box-shadow:0 3px 8px rgba(24,95,165,.35);
+}
+.wd-cat-sub{
+  margin-left:auto;font-family:'Outfit',sans-serif;font-size:.62rem;font-weight:700;color:var(--muted);
+  background:#eef5ff;border:1px solid #d8ebff;padding:2px 10px;border-radius:20px;
+}
+.wd-cat-body{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.wd-cat-donut-wrap{position:relative;width:min(260px,44vw);height:220px;flex-shrink:0;margin:0 auto}
+.wd-cat-center{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;pointer-events:none;
+}
+.wd-cat-center .num{font-family:'Montserrat',sans-serif;font-size:1.5rem;font-weight:900;color:var(--navy);line-height:1}
+.wd-cat-center .lbl{font-family:'Outfit',sans-serif;font-size:.58rem;font-weight:700;color:var(--muted);letter-spacing:.4px;margin-top:2px}
+.wd-cat-legend{display:flex;flex-direction:column;gap:8px;flex:1;min-width:180px}
+.wd-cat-leg-item{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;
+  background:#f5f9ff;border:1px solid #e4f0fc;transition:all .2s ease;cursor:default;
+}
+.wd-cat-leg-item:hover{background:#eaf3ff;transform:translateX(3px);box-shadow:0 3px 10px rgba(21,49,140,.08)}
+.wd-cat-leg-dot{width:12px;height:12px;border-radius:4px;flex-shrink:0;box-shadow:0 2px 5px rgba(0,0,0,.15)}
+.wd-cat-leg-name{font-family:'Outfit',sans-serif;font-size:.76rem;font-weight:700;color:var(--text);flex:1}
+.wd-cat-leg-val{font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:900;color:var(--navy)}
+.wd-cat-leg-pct{font-family:'Outfit',sans-serif;font-size:.62rem;font-weight:700;color:var(--muted);min-width:38px;text-align:right}
+
+/* ===== Mobile menu button + sidebar overlay (hidden on desktop) ===== */
+.mobile-menu-btn{
+  display:none;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);
+  color:#fff;width:38px;height:38px;border-radius:9px;font-size:1rem;cursor:pointer;
+  align-items:center;justify-content:center;flex-shrink:0;position:relative;z-index:2;
+  transition:background .2s ease;
+}
+.mobile-menu-btn:hover{background:rgba(255,255,255,.26)}
+.sb-overlay{
+  display:none;position:fixed;inset:0;background:rgba(6,14,50,.55);backdrop-filter:blur(2px);
+  z-index:998;opacity:0;transition:opacity .25s ease;
+}
+.sb-overlay.show{display:block;opacity:1}
+
+/* =====================================================================
+   RESPONSIVE — tablets & phones
+   ===================================================================== */
+@media (max-width:1024px){
+  :root{--nav-w:230px}
+  #page-workdash [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr) !important}
+}
+
+@media (max-width:900px){
+  .mobile-menu-btn{display:flex}
+  .layout{height:100dvh}
+  .sidebar{
+    position:fixed;top:0;left:0;height:100dvh;z-index:999;width:min(var(--nav-w),78vw);
+    transform:translateX(-104%);transition:transform .3s cubic-bezier(.2,.8,.2,1);
+    box-shadow:0 0 50px rgba(0,0,0,.5);
+  }
+  .sidebar.sb-open{transform:translateX(0)}
+  .main{width:100%}
+  .top-bar{padding:0 12px;height:66px}
+  .top-title{font-size:1.05rem;letter-spacing:1px}
+  .top-sub{font-size:.66rem;letter-spacing:1px;margin-top:2px}
+  .top-title-wrap{max-width:64vw;left:50%}
+  .top-title-row{gap:7px;flex-wrap:wrap;row-gap:2px}
+  .top-right{gap:8px}
+  .top-clock{display:none}
+  .fb-status{padding:3px 9px;font-size:.54rem}
+  .content{padding:10px !important}
+
+  /* Work Dashboard — filter bar */
+  #page-workdash .form-card{padding:10px 12px !important}
+  #page-workdash select#wd-month,
+  #page-workdash input#wd-df,
+  #page-workdash input#wd-dt{flex:1 1 auto;min-width:110px}
+  #wd-total-badge{margin-left:0 !important;width:100%;text-align:center;order:99;margin-top:6px}
+
+  /* Stat cards → 2 columns on mobile */
+  #wd-stat-row{grid-template-columns:repeat(2,1fr) !important;gap:8px !important}
+
+  /* Charts → stack vertically on mobile */
+  #page-workdash > div[style*="grid-template-columns:1fr 1fr"]{
+    grid-template-columns:1fr !important;
+  }
+  .wd-chart-card{padding:10px 12px !important}
+  .wd-chart-card .wd-card-hd{flex-wrap:wrap;row-gap:6px}
+  .wd-chart-card .wd-card-sub{
+    margin-left:0;order:99;flex:0 0 auto;
+  }
+  #wd-chart-date,#wd-chart-eng{max-height:180px}
+
+  /* Category Wise donut card on mobile */
+  .wd-cat-card{padding:12px 12px}
+  .wd-cat-hd{font-size:.64rem}
+  .wd-cat-sub{margin-left:0;order:99;flex:0 0 auto}
+  .wd-cat-body{flex-direction:column;gap:14px}
+  .wd-cat-donut-wrap{width:200px;height:200px}
+  .wd-cat-legend{width:100%}
+}
+
+@media (max-width:480px){
+  .top-title-wrap{max-width:60vw}
+  .top-title{font-size:.88rem}
+  .top-title-row{flex-direction:column;gap:4px}
+  .top-sub{display:none}
+  #wd-stat-row{grid-template-columns:1fr 1fr !important}
+  #wd-stat-row .tbl-card{padding:7px 9px !important}
+  .wd-chart-card .wd-card-hd{font-size:.62rem !important}
+  .wd-chart-card .wd-card-sub{font-size:.56rem !important;padding:2px 6px !important}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -641,16 +902,27 @@ tbody tr:hover td{background:#f5f9ff}
   </div>
   <nav class="sb-nav">
     <div class="nav-sec"></div>
-    <div class="nav-item" onclick="showPage('maindash',this)"><div class="nav-icon-wrap"><i class="fas fa-tachometer-alt"></i></div><span class="nav-label">Dashboard</span></div>
-<div class="nav-item active" onclick="showPage('dashboard',this)"><div class="nav-icon-wrap"><i class="fas fa-ticket-alt"></i></div><span class="nav-label">Ticket Entry</span></div>
-    <div class="nav-item" onclick="showPage('mytask',this)"><div class="nav-icon-wrap"><i class="fas fa-calendar-check"></i></div><span class="nav-label">My Task</span></div>
-    <div class="nav-item" onclick="showPage('taskreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-bar"></i></div><span class="nav-label">Task Report</span></div>
-    <div class="nav-item eng-visible" id="nav-alltask" onclick="showPage('alltask',this)"><div class="nav-icon-wrap"><i class="fas fa-clipboard-list"></i></div><span class="nav-label">All Completed Tasks</span></div>
-    <div class="nav-item eng-visible" id="nav-devices" onclick="showPage('devices',this)"><div class="nav-icon-wrap"><i class="fas fa-network-wired"></i></div><span class="nav-label">Used Devices</span></div>
-    <div class="nav-item eng-visible" id="nav-wifi" onclick="showPage('wifi',this)"><div class="nav-icon-wrap"><i class="fas fa-wifi"></i></div><span class="nav-label">WiFi Scoring</span></div>
-<div class="nav-item admin-only" id="nav-import" onclick="showPage('import',this)">
-<div class="nav-icon-wrap"><i class="fas fa-file-import"></i></div><span class="nav-label">Import Data</span></div>
+    <div class="nav-item" id="nav-workdash" onclick="showPage('workdash',this)">
+      <div class="nav-icon-wrap"><i class="fas fa-chart-column"></i></div><span class="nav-label">Dashboard</span>
+    </div>
+    <div class="nav-item eng-visible" id="nav-mis" onclick="showPage('mis',this)"><div class="nav-icon-wrap"><i class="fas fa-file-excel"></i></div><span class="nav-label">MIS Update</span></div>
+    <div class="nav-item eng-visible" id="nav-misreport" onclick="showPage('misreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-pie"></i></div><span class="nav-label">MIS Task Report</span></div>
+    <div class="nav-item eng-visible" id="nav-engreport" onclick="showPage('engreport',this)"><div class="nav-icon-wrap"><i class="fas fa-user-clock"></i></div><span class="nav-label">Engineer Report</span></div>
     <div class="nav-item admin-only" id="nav-users" onclick="showPage('users',this)"><div class="nav-icon-wrap"><i class="fas fa-users-cog"></i></div><span class="nav-label">User Management</span></div>
+    <div class="nav-item nav-parent admin-only" id="nav-format-one" onclick="toggleNavGroup('format-one',this)">
+      <div class="nav-icon-wrap"><i class="fas fa-layer-group"></i></div><span class="nav-label">Format One</span><i class="fas fa-chevron-down nav-chevron"></i>
+    </div>
+    <div class="nav-submenu admin-only" id="submenu-format-one">
+      <div class="nav-item" onclick="showPage('maindash',this)"><div class="nav-icon-wrap"><i class="fas fa-tachometer-alt"></i></div><span class="nav-label">Dashboard</span></div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)"><div class="nav-icon-wrap"><i class="fas fa-ticket-alt"></i></div><span class="nav-label">Ticket Entry</span></div>
+      <div class="nav-item" onclick="showPage('mytask',this)"><div class="nav-icon-wrap"><i class="fas fa-calendar-check"></i></div><span class="nav-label">My Task</span></div>
+      <div class="nav-item" onclick="showPage('taskreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-bar"></i></div><span class="nav-label">Task Report</span></div>
+      <div class="nav-item eng-visible" id="nav-alltask" onclick="showPage('alltask',this)"><div class="nav-icon-wrap"><i class="fas fa-clipboard-list"></i></div><span class="nav-label">All Completed Tasks</span></div>
+      <div class="nav-item eng-visible" id="nav-devices" onclick="showPage('devices',this)"><div class="nav-icon-wrap"><i class="fas fa-network-wired"></i></div><span class="nav-label">Used Devices</span></div>
+      <div class="nav-item eng-visible" id="nav-wifi" onclick="showPage('wifi',this)"><div class="nav-icon-wrap"><i class="fas fa-wifi"></i></div><span class="nav-label">WiFi Scoring</span></div>
+      <div class="nav-item admin-only" id="nav-import" onclick="showPage('import',this)">
+      <div class="nav-icon-wrap"><i class="fas fa-file-import"></i></div><span class="nav-label">Import Data</span></div>
+    </div>
     <div class="nav-sep"></div>
   </nav>
   <div class="sb-bottom">
@@ -663,8 +935,11 @@ tbody tr:hover td{background:#f5f9ff}
 <div class="main">
  <div class="top-bar">
     <div style="position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(90deg,rgba(2,10,56,.7) 0%,rgba(2,10,56,0) 18%,rgba(2,10,56,0) 82%,rgba(2,10,56,.7) 100%);"></div>
+    <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Menu"><i class="fas fa-bars"></i></button>
     <div class="top-title-wrap" style="position:relative;z-index:1;">
-      <div class="top-title" id="topTitle">Daily Work Dashboard</div>
+      <div class="top-title-row">
+        <div class="top-title" id="topTitle">Daily Work Dashboard</div>
+      </div>
       <div class="top-sub"><span style="color:rgba(255,255,255,.95);text-shadow:0 2px 10px rgba(0,0,0,.6),0 4px 20px rgba(0,0,0,.4)">BANANI</span> <span style="color:rgba(255,255,255,.95);text-shadow:0 2px 10px rgba(0,0,0,.6),0 4px 20px rgba(0,0,0,.4)">ZONE</span></div>
     </div>
     <div class="top-right" style="position:relative;z-index:1;">
@@ -678,6 +953,8 @@ tbody tr:hover td{background:#f5f9ff}
       </div>
     </div>
   </div>
+  <div class="sb-overlay" id="sb-overlay" onclick="toggleSidebar()"></div>
+
 
   <div class="content">
 <!-- MAIN DASHBOARD -->
@@ -737,7 +1014,7 @@ tbody tr:hover td{background:#f5f9ff}
   <!-- Summary Stat Cards -->
   <div class="stat-row" style="grid-template-columns:repeat(6,1fr);margin-bottom:8px;height:44px" id="db-stat-row"></div>
 
-  <!-- Charts — সব একসাথে compact grid -->
+  <!-- Charts — all together in compact grid -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0">
 
     <div class="tbl-card" style="padding:10px 14px;max-height:220px;overflow:hidden;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #bbf7d0;">
@@ -763,6 +1040,81 @@ tbody tr:hover td{background:#f5f9ff}
   </div>
 
 </div>
+
+<!-- ===== NEW WORK DASHBOARD (Date wise & Engineer wise) ===== -->
+<div class="page" id="page-workdash">
+
+  <!-- Filter Bar -->
+  <div class="form-card" style="padding:14px 20px;margin-bottom:12px;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:800;color:var(--blue)"><i class="fas fa-filter"></i> FILTER</span>
+
+      <select id="wd-month" onchange="onWdMonthChange()" style="font-size:.78rem;padding:5px 12px;border:1.5px solid var(--border);border-radius:7px;height:32px;background:#eaf3ff;outline:none;font-family:'Montserrat',sans-serif;font-weight:700;color:var(--navy)">
+        <option value="">All Months</option>
+        <option value="01">January</option><option value="02">February</option>
+        <option value="03">March</option><option value="04">April</option>
+        <option value="05">May</option><option value="06">June</option>
+        <option value="07">July</option><option value="08">August</option>
+        <option value="09">September</option><option value="10">October</option>
+        <option value="11">November</option><option value="12">December</option>
+      </select>
+
+      <input type="date" id="wd-df" onchange="renderWorkDash()" style="font-size:.78rem;height:32px;padding:5px 12px;border:1.5px solid var(--border);border-radius:7px;background:#eaf3ff;outline:none;font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy)" title="From Date">
+      <span style="font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;color:var(--muted)">→</span>
+      <input type="date" id="wd-dt" onchange="renderWorkDash()" style="font-size:.78rem;height:32px;padding:5px 12px;border:1.5px solid var(--border);border-radius:7px;background:#eaf3ff;outline:none;font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy)" title="To Date">
+
+      <button onclick="clearWorkDashFilters()" style="padding:0 16px;height:32px;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;border-radius:8px;font-size:.68rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:6px"><i class="fas fa-times"></i> Clear</button>
+
+      <span id="wd-total-badge" style="margin-left:auto;font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;color:#fff;background:linear-gradient(135deg,#0a1642,#2452e8);padding:6px 18px;border-radius:20px;box-shadow:0 3px 10px rgba(21,49,140,.25)">0 tasks</span>
+    </div>
+  </div>
+
+  <!-- Summary Stat Cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px" id="wd-stat-row"></div>
+
+  <!-- Charts -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1;min-height:0">
+
+    <div class="tbl-card wd-chart-card" style="--wd-accent:linear-gradient(90deg,#0a1642,#2452e8,#2f9bff);padding:12px 14px;box-shadow:0 6px 20px rgba(21,49,140,.08);border:1px solid rgba(190,227,248,.75)">
+      <div class="wd-card-hd" style="font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:800;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span class="wd-card-icn" style="width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,#0a1642,#2452e8);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 8px rgba(36,82,232,.35)"><i class="fas fa-chart-line" style="color:#fff;font-size:.6rem"></i></span>
+        Date Wise Total Tasks
+        <span class="wd-card-sub"><i class="fas fa-arrow-trend-up" style="color:#2452e8"></i>&nbsp;Trend</span>
+      </div>
+      <div style="height:200px;position:relative"><canvas id="wd-chart-date"></canvas></div>
+    </div>
+
+    <div class="tbl-card wd-chart-card" style="--wd-accent:linear-gradient(90deg,#059669,#10b981,#34d399);padding:12px 14px;box-shadow:0 6px 20px rgba(21,49,140,.08);border:1px solid rgba(190,227,248,.75)">
+      <div class="wd-card-hd" style="font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:800;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span class="wd-card-icn" style="width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,#059669,#10b981);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 8px rgba(16,185,129,.35)"><i class="fas fa-users" style="color:#fff;font-size:.6rem"></i></span>
+        Engineer Wise Total Tasks
+        <span class="wd-card-sub"><i class="fas fa-ranking-star" style="color:#10b981"></i>&nbsp;Ranking</span>
+      </div>
+      <div style="height:200px;position:relative"><canvas id="wd-chart-eng"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- Category Wise Donut Chart -->
+  <div class="wd-cat-card">
+    <div class="wd-cat-hd">
+      <span class="wd-cat-icn"><i class="fas fa-chart-pie"></i></span>
+      Category Wise
+      <span class="wd-cat-sub" id="wd-cat-total-sub">0 total</span>
+    </div>
+    <div class="wd-cat-body">
+      <div class="wd-cat-donut-wrap">
+        <canvas id="wd-chart-cat"></canvas>
+        <div class="wd-cat-center">
+          <div class="num" id="wd-cat-center-num">0</div>
+          <div class="lbl">TOTAL</div>
+        </div>
+      </div>
+      <div class="wd-cat-legend" id="wd-cat-legend"></div>
+    </div>
+  </div>
+</div>
+
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
       <div class="form-card">
@@ -1096,18 +1448,18 @@ tbody tr:hover td{background:#f5f9ff}
     <div class="page-ttl" style="margin-bottom:14px"><i class="fas fa-file-import" style="color:var(--accent)"></i> Import Data from Excel/Sheet</div>
 
     <div style="background:#f5f9ff;border:1.5px dashed #8cc7f7;border-radius:12px;padding:16px 18px;margin-bottom:14px">
-      <div style="font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;color:var(--blue);margin-bottom:8px"><i class="fas fa-info-circle"></i> নির্দেশনা:</div>
+      <div style="font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;color:var(--blue);margin-bottom:8px"><i class="fas fa-info-circle"></i> Instructions:</div>
       <ol style="font-family:'Outfit',sans-serif;font-size:.8rem;color:var(--text);padding-left:18px;line-height:2">
-        <li>Google Sheet থেকে data <b>copy</b> করুন (Header ছাড়া, শুধু data rows)</li>
-        <li>নিচের box এ <b>paste</b> করুন (Ctrl+V)</li>
+        <li><b>Copy</b> data from Google Sheet (without header, data rows only)</li>
+        <li><b>Paste</b> into the box below (Ctrl+V)</li>
         <li>Column order: <b>Date | Ticket ID | Category | Task Type | Team Type | Engineer | BNOC (Engineer name, comma separated if multiple) | MAC | WiFi | Remarks</b></li>
-        <li><b>Import</b> বাটনে click করুন</li>
+        <li>Click the <b>Import</b> button</li>
       </ol>
     </div>
 
     <div class="fg" style="margin-bottom:12px">
       <label><i class="fas fa-paste"></i> Paste Data Here</label>
-      <textarea id="import-paste" rows="12" placeholder="Google Sheet থেকে copy করা data এখানে paste করুন..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text);background:#f8faff;resize:vertical;outline:none;line-height:1.6"></textarea>
+      <textarea id="import-paste" rows="12" placeholder="Paste copied data from Google Sheet here..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text);background:#f8faff;resize:vertical;outline:none;line-height:1.6"></textarea>
     </div>
 
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -1151,6 +1503,159 @@ tbody tr:hover td{background:#f5f9ff}
   <div class="form-card" id="import-log-card" style="margin-top:10px;display:none">
     <div style="font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:800;color:var(--navy);margin-bottom:10px"><i class="fas fa-terminal"></i> Import Log</div>
     <div id="import-log" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text);line-height:1.8;max-height:200px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- ===== MIS UPDATE (Admin only) ===== -->
+<div class="page" id="page-mis">
+  <div class="form-card">
+    <div class="page-ttl" style="margin-bottom:14px"><i class="fas fa-file-excel" style="color:var(--accent)"></i> MIS Update — Excel File</div>
+
+    <div style="background:#f5f9ff;border:1.5px dashed #8cc7f7;border-radius:12px;padding:16px 18px;margin-bottom:14px">
+      <div style="font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;color:var(--blue);margin-bottom:8px"><i class="fas fa-info-circle"></i> Instructions:</div>
+      <ol style="font-family:'Outfit',sans-serif;font-size:.8rem;color:var(--text);padding-left:18px;line-height:2">
+        <li>Select a <b>.xlsx / .xls / .csv</b> file below</li>
+      </ol>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <label for="mis-file-input" style="background:linear-gradient(135deg,#0a1642,#2452e8,#2f9bff);color:#fff;border:none;padding:11px 28px;border-radius:10px;font-size:.82rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:9px;letter-spacing:.5px;font-family:'Montserrat',sans-serif;box-shadow:0 5px 16px rgba(21,49,140,.32);transition:all .25s">
+        <i class="fas fa-upload"></i> <span id="mis-upload-label">Update Excel File</span>
+      </label>
+      <input type="file" id="mis-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleMisFile(this)">
+      <button onclick="clearMisData()" style="background:#fff;color:#6b7280;border:1.5px solid #d1d5db;padding:11px 20px;border-radius:10px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif">
+        <i class="fas fa-times"></i> Clear
+      </button>
+      <span id="mis-file-status" style="font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:700;color:var(--muted)"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MIS TASK REPORT (Admin only) ===== -->
+<div class="page" id="page-misreport">
+  <div class="form-card" id="mis-filter-card" style="padding:10px 16px;margin-bottom:10px;display:none">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:800;color:var(--blue)"><i class="fas fa-filter"></i> FILTER</span>
+
+      <select id="mis-eng-filter" onchange="onMisEngFilterChange()" style="font-size:.76rem;padding:5px 12px;border:1.5px solid var(--border);border-radius:7px;height:32px;background:#eaf3ff;outline:none;font-family:'Outfit',sans-serif;font-weight:600;color:var(--navy);max-width:220px">
+        <option value="">All Engineers</option>
+      </select>
+
+      <input type="date" id="mis-df" onchange="renderMis()" style="font-size:.76rem;height:32px;padding:5px 12px;border:1.5px solid var(--border);border-radius:7px;background:#eaf3ff;outline:none;font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy)" title="From Date">
+      <span style="font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;color:var(--muted)">→</span>
+      <input type="date" id="mis-dt" onchange="renderMis()" style="font-size:.76rem;height:32px;padding:5px 12px;border:1.5px solid var(--border);border-radius:7px;background:#eaf3ff;outline:none;font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy)" title="To Date">
+
+      <button onclick="clearMisDateEngFilter()" style="padding:0 14px;height:32px;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;border-radius:8px;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px"><i class="fas fa-times"></i> Clear</button>
+    </div>
+  </div>
+  <div class="tbl-card" id="mis-data-card" style="margin-top:0;display:none">
+    <div style="padding:8px 14px 4px">
+      <div class="mis-stat-tabs">
+        <div class="mis-stat-tab" id="mis-tab-support" onclick="toggleMisStatTab('support')"><i class="fas fa-tags"></i> Support Type</div>
+        <div class="mis-stat-tab" id="mis-tab-status" onclick="toggleMisStatTab('status')"><i class="fas fa-flag"></i> Task Status</div>
+      </div>
+      <div class="stat-row" id="mis-support-stats" style="display:none"></div>
+      <div class="stat-row" id="mis-status-stats" style="display:none"></div>
+    </div>
+    <div class="tbl-top" style="flex-wrap:wrap;gap:6px">
+      <span class="tbl-title"><i class="fas fa-list"></i> MIS Data</span>
+      <span class="tbl-badge" id="mis-cnt">0 rows</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <button onclick="openDownloadModal()" id="btn-download-task-report" style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:0 14px;background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff;border:none;border-radius:8px;font-size:.67rem;font-weight:800;cursor:pointer;height:30px;font-family:'Montserrat',sans-serif;box-shadow:0 3px 10px rgba(20,184,166,.35);letter-spacing:.3px;white-space:nowrap" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-file-excel"></i> Download Task Report</button>
+        <button onclick="toggleMisSelectMode()" id="btn-mis-toggle-sel" style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:0 13px;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;border-radius:8px;font-size:.67rem;font-weight:800;cursor:pointer;height:30px;font-family:'Montserrat',sans-serif;box-shadow:0 3px 8px rgba(220,38,38,.3);white-space:nowrap" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''"><i class="fas fa-check-square"></i> Delete</button>
+        <button id="btn-mis-del-selected" onclick="deleteMisSelected()" style="flex-shrink:0;display:none;align-items:center;gap:6px;padding:0 13px;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;border-radius:8px;font-size:.67rem;font-weight:800;cursor:pointer;height:30px;font-family:'Montserrat',sans-serif;box-shadow:0 3px 8px rgba(220,38,38,.3);white-space:nowrap"><i class="fas fa-trash"></i> Delete Selected (<span id="mis-sel-count">0</span>)</button>
+        <button id="btn-mis-del-all" onclick="deleteAllMisData()" style="flex-shrink:0;display:none;align-items:center;gap:6px;padding:0 13px;background:linear-gradient(135deg,#7f1d1d,#b91c1c);color:#fff;border:none;border-radius:8px;font-size:.67rem;font-weight:800;cursor:pointer;height:30px;font-family:'Montserrat',sans-serif;box-shadow:0 3px 10px rgba(185,28,28,.45);white-space:nowrap" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-trash-alt"></i> Delete ALL</button>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+  <th id="mis-sel-th" style="display:none;width:36px"><input type="checkbox" id="mis-chk-all" onchange="toggleMisSelectAll(this)" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer"></th>
+  <th>#</th>
+  <th>Entry Date</th>
+  <th>Engineer Name</th>
+  <th>Ticket ID</th>
+  <th>Support Type</th>
+  <th>Task Status</th>
+</tr></thead>
+      <tbody id="mis-tbody"></tbody>
+    </table></div>
+  </div>
+  <div class="form-card" id="mis-empty-card">
+    <div class="empty-box"><span class="ei">📊</span><p>No Excel file uploaded yet. Go to "MIS Update" to upload a file.</p></div>
+  </div>
+</div>
+
+<!-- ===== ENGINEER REPORT (MIS data grouped by uploader) ===== -->
+<div class="page" id="page-engreport">
+
+  <!-- Compact single-row header -->
+  <div style="background:linear-gradient(90deg,#0a1642,#15318c,#2f9bff);border-radius:12px 12px 0 0;padding:8px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:0">
+    <div style="display:flex;align-items:center;gap:7px;flex-shrink:0">
+      <i class="fas fa-users" style="color:#ffd54f;font-size:.88rem"></i>
+      <span style="font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:900;color:#fff;letter-spacing:.4px;white-space:nowrap">Engineer Report</span>
+    </div>
+    <div style="width:1px;height:22px;background:rgba(255,255,255,.25);flex-shrink:0"></div>
+    <select id="er-month-sel" onchange="applyMonthPresetEng()" style="font-size:.68rem;padding:2px 8px;border:1.5px solid rgba(255,255,255,.35);border-radius:6px;height:26px;background:rgba(255,255,255,.12);outline:none;font-family:'Montserrat',sans-serif;font-weight:700;color:#fff;flex-shrink:0">
+      <option value="" style="color:#0a1642">— Month —</option>
+      <option value="0" style="color:#0a1642">January</option><option value="1" style="color:#0a1642">February</option>
+      <option value="2" style="color:#0a1642">March</option><option value="3" style="color:#0a1642">April</option>
+      <option value="4" style="color:#0a1642">May</option><option value="5" style="color:#0a1642">June</option>
+      <option value="6" style="color:#0a1642">July</option><option value="7" style="color:#0a1642">August</option>
+      <option value="8" style="color:#0a1642">September</option><option value="9" style="color:#0a1642">October</option>
+      <option value="10" style="color:#0a1642">November</option><option value="11" style="color:#0a1642">December</option>
+    </select>
+    <span style="font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;color:rgba(255,255,255,.75)">FROM</span>
+    <div style="position:relative;height:26px;display:inline-flex;align-items:center">
+      <span id="er-df-disp" onclick="document.getElementById('er-df').showPicker&&document.getElementById('er-df').showPicker()" style="display:inline-flex;align-items:center;gap:4px;height:26px;padding:3px 9px;border:1.5px solid rgba(255,255,255,.35);border-radius:6px;background:rgba(255,255,255,.12);font-size:.7rem;font-weight:800;font-family:'Montserrat',sans-serif;color:#fff;cursor:pointer;user-select:none;min-width:76px;white-space:nowrap">—&nbsp;<i class="fas fa-calendar" style="font-size:.55rem;opacity:.7"></i></span>
+      <input type="date" id="er-df" oninput="_erSyncDisp();renderEngReport()" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;background:transparent">
+    </div>
+    <span style="font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;color:rgba(255,255,255,.75)">TO</span>
+    <div style="position:relative;height:26px;display:inline-flex;align-items:center">
+      <span id="er-dt-disp" onclick="document.getElementById('er-dt').showPicker&&document.getElementById('er-dt').showPicker()" style="display:inline-flex;align-items:center;gap:4px;height:26px;padding:3px 9px;border:1.5px solid rgba(255,255,255,.35);border-radius:6px;background:rgba(255,255,255,.12);font-size:.7rem;font-weight:800;font-family:'Montserrat',sans-serif;color:#fff;cursor:pointer;user-select:none;min-width:76px;white-space:nowrap">—&nbsp;<i class="fas fa-calendar" style="font-size:.55rem;opacity:.7"></i></span>
+      <input type="date" id="er-dt" oninput="_erSyncDisp();renderEngReport()" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;background:transparent">
+    </div>
+    <button onclick="resetErToday()" title="Today → End of Month" style="height:26px;padding:0 10px;border-radius:6px;border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.18);color:#fff;font-size:.62rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0" onmouseover="this.style.background='rgba(255,255,255,.3)'" onmouseout="this.style.background='rgba(255,255,255,.18)'"><i class="fas fa-calendar-day"></i> Today→End</button>
+    <button onclick="resetErFullMonth()" title="Full Current Month" style="height:26px;padding:0 10px;border-radius:6px;border:1.5px solid rgba(20,184,166,.6);background:rgba(20,184,166,.35);color:#fff;font-size:.62rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0" onmouseover="this.style.background='rgba(20,184,166,.5)'" onmouseout="this.style.background='rgba(20,184,166,.35)'"><i class="fas fa-calendar-alt"></i> Full Month</button>
+    <span id="er-period-badge" style="margin-left:auto;font-size:.68rem;font-family:'Montserrat',sans-serif;font-weight:900;color:#ffd54f;letter-spacing:.5px;white-space:nowrap">—</span>
+  </div>
+
+  <!-- Engineer Summary Table -->
+  <div class="tbl-card" style="margin-bottom:0;border-radius:0 0 12px 12px;border-top:none">
+    <div class="tbl-wrap">
+      <table id="er-summary-table" style="border-collapse:collapse;table-layout:fixed">
+        <thead id="er-summary-thead"></thead>
+        <tbody id="er-summary-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Engineer Detail Floating Modal -->
+<div id="er-modal-overlay" onclick="if(event.target===this)closeEngModal()" style="display:none;position:fixed;inset:0;background:rgba(10,22,66,.55);z-index:4000;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:6px">
+  <div style="background:#fff;border-radius:16px;width:98vw;max-width:98vw;max-height:94vh;display:flex;flex-direction:column;box-shadow:0 28px 70px rgba(10,22,66,.38),0 0 0 1.5px rgba(47,155,255,.18);overflow:hidden">
+    <!-- Modal header -->
+    <div style="background:linear-gradient(90deg,#0a1642,#15318c,#2f9bff);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center"><i class="fas fa-user-clock" style="color:#fff;font-size:.9rem"></i></div>
+        <div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:.65rem;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:.8px;text-transform:uppercase">Engineer Detail</div>
+          <div id="er-detail-name" style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:900;color:#fff;letter-spacing:.2px"></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="er-tab active" id="er-tab-day" onclick="setEngReportView('day',this)" style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;padding:5px 14px;border-radius:20px;border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.22);color:#fff;cursor:pointer">Day Wise</button>
+        <button class="er-tab" id="er-tab-month" onclick="setEngReportView('month',this)" style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;padding:5px 14px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.7);cursor:pointer">Month Wise</button>
+        <button onclick="closeEngModal()" title="Close" style="width:30px;height:30px;border-radius:50%;border:none;background:rgba(255,255,255,.18);color:#fff;font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.32)'" onmouseout="this.style.background='rgba(255,255,255,.18)'"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+    <!-- Modal body -->
+    <div style="overflow:auto;flex:1;padding:0">
+      <table style="width:100%;table-layout:fixed;border-collapse:collapse">
+        <thead id="er-day-thead"></thead>
+        <tbody id="er-day-tbody"><tr><td><div class="empty-box"><span class="ei">⏳</span><p>Loading…</p></div></td></tr></tbody>
+      </table>
+    </div>
   </div>
 </div>
     <div class="page" id="page-users">
@@ -1239,7 +1744,7 @@ const DEFAULT_USERS = {
   test1:      { name:'Test1',                     role:'admin',    pass:'test321' }
 };
 
-// ===== FORCE RESET: পুরনো ব্রাউজারে cache হয়ে থাকা user list clear করে নতুন list চালু করবে =====
+// ===== FORCE RESET: clears cached user list from old browsers and loads new list =====
 (function forceUserReset(){
   const CURRENT_VERSION = 'ncss-team-v2';
   if (localStorage.getItem('l3_users_version') !== CURRENT_VERSION) {
@@ -1277,45 +1782,64 @@ async function saveUsersToFirebase(u) {
 
 async function syncUsersFromFirebase() {
   try {
-    const fbUsers = await window._fbGetUsers();
+    if (typeof window._fbGetUsers !== 'function') return;
+    const timeoutP = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),4000));
+    const fbUsers = await Promise.race([window._fbGetUsers(), timeoutP]);
     if (fbUsers && Object.keys(fbUsers).length > 0) {
       _cachedUsers = fbUsers;
       localStorage.setItem('l3_users', JSON.stringify(fbUsers));
-    } else {
-      const local = getUsers();
-      await window._fbInitUsers(local);
     }
   } catch(e) {
-    console.error('Firebase user sync failed:', e);
+    console.warn('Firebase sync skipped:', e.message);
   }
 }
-
 let currentUser = null;
 
 async function doLogin() {
-  const uname = document.getElementById('l-user').value.trim().toLowerCase();
+  const uname  = document.getElementById('l-user').value.trim().toLowerCase();
   const pass   = document.getElementById('l-pass').value;
-  const err    = document.getElementById('login-err');
+  const errEl  = document.getElementById('login-err');
+  const errMsg = errEl.querySelector('span');
+  const btn    = document.querySelector('.login-btn');
+  const origTxt = btn ? btn.innerHTML : '';
 
-  await syncUsersFromFirebase();
-  const users = getUsers();
+  errEl.classList.remove('show');
+  if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...'; btn.disabled = true; }
 
-  if (users[uname] && users[uname].pass === pass) {
-    err.classList.remove('show');
-    currentUser = { username: uname, ...users[uname] };
-    localStorage.setItem('l3_session', JSON.stringify(currentUser));
-    localStorage.setItem('l3_saved_user', uname);
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app-screen').style.display = 'block';
-    setupUserUI();
-    renderUserTable();
-    setDateDefaults();
-  } else {
-    err.classList.add('show');
-    document.getElementById('l-pass').value = '';
+  try {
+    await syncUsersFromFirebase();
+    const users = getUsers();
+    let matchedUser = null;
+    if (users[uname] && users[uname].pass === pass) {
+      matchedUser = { username: uname, ...users[uname] };
+    } else if (DEFAULT_USERS[uname] && DEFAULT_USERS[uname].pass === pass) {
+      matchedUser = { username: uname, ...DEFAULT_USERS[uname] };
+    }
+
+    if (matchedUser) {
+      currentUser = matchedUser;
+      localStorage.setItem('l3_session', JSON.stringify(currentUser));
+      localStorage.setItem('l3_saved_user', uname);
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-screen').style.display = 'block';
+      setupUserUI();
+      renderUserTable();
+      setDateDefaults();
+      setTimeout(()=>showPage('engreport', document.getElementById('nav-engreport')), 80);
+    } else {
+      const known = users[uname] || DEFAULT_USERS[uname];
+      errMsg.textContent = known ? 'Incorrect password!' : 'Username not found!';
+      errEl.classList.add('show');
+      document.getElementById('l-pass').value = '';
+      if (btn) { btn.innerHTML = origTxt; btn.disabled = false; }
+    }
+  } catch(e) {
+    console.error('Login error:', e);
+    errMsg.textContent = 'Login error - please try again.';
+    errEl.classList.add('show');
+    if (btn) { btn.innerHTML = origTxt; btn.disabled = false; }
   }
 }
-
 function canExcelDownload() {
   if (!currentUser) return false;
   return currentUser.role === 'admin';
@@ -1344,6 +1868,14 @@ function setupUserUI() {
     el.style.display = isAdmin ? 'flex' : 'none';
   });
 
+  // MIS Task Report delete buttons — admin only
+  const misToggleSel = document.getElementById('btn-mis-toggle-sel');
+  if (misToggleSel) misToggleSel.style.display = isAdmin ? 'flex' : 'none';
+  const misDelSel = document.getElementById('btn-mis-del-selected');
+  if (misDelSel) misDelSel.style.display = 'none'; // always starts hidden; shown only via toggleMisSelectMode
+  const misDelAll = document.getElementById('btn-mis-del-all');
+  if (misDelAll) misDelAll.style.display = isAdmin ? 'flex' : 'none';
+
   // eng-visible = All Completed Tasks, Used Devices, WiFi Scoring (ALL users see these)
   document.querySelectorAll('.eng-visible').forEach(el => {
     el.style.display = 'flex';
@@ -1354,7 +1886,7 @@ function setupUserUI() {
   if (excelBtn) {
     excelBtn.style.display = canExcelDownload() ? 'flex' : 'none';
   }
-// Inventory popup - শুধু Admin দের জন্য
+// Inventory popup - for Admins only
 const zoneBadge = document.getElementById('zone-badge');
 if (zoneBadge) {
   if (isAdmin) {
@@ -1365,9 +1897,9 @@ if (zoneBadge) {
     zoneBadge.onclick = null;
   }
 }
-  // যার নামে account (role যাই হোক না কেন - admin বা engineer), সে যদি ENGINEERS
-  // list-এর কেউ হয়, তাহলে Engineer Name field তার নিজের নামেই fixed/locked থাকবে।
-  // শুধু যাদের নাম ENGINEERS list-এ নেই (যেমন plain "Admin", "Test1") তাদের জন্য field editable থাকবে।
+  // If the account owner (regardless of role - admin or engineer) is in the ENGINEERS
+  // list, their Engineer Name field will be fixed/locked to their own name.
+  // Only those not in the ENGINEERS list (e.g. plain "Admin", "Test1") will have an editable field.
   const sel = document.getElementById('f-eng');
   let matched = false;
   for (let opt of sel.options) {
@@ -1377,7 +1909,7 @@ if (zoneBadge) {
  const toggleSelBtn = document.getElementById('btn-toggle-sel');
   if(toggleSelBtn) toggleSelBtn.style.display = canExcelDownload() ? 'flex' : 'none';
 
-} // ← setupUserUI এর closing bracket
+} // ← closing bracket of setupUserUI
 
 
 function doLogout() {
@@ -1392,10 +1924,10 @@ function doLogout() {
 // ===== IMPORT DATA =====
 async function parseAndImport() {
   const raw = document.getElementById('import-paste').value.trim();
-  if (!raw) { toast('⚠ কোনো data paste করা হয়নি!'); return; }
+  if (!raw) { toast('⚠ No data pasted!'); return; }
 
   const lines = raw.split('\n').filter(l => l.trim());
-  if (!lines.length) { toast('⚠ কোনো valid data নেই!'); return; }
+  if (!lines.length) { toast('⚠ No valid data found!'); return; }
 
   // Parse rows
   const parsed = [];
@@ -1436,9 +1968,9 @@ async function parseAndImport() {
     });
   }
 
-  if (!parsed.length) { toast('⚠ কোনো valid row পাওয়া যায়নি!'); return; }
+  if (!parsed.length) { toast('⚠ No valid rows found!'); return; }
 
-  // Preview দেখাও
+  // Show preview
   const previewCard = document.getElementById('import-preview-card');
   const previewTb   = document.getElementById('import-preview');
   const previewCnt  = document.getElementById('import-preview-count');
@@ -1458,10 +1990,10 @@ async function parseAndImport() {
     <td style="color:var(--muted)">${r.remarks||'—'}</td>
   </tr>`).join('');
 
-  // Confirm করুন
-  if (!confirm(`${parsed.length}টি row Firebase এ import করবেন?`)) return;
+  // Confirm
+  if (!confirm(`Import ${parsed.length} row(s) to Firebase?`)) return;
 
-  // Log card দেখাও
+  // Show log card
   const logCard = document.getElementById('import-log-card');
   const logEl   = document.getElementById('import-log');
   logCard.style.display = 'block';
@@ -1486,12 +2018,12 @@ async function parseAndImport() {
     }
     logEl.scrollTop = logEl.scrollHeight;
 
-    // প্রতি entry তে ছোট pause
+    // Small pause per entry
     await new Promise(res => setTimeout(res, 300));
   }
 
-  logEl.innerHTML += `<div style="margin-top:8px;font-weight:800;color:var(--navy)">═══ সম্পন্ন! ✅ ${success} সফল | ❌ ${fail} ব্যর্থ ═══</div>`;
-  toast(`✅ Import সম্পন্ন! ${success}টি সফল, ${fail}টি ব্যর্থ।`);
+  logEl.innerHTML += `<div style="margin-top:8px;font-weight:800;color:var(--navy)">═══ Done! ✅ ${success} success | ❌ ${fail} failed ═══</div>`;
+  toast(`✅ Import complete! ${success} succeeded, ${fail} failed.`);
 }
 
 // ===== CHANGE PASSWORD =====
@@ -1513,7 +2045,7 @@ async function savePassword() {
   const errEl   = document.getElementById('cp-err');
 
   if (!uname) {
-    errEl.textContent = '❌ Username দিন!'; errEl.classList.add('show'); return;
+    errEl.textContent = '❌ Please enter your username!'; errEl.classList.add('show'); return;
   }
 
   await syncUsersFromFirebase();
@@ -1521,7 +2053,7 @@ async function savePassword() {
   const targetUser = users[uname];
 
   if (!targetUser) {
-    errEl.textContent = '❌ Username খুঁজে পাওয়া যায়নি!'; errEl.classList.add('show'); return;
+    errEl.textContent = '❌ Username not found!'; errEl.classList.add('show'); return;
   }
   if (oldP !== targetUser.pass) {
     errEl.textContent = '❌ Current password is incorrect!'; errEl.classList.add('show'); return;
@@ -1649,9 +2181,9 @@ function doDeleteUser(uname, displayName) {
 let tickets = [];
 
 const titles = {
-  maindash:'Dashboard', dashboard:'Ticket Entry', mytask:'My Task', taskreport:'Task Report',
+  maindash:'Dashboard', workdash:'Dashboard', dashboard:'Ticket Entry', mytask:'My Task', taskreport:'Task Report',
   alltask:'All Completed Tasks', devices:'Used Devices', wifi:'WiFi Scoring',
-  users:'User Management', import:'Import Data'
+  users:'User Management', import:'Import Data', mis:'MIS Update', misreport:'MIS Task Report', engreport:'Engineer Report'
 };
 
 function pad(n){return String(n).padStart(2,'0')}
@@ -1667,7 +2199,7 @@ function updateClock(){
   document.getElementById('tday').textContent=dsFull[d.getDay()];
   document.getElementById('tdate').textContent=msFull[d.getMonth()]+' '+pad(d.getDate())+', '+d.getFullYear();
 
-  // রাত ১২টায় f-date auto-update — user manually change করলে ছুঁবে না
+  // Auto-update f-date at midnight — won't touch if user manually changed it
   const todayLocal=d.toLocaleDateString('en-CA');
   const fDate=document.getElementById('f-date');
   if(fDate && fDate._autoDate && fDate.value===fDate._autoDate && fDate.value!==todayLocal){
@@ -1677,7 +2209,7 @@ function updateClock(){
   const trDf=document.getElementById('tr-df');
   if(trDf && trDf.value!==todayLocal){
     trDf.value=todayLocal;
-    // TO date ও সেই মাসের শেষ দিনে update
+    // Also update TO date to the last day of that month
     const y=d.getFullYear(), mi=d.getMonth();
     const last=new Date(y,mi+1,0).getDate();
     const m=String(mi+1).padStart(2,'0');
@@ -1695,18 +2227,18 @@ function updateClock(){
   document.getElementById('tday').textContent=dsFull[d.getDay()];
   document.getElementById('tdate').textContent=msFull[d.getMonth()]+' '+pad(d.getDate())+', '+d.getFullYear();
 
-  // রাত ১২টায় f-date auto-update (শুধু date change হলে, user manually edit করলে ছুঁবে না)
+  // Auto-update f-date at midnight (only if date changed; won't touch if user manually edited)
   const newToday = d.toLocaleDateString('en-CA'); // YYYY-MM-DD format
   const fDate = document.getElementById('f-date');
-  // শুধু midnight cross হলে (আগের দিনের date থাকলে) update করবে
+  // Only update if midnight has crossed (previous day's date is still set)
   if(fDate && fDate._autoDate && fDate.value === fDate._autoDate && fDate.value !== newToday){
     fDate.value = newToday;
     fDate._autoDate = newToday;
   }
   const mtDate = document.getElementById('mt-date');
   if(mtDate && mtDate.value){
-    // mt-date শুধু তখনই update করব যদি সে আগের দিনের today তে থাকে
-    // (user manually change করলে ছুঁব না)
+    // Only update mt-date if it still holds yesterday's today value
+    // (won't touch if user manually changed it)
   }
 }
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1714,11 +2246,11 @@ function fmtDateDisp(iso){
   if(!iso||iso==='—')return iso||'—';
   const p=iso.split('-');
   if(p.length!==3)return iso;
-  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const day=parseInt(p[2],10);
-  const mon=months[parseInt(p[1],10)-1]||p[1];
-  const year=p[0];
-  return day+'-'+mon+'-'+year;
+  const mon=parseInt(p[1],10);
+  const year=p[0]; // full 4-digit year
+  // dd/mm/yyyy — day first, then month, then year (no leading zeros)
+  return day+'/'+mon+'/'+year;
 }
 function setDateDefaults(){
   const today = new Date().toLocaleDateString('en-CA');
@@ -1726,10 +2258,17 @@ function setDateDefaults(){
   fd.value=today;
   fd._autoDate=today;
   document.getElementById('mt-date').value=today;
-// Script এর একদম শেষে যোগ করুন
+// Add at the very end of the script
 const _initMi = new Date().getMonth();
 document.getElementById('tr-month-sel').value = String(_initMi);
 document.getElementById('db-month').value = String(new Date().getMonth() + 1).padStart(2, '0');
+}
+
+function toggleNavGroup(id, el){
+  const menu = document.getElementById('submenu-'+id);
+  if(!menu) return;
+  menu.classList.toggle('open');
+  el.classList.toggle('open');
 }
 
 function showPage(pg,el){
@@ -1738,6 +2277,11 @@ function showPage(pg,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+pg).classList.add('active');
+  // Close engineer detail modal whenever navigating away from engreport
+  if(pg !== 'engreport'){
+    const _ov=document.getElementById('er-modal-overlay');
+    if(_ov && _ov.style.display!=='none'){ _ov.style.display='none'; document.body.style.overflow=''; erSelectedEngineer=''; }
+  }
   if(el){
     el.classList.add('active');
     // Ripple effect on click
@@ -1758,10 +2302,28 @@ function showPage(pg,el){
   if(pg==='devices')renderDevices();
   if(pg==='wifi')renderWifi();
   if(pg==='users')renderUserTable();
+  if(pg==='mis')renderMis();
+  if(pg==='misreport')renderMis();
+  if(pg==='engreport'){setThisMonthEng();renderEngReport();}
   if(pg==='maindash'){
   document.getElementById('db-month').value = String(new Date().getMonth() + 1).padStart(2, '0');
   renderDash();
 }
+  if(pg==='workdash'){
+  document.getElementById('wd-month').value = String(new Date().getMonth() + 1).padStart(2, '0');
+  renderWorkDash();
+}
+  // On mobile, close the slide-out sidebar after a nav item is tapped
+  if(window.innerWidth<=900) closeSidebar();
+}
+
+function toggleSidebar(){
+  document.querySelector('.sidebar').classList.toggle('sb-open');
+  document.getElementById('sb-overlay').classList.toggle('show');
+}
+function closeSidebar(){
+  document.querySelector('.sidebar').classList.remove('sb-open');
+  document.getElementById('sb-overlay').classList.remove('show');
 }
 
 function toast(msg){
@@ -1959,8 +2521,8 @@ async function submitTicket(){
   btn.innerHTML='<i class="fas fa-paper-plane"></i> Submit Done Tickets';
 
  if(successCount>0){
-    // শুধু Ticket ID, MAC, Remarks reset হবে
-    // Category, Task Type, Team Type, Engineer, BNOC, WiFi same থাকবে
+    // Only Ticket ID, MAC, Remarks are reset
+    // Category, Task Type, Team Type, Engineer, BNOC, WiFi remain the same
     ['f-ticket','f-mac','f-remarks'].forEach(i=>document.getElementById(i).value='');
   }
 
@@ -2001,7 +2563,7 @@ function firstNamePart(fullName) {
   if (words.length === 0) return fullName;
   let idx = 0;
   const norm = words[0].toLowerCase().replace(/\.$/, '');
-  if (words.length > 1 && norm === 'md') idx = 1; // "Md." / "Md" prefix skip করে পরের অংশ নেবে
+  if (words.length > 1 && norm === 'md') idx = 1; // skip "Md." / "Md" prefix, take the next part
   return words[idx] || fullName;
 }
 function shortenBnocNames(raw) {
@@ -2036,7 +2598,7 @@ async function openBnocEdit(firebaseKey) {
   if (!ticket) return;
 
   const currentVal = (ticket.bnoc && ticket.bnoc !== 'NO') ? ticket.bnoc : '';
-  const newVal = prompt(`BNOC/Backend Support Engineer(s) edit করুন (comma দিয়ে একাধিক নাম দিতে পারবেন):\n\nTicket: ${ticket.ticket}`, currentVal === 'YES' ? '' : currentVal);
+  const newVal = prompt(`Edit BNOC/Backend Support Engineer(s) (separate multiple names with commas):\n\nTicket: ${ticket.ticket}`, currentVal === 'YES' ? '' : currentVal);
   if (newVal === null) return;
 
   try {
@@ -2068,7 +2630,7 @@ async function openRemarksEdit(firebaseKey) {
   if (!canEdit) return;
   const ticket = tickets.find(t => (t.firebaseKey || t.id) == firebaseKey);
   if (!ticket) return;
-  const newVal = prompt(`Remarks edit করুন:\n\nTicket: ${ticket.ticket}`, ticket.remarks || '');
+  const newVal = prompt(`Edit Remarks:\n\nTicket: ${ticket.ticket}`, ticket.remarks || '');
   if (newVal === null) return;
   try {
     const { getDatabase, ref, update } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
@@ -2132,15 +2694,15 @@ async function delTicket(fk, fromMyTask){
 function getMyTickets(){
   if(!currentUser) return [];
   if(currentUser.role==='admin'){
-    // Admin overview: synthetic BNOC/Backend Support duplicate rows hide করে দাও,
-    // শুধু original (closing engineer এর) ticket-টা দেখাবে।
+    // Admin overview: hide synthetic BNOC/Backend Support duplicate rows,
+    // show only the original (closing engineer's) ticket.
     return tickets.filter(t=>!(t.remarks && t.remarks.includes('[BNOC/Backend Support]')));
   }
   return tickets.filter(t=>{
     const isBnocSynthetic = t.remarks && t.remarks.includes('[BNOC/Backend Support]');
     if(isBnocSynthetic){
-      // এই record টা শুধু যার নামে Backend Support raise হয়েছে তার My Task-এই দেখাবে,
-      // যে submit করেছে (closing engineer) তার My Task-এ দেখাবে না।
+      // This record only appears in the My Task of the engineer the Backend Support was raised for,
+      // and will not appear in the submitter's (closing engineer's) My Task.
       return t.eng===currentUser.name;
     }
     return t.eng===currentUser.name || t.submittedBy===currentUser.username;
@@ -2161,7 +2723,7 @@ function renderMyTask(){
     (!cat||t.cat===cat)
   );
   arr.sort((a,b)=>b.date.localeCompare(a.date)||(b.id||0)-(a.id||0));
-  // Filter করা arr দিয়ে stats build করবে, base দিয়ে নয়
+  // Build stats from filtered arr, not from base
   const statBase = tickets.filter(t=>
     (!df||t.date===df)&&
     (!s||(t.ticket.toLowerCase().includes(s)||t.eng.toLowerCase().includes(s)))
@@ -2219,6 +2781,34 @@ function mtGoPage(p){
 }
 
 const ENGINEERS = ['Prince Hedayet Zaman','Md. Mostafizur Rahman','Nabiul Ahsan Bakshi','Md. Asad','Taibul Hoque Zehad','Subroto Saha','Abu Hasnat','Muhammed Rabiul Islam','Md. Azizul Haque Sojol','Ainul Hoque Rubel','Md Juel Hossain','Mrithunjoy Das','Mohammad Badrul Islam','Abir Roy','Syed Ash Shams'];
+
+// ===== ID -> Engineer Name map (resolve names from ID column in MIS Excel files) =====
+const ID_NAME_MAP = {
+  'L3T709':'Prince Hedayet Zaman',
+  'L3T1141':'Md. Mostafizur Rahman',
+  'L3T1743':'Nabiul Ahsan Bakshi',
+  'L3T2025':'Md. Asad',
+  'L3T1829':'Taibul Hoque Zehad',
+  'L3T2083':'Subroto Saha',
+  'L3T805':'Abu Hasnat',
+  'L3T2503':'Muhammed Rabiul Islam',
+  'L3T2141':'Md. Azizul Haque Sojol',
+  'L3T1971':'Ainul Hoque Rubel',
+  'L3T1590':'Md Juel Hossain',
+  'L3T2159':'Mrithunjoy Das',
+  'L3T002':'Mohammad Badrul Islam',
+  'L3T1907':'Abir Roy',
+  'L3T1630':'Syed Ash Shams'
+};
+// For ID normalization (case/space/hyphen insensitive matching) — normalized key -> name
+const ID_NAME_MAP_NORM = {};
+Object.keys(ID_NAME_MAP).forEach(k=>{
+  ID_NAME_MAP_NORM[k.toUpperCase().replace(/[^A-Z0-9]/g,'')] = ID_NAME_MAP[k];
+});
+function misLookupNameById(rawId){
+  const norm = String(rawId||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  return ID_NAME_MAP_NORM[norm] || null;
+}
 const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -2227,9 +2817,8 @@ function setThisMonth(){
   const y=n.getFullYear(), mi=n.getMonth();
   const last=new Date(y,mi+1,0).getDate();
   const m=String(mi+1).padStart(2,'0');
-  // FROM = আজকের তারিখ (dynamic), TO = month এর শেষ দিন
-  const todayLocal=n.toLocaleDateString('en-CA');
-  document.getElementById('tr-df').value=todayLocal;
+  // FROM = 1st of current month, TO = last day of the month
+  document.getElementById('tr-df').value=`${y}-${m}-01`;
   document.getElementById('tr-dt').value=`${y}-${m}-${String(last).padStart(2,'0')}`;
   document.getElementById('tr-month-sel').value=String(mi);
 }
@@ -2282,9 +2871,9 @@ function renderReport(){
     const nt=etMain.filter(t=>t.cat==='Non Ticket').length;
     const ps=etMain.filter(t=>t.tt==='Phone support').length;
 
-    // Backend Support count: শুধু যার নামে Backend Support raise হয়েছে তার row-এই count হবে
-    // (synthetic tag দিয়ে চেনা যায়), closing engineer-এর নিজের row-এ না —
-    // শুধু legacy 'YES' (নির্দিষ্ট নাম ছাড়া, নিজেই backend support করেছে) হলে closer-এর row-এ থাকবে।
+    // Backend Support count: only count in the row of the engineer the support was raised for
+    // (identified by synthetic tag), not in the closing engineer's own row —
+    // only legacy 'YES' (no specific name, did backend support themselves) stays in closer's row.
     const bn = et.filter(t=>{
       const isSynthetic = t.remarks && t.remarks.includes('[BNOC/Backend Support]');
       if(isSynthetic) return true;
@@ -2331,6 +2920,873 @@ function clearAtDates(){
   renderAll();
 }
 
+// ===== SUPPORT TYPE NORMALISATION =====
+function normSupportType(v){
+  if(!v) return v;
+  v = v.replace(/MIS\s+Complain\s+Ticket\s+Forward/gi, 'Ticket Forward');
+  v = v.replace(/Customer\s+Schedule\s+[Ww]aiting/gi, 'Schedule waiting');
+  return v;
+}
+
+// ===== MIS UPDATE (Excel Upload) =====
+let misRows = [];        // parsed {entryDate, ticketId, supportType, taskStatus}
+let misActiveSupport='';  // '' = all
+let misActiveStatus='';   // '' = all
+let misPage=1;
+const MIS_PER_PAGE=50;
+
+function misNormHeader(h){
+  return String(h||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+function misFindCol(headerMap, candidates){
+  const keys = Object.keys(headerMap);
+  // 1. Exact normalized match
+  for(const c of candidates){
+    if(headerMap[c]!==undefined) return headerMap[c];
+  }
+  // 2. "Starts with" match (header starts with candidate or candidate starts with header)
+  for(const c of candidates){
+    const found = keys.find(k => k.length>=3 && (k.startsWith(c) || c.startsWith(k)));
+    if(found !== undefined) return headerMap[found];
+  }
+  // 3. "Contains" match
+  for(const c of candidates){
+    const found = keys.find(k => k.length>=2 && (k.includes(c) || (c.length>=4 && c.includes(k))));
+    if(found !== undefined) return headerMap[found];
+  }
+  return null;
+}
+
+function handleMisFile(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  document.getElementById('mis-upload-label').textContent = 'Reading...';
+  document.getElementById('mis-file-status').textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = async function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array', cellDates: false});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet, {defval:'', raw: false, dateNF:'d/m/yyyy'});
+
+      if(!json.length){
+        toast('⚠ No data found in the Excel file!');
+        document.getElementById('mis-upload-label').textContent='Update Excel File';
+        return;
+      }
+
+      // Auto-detect header row: try first 5 rows as potential headers
+      // Sometimes Excel has merged title rows before actual column headers
+      let json2 = json;
+      const KEY_COLS_NORM = ['entrydate','date','ticketid','ticket','ticketno','supporttype','support','taskstatus','status','type','category'];
+      let bestStartRow = 0;
+      for(let rowIdx = 0; rowIdx < Math.min(5, json.length); rowIdx++){
+        const rowKeys = Object.keys(json[rowIdx]);
+        const normKeys = rowKeys.map(k => misNormHeader(String(k)));
+        const hits = normKeys.filter(n => KEY_COLS_NORM.some(c => n.includes(c) || c.includes(n)));
+        if(hits.length >= 2){ bestStartRow = rowIdx; break; }
+        // Try using this row's VALUES as headers
+        const vals = rowKeys.map(k => String(json[rowIdx][k]||''));
+        const normVals = vals.map(v => misNormHeader(v));
+        const valHits = normVals.filter(n => KEY_COLS_NORM.some(c => n.includes(c) || c.includes(n)));
+        if(valHits.length >= 2){
+          // Re-parse with this row as header
+          const rawData = XLSX.utils.sheet_to_json(sheet, {header:1, raw: false, dateNF:'d/m/yyyy'});
+          if(rawData.length > rowIdx + 1){
+            const headers = rawData[rowIdx].map(h=>String(h||''));
+            json2 = rawData.slice(rowIdx+1).map(row=>{
+              const obj = {};
+              headers.forEach((h,i)=>{ obj[h] = row[i] !== undefined ? row[i] : ''; });
+              return obj;
+            }).filter(r=>Object.values(r).some(v=>String(v||'').trim()));
+          }
+          bestStartRow = rowIdx;
+          break;
+        }
+      }
+      if(!json2.length) json2 = json;
+
+      // Header map: normalized header -> original key
+      const headerMap = {};
+      Object.keys(json2[0]).forEach(k=>{ headerMap[misNormHeader(k)] = k; });
+
+      const entryDateKey = misFindCol(headerMap, ['entrydate','date','entrydatetime','entrydt','dateofentry','ticketdate','datetime','entrydate','opendate','createddate','createdate']);
+      const ticketIdKey  = misFindCol(headerMap, ['ticketid','ticket','ticketno','ticketnumber','tktid','tktno','incidentid','incidentno','callid','callno','issueid','id2','tid']);
+      const supportKey   = misFindCol(headerMap, ['supporttype','support','type','category','servicetype','calltype','tasktype','worktype','jobtype','supportcategory','callcategory']);
+      const statusKey    = misFindCol(headerMap, ['taskstatus','status','ticketstatus','callstatus','state','resolution','currentstatus','workstatus','jobstatus']);
+      // idKey is optional — used for engineer name lookup; if not found rows still upload
+      const idKey        = misFindCol(headerMap, ['entryuser','entry user','entryuserid','entryusername','entryby','enteredby','createdby','openedby','user','username','usercode','useridcode','empcode','staffcode','engcode','id','employeeid','empid','engineerid','staffid','userid','l3tid','empno','employeeno','staffno','engineerno','engid','eid']);
+
+      // Only require the core 4 columns; id is optional
+      const missing = [];
+      if(!entryDateKey) missing.push('Entry Date');
+      if(!ticketIdKey)  missing.push('Ticket ID');
+      if(!supportKey)   missing.push('Support Type');
+      if(!statusKey)    missing.push('Task Status');
+
+      if(missing.length){
+        const foundCols = Object.values(headerMap).join(', ');
+        toast('❌ Required columns not found: ' + missing.join(', ') + '\nColumns present in file: ' + foundCols.slice(0,120));
+        document.getElementById('mis-upload-label').textContent='Update Excel File';
+        return;
+      }
+
+      const uploaderName = currentUser ? currentUser.name : 'Unknown';
+      const uploaderUsername = currentUser ? currentUser.username : '';
+      // Auto-detect MM/DD vs DD/MM from this batch before parsing individual dates
+      detectMisDateFmt(json2, entryDateKey);
+      let unknownIdSet = new Set();
+      const newRows = json2.map((row,rowIdx)=>{
+        const rowId = idKey ? String(row[idKey]??'').trim() : '';
+        const engName = misLookupNameById(rowId);
+        if(rowId && !engName) unknownIdSet.add(rowId);
+        return {
+          id: rowId,
+          engineerName: engName || (rowId ? rowId : 'Unknown'),
+          entryDate: misParseDateISO(row[entryDateKey]) || String(row[entryDateKey]??'').trim(),
+          ticketId: String(row[ticketIdKey]??'').trim(),
+          supportType: normSupportType(String(row[supportKey]??'').trim()) || '—',
+          taskStatus: String(row[statusKey]??'').trim() || '—',
+          uploadedBy: uploaderName,
+          uploadedByUsername: uploaderUsername,
+          uploadedAt: new Date().toISOString()
+        };
+      });
+
+      // ===== UPDATE vs ADD =====
+      // "Update" should actually update: if a row with the same Ticket ID (for the
+      // same engineer ID) already exists in the shared MIS data, overwrite that row
+      // instead of appending a duplicate. Rows with a Ticket ID not seen before are
+      // added as new. This lets both Admin (bulk file, many IDs) and an individual
+      // Engineer (their own file, own ID) re-upload a file to refresh/update their
+      // data without ever-growing duplicates.
+      const misKeyOf = r => `${String(r.id||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}__${String(r.ticketId||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}`;
+      const existingByKey = {};
+      misRows.forEach(r=>{
+        if(r.ticketId) existingByKey[misKeyOf(r)] = r.firebaseKey;
+      });
+
+      const toUpdate = []; // {key, row}
+      const toAdd = [];    // row
+      newRows.forEach(row=>{
+        const k = misKeyOf(row);
+        if(row.ticketId && existingByKey[k]){
+          toUpdate.push({ key: existingByKey[k], row });
+        } else {
+          toAdd.push(row);
+        }
+      });
+
+      misActiveSupport=''; misActiveStatus=''; misPage=1;
+      document.getElementById('mis-upload-label').textContent='Saving...';
+
+      let updateFail=0, addFail=0;
+      for(const {key,row} of toUpdate){
+        const ok = await window._fbSetMisRow(key, row);
+        if(!ok) updateFail++;
+      }
+      let addOk = true;
+      if(toAdd.length){
+        addOk = await window._fbPushMisRows(toAdd);
+      }
+
+      document.getElementById('mis-upload-label').textContent='Update Excel File';
+      if(!updateFail && addOk){
+        document.getElementById('mis-file-status').textContent = `${file.name} — ${toAdd.length} new, ${toUpdate.length} updated (${uploaderName})`;
+        if(unknownIdSet.size){
+          toast(`⚠ ${newRows.length} rows processed (${toAdd.length} new, ${toUpdate.length} updated), but ${unknownIdSet.size} ID(s) could not be matched to a name: ${[...unknownIdSet].slice(0,5).join(', ')}${unknownIdSet.size>5?'...':''}`);
+        } else {
+          toast(`✅ ${toAdd.length} new row(s) added, ${toUpdate.length} row(s) updated — by ${uploaderName}!`);
+        }
+      } else {
+        document.getElementById('mis-file-status').textContent = '';
+        toast('❌ Failed to save to Firebase!');
+      }
+    }catch(err){
+      console.error(err);
+      toast('❌ Failed to read the Excel file!');
+      document.getElementById('mis-upload-label').textContent='Update Excel File';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  input.value = '';
+}
+
+async function clearMisData(){
+  if(!currentUser || currentUser.role !== 'admin'){ toast('❌ Only Admin can clear this data!'); return; }
+  if(!confirm('Delete all MIS data (including all engineer uploads)?')) return;
+  const ok = await window._fbClearMisData();
+  misActiveSupport=''; misActiveStatus=''; misActiveEngineer=''; misPage=1;
+  const misDfEl=document.getElementById('mis-df'), misDtEl=document.getElementById('mis-dt');
+  if(misDfEl) misDfEl.value=''; if(misDtEl) misDtEl.value='';
+  document.getElementById('mis-file-status').textContent='';
+  if(ok) toast('✅ All MIS data has been cleared!');
+  else toast('❌ Failed to clear data!');
+}
+
+let misTabSupportOn = false;
+let misTabStatusOn = false;
+function toggleMisStatTab(tab){
+  if(tab==='status') misTabStatusOn = !misTabStatusOn;
+  else misTabSupportOn = !misTabSupportOn;
+  const supportBtn = document.getElementById('mis-tab-support');
+  const statusBtn = document.getElementById('mis-tab-status');
+  const supportRow = document.getElementById('mis-support-stats');
+  const statusRow = document.getElementById('mis-status-stats');
+  if(!supportBtn || !statusBtn || !supportRow || !statusRow) return;
+  supportBtn.classList.toggle('active', misTabSupportOn);
+  statusBtn.classList.toggle('active', misTabStatusOn);
+  supportRow.style.display = misTabSupportOn ? 'flex' : 'none';
+  statusRow.style.display = misTabStatusOn ? 'flex' : 'none';
+}
+
+function misBuildStatRow(elId, field, activeVal, onClickFn, rows){
+  rows = rows || misRows;
+  const counts={};
+  rows.forEach(r=>{ const v=r[field]||'—'; counts[v]=(counts[v]||0)+1; });
+  const keys=Object.keys(counts).sort();
+  const el=document.getElementById(elId);
+  let html = `<div class="stat-card${activeVal===''?' active':''}" onclick="${onClickFn}(this,'')">
+      <div class="stat-num">${rows.length}</div>
+      <div class="stat-lbl">Total</div>
+    </div>`;
+  keys.forEach(k=>{
+    const isActive = activeVal===k;
+    html += `<div class="stat-card${isActive?' active':''}" onclick="${onClickFn}(this,'${k.replace(/'/g,"\\'")}')">
+      <div class="stat-num">${counts[k]}</div>
+      <div class="stat-lbl">${k}</div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function filterMisSupport(el, val){
+  misActiveSupport = val;
+  misPage=1;
+  renderMis();
+}
+function filterMisStatus(el, val){
+  misActiveStatus = val;
+  misPage=1;
+  renderMis();
+}
+
+let misActiveEngineer='';
+function onMisEngFilterChange(){
+  misActiveEngineer = document.getElementById('mis-eng-filter').value;
+  misPage=1;
+  renderMis();
+}
+function clearMisDateEngFilter(){
+  misActiveEngineer='';
+  document.getElementById('mis-eng-filter').value='';
+  document.getElementById('mis-df').value='';
+  document.getElementById('mis-dt').value='';
+  misPage=1;
+  renderMis();
+}
+function misBuildEngineerOptions(){
+  const sel = document.getElementById('mis-eng-filter');
+  if(!sel) return;
+  const extraNames = [...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n)).sort();
+  const engList = [...ENGINEERS, ...extraNames];
+  const current = misActiveEngineer;
+  sel.innerHTML = `<option value="">All Engineers</option>` + engList.map(name=>
+    `<option value="${name.replace(/"/g,'&quot;')}" ${name===current?'selected':''}>${name}</option>`
+  ).join('');
+}
+
+function misGetFilterBase(excludeField){
+  const misDf = document.getElementById('mis-df') ? document.getElementById('mis-df').value : '';
+  const misDt = document.getElementById('mis-dt') ? document.getElementById('mis-dt').value : '';
+  return misRows.filter(r=>{
+    if(excludeField!=='supportType' && misActiveSupport && r.supportType!==misActiveSupport) return false;
+    if(excludeField!=='taskStatus' && misActiveStatus && r.taskStatus!==misActiveStatus) return false;
+    if(misActiveEngineer && r.engineerName!==misActiveEngineer) return false;
+    if(misDf || misDt){
+      const iso = misParseDateISO(r.entryDate);
+      if(misDf && (!iso || iso < misDf)) return false;
+      if(misDt && (!iso || iso > misDt)) return false;
+    }
+    return true;
+  });
+}
+
+function renderMis(){
+  const card = document.getElementById('mis-data-card');
+  const emptyCard = document.getElementById('mis-empty-card');
+  const filterCard = document.getElementById('mis-filter-card');
+  if(!misRows.length){
+    card.style.display='none';
+    if(emptyCard) emptyCard.style.display='block';
+    if(filterCard) filterCard.style.display='none';
+    return;
+  }
+  card.style.display='block';
+  if(emptyCard) emptyCard.style.display='none';
+  if(filterCard) filterCard.style.display='block';
+
+  misBuildEngineerOptions();
+  misBuildStatRow('mis-support-stats','supportType',misActiveSupport,'filterMisSupport', misGetFilterBase('supportType'));
+  misBuildStatRow('mis-status-stats','taskStatus',misActiveStatus,'filterMisStatus', misGetFilterBase('taskStatus'));
+
+  const misDf = document.getElementById('mis-df') ? document.getElementById('mis-df').value : '';
+  const misDt = document.getElementById('mis-dt') ? document.getElementById('mis-dt').value : '';
+
+  const filtered = misRows.filter(r=>{
+    if(misActiveSupport && r.supportType!==misActiveSupport) return false;
+    if(misActiveStatus && r.taskStatus!==misActiveStatus) return false;
+    if(misActiveEngineer && r.engineerName!==misActiveEngineer) return false;
+    if(misDf || misDt){
+      const iso = misParseDateISO(r.entryDate);
+      if(misDf && (!iso || iso < misDf)) return false;
+      if(misDt && (!iso || iso > misDt)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('mis-cnt').textContent = filtered.length+' rows';
+
+  const totalPages=Math.max(1,Math.ceil(filtered.length/MIS_PER_PAGE));
+  if(misPage>totalPages) misPage=totalPages;
+  const start=(misPage-1)*MIS_PER_PAGE;
+  const pageArr=filtered.slice(start,start+MIS_PER_PAGE);
+
+  const tb=document.getElementById('mis-tbody');
+  if(!pageArr.length){
+    tb.innerHTML=`<tr><td colspan="7"><div class="empty-box"><span class="ei">📊</span><p>No data found.</p></div></td></tr>`;
+    return;
+  }
+  tb.innerHTML = pageArr.map((r,i)=>`<tr>
+    ${misSelMode?`<td style="text-align:center;padding:4px 2px"><input type="checkbox" class="mis-row-chk" data-key="${r.firebaseKey}" ${misSelectedKeys.has(r.firebaseKey)?'checked':''} onchange="onMisRowCheck(this)" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer"></td>`:''}
+    <td>${start+i+1}</td>
+    <td>${fmtDateDisp(r.entryDate)||r.entryDate||'—'}</td>
+    <td style="font-weight:700;color:var(--navy)">${r.engineerName||'—'}</td>
+    <td>${r.ticketId||'—'}</td>
+    <td><span class="chip chip-cat">${r.supportType||'—'}</span></td>
+    <td>${r.taskStatus||'—'}</td>
+  </tr>`).join('');
+  renderMisPagination(filtered.length, totalPages);
+}
+
+function renderMisPagination(total, totalPages){
+  let pg=document.getElementById('mis-pagination');
+  if(!pg){
+    pg=document.createElement('div');
+    pg.id='mis-pagination';
+    pg.style.cssText='display:flex;align-items:center;justify-content:center;gap:5px;padding:10px;border-top:1px solid var(--border);flex-wrap:wrap';
+    document.querySelector('#mis-tbody').closest('table').parentElement.after(pg);
+  }
+  if(totalPages<=1){pg.innerHTML='';return;}
+  let html='';
+  html+=`<button onclick="misGoPage(${misPage-1})" ${misPage===1?'disabled':''} style="padding:4px 11px;border:1.5px solid var(--border);border-radius:7px;background:${misPage===1?'#f1f5f9':'#fff'};color:${misPage===1?'#b0bec5':'var(--blue)'};font-weight:800;cursor:${misPage===1?'default':'pointer'};font-family:'Montserrat',sans-serif;font-size:.7rem">◀ Prev</button>`;
+  let pages=[];
+  if(totalPages<=7){for(let i=1;i<=totalPages;i++)pages.push(i);}
+  else{
+    pages=[1];
+    if(misPage>3)pages.push('...');
+    for(let i=Math.max(2,misPage-1);i<=Math.min(totalPages-1,misPage+1);i++)pages.push(i);
+    if(misPage<totalPages-2)pages.push('...');
+    pages.push(totalPages);
+  }
+  pages.forEach(p=>{
+    if(p==='...'){html+=`<span style="color:var(--muted);font-size:.8rem;padding:0 3px">…</span>`;}
+    else{
+      const active=p===misPage;
+      html+=`<button onclick="misGoPage(${p})" style="padding:4px 10px;border:1.5px solid ${active?'var(--accent)':'var(--border)'};border-radius:7px;background:${active?'linear-gradient(135deg,#15318c,#2f9bff)':'#fff'};color:${active?'#fff':'var(--blue)'};font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.7rem">${p}</button>`;
+    }
+  });
+  html+=`<button onclick="misGoPage(${misPage+1})" ${misPage===totalPages?'disabled':''} style="padding:4px 11px;border:1.5px solid var(--border);border-radius:7px;background:${misPage===totalPages?'#f1f5f9':'#fff'};color:${misPage===totalPages?'#b0bec5':'var(--blue)'};font-weight:800;cursor:${misPage===totalPages?'default':'pointer'};font-family:'Montserrat',sans-serif;font-size:.7rem">Next ▶</button>`;
+  html+=`<span style="font-family:'Montserrat',sans-serif;font-size:.65rem;color:var(--muted);font-weight:700">Page ${misPage} of ${totalPages} · ${total} total</span>`;
+  pg.innerHTML=html;
+}
+
+function misGoPage(p){
+  misPage=p;
+  renderMis();
+  document.getElementById('page-misreport').scrollTop=0;
+}
+
+// ===== MIS Task Report — bulk delete (select multiple rows and delete together) =====
+let misSelMode = false;
+let misSelectedKeys = new Set();
+
+function toggleMisSelectMode(){
+  misSelMode = !misSelMode;
+  misSelectedKeys.clear();
+  const btn = document.getElementById('btn-mis-del-selected');
+  const th = document.getElementById('mis-sel-th');
+  const chkAll = document.getElementById('mis-chk-all');
+  if(btn) btn.style.display = misSelMode ? 'flex' : 'none';
+  if(th) th.style.display = misSelMode ? '' : 'none';
+  if(chkAll) chkAll.checked = false;
+  const cnt = document.getElementById('mis-sel-count');
+  if(cnt) cnt.textContent = '0';
+  renderMis();
+}
+
+function toggleMisSelectAll(el){
+  misSelectedKeys.clear();
+  if(el.checked){
+    document.querySelectorAll('.mis-row-chk').forEach(c=>{
+      c.checked=true;
+      misSelectedKeys.add(c.dataset.key);
+    });
+  } else {
+    document.querySelectorAll('.mis-row-chk').forEach(c=>c.checked=false);
+  }
+  document.getElementById('mis-sel-count').textContent = misSelectedKeys.size;
+}
+
+function onMisRowCheck(el){
+  if(el.checked) misSelectedKeys.add(el.dataset.key);
+  else misSelectedKeys.delete(el.dataset.key);
+  document.getElementById('mis-sel-count').textContent = misSelectedKeys.size;
+  const all = document.querySelectorAll('.mis-row-chk');
+  const allChecked = [...all].every(c=>c.checked);
+  const chkAll = document.getElementById('mis-chk-all');
+  if(chkAll) chkAll.checked = allChecked && all.length > 0;
+}
+
+async function deleteMisSelected(){
+  if(!currentUser || currentUser.role !== 'admin'){ toast('❌ Only Admin can delete this data!'); return; }
+  if(misSelectedKeys.size===0){ toast('⚠ No rows selected!'); return; }
+  if(!confirm(`Delete ${misSelectedKeys.size} row(s)?`)) return;
+  const btn = document.getElementById('btn-mis-del-selected');
+  btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Deleting...';
+  btn.disabled=true;
+  let done=0;
+  for(const key of misSelectedKeys){
+    await window._fbDeleteMisRow(key);
+    done++;
+  }
+  misSelectedKeys.clear();
+  misSelMode=false;
+  const th=document.getElementById('mis-sel-th');
+  if(th) th.style.display='none';
+  btn.style.display='none';
+  btn.disabled=false;
+  btn.innerHTML='<i class="fas fa-trash"></i> Delete Selected (<span id="mis-sel-count">0</span>)';
+  toast(`✅ ${done} row(s) deleted!`);
+  renderMis();
+}
+
+async function deleteAllMisData(){
+  if(!currentUser || currentUser.role !== 'admin'){ toast('❌ Only Admin can delete data!'); return; }
+  if(!misRows.length){ toast('⚠ No data to delete!'); return; }
+  const confirmed = confirm(`⚠ এই কাজটি সমস্ত MIS data মুছে দেবে (${misRows.length} rows)। নিশ্চিত?`);
+  if(!confirmed) return;
+  const btn = document.getElementById('btn-mis-del-all');
+  const orig = btn.innerHTML;
+  btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Deleting...';
+  btn.disabled=true;
+  try{
+    await window._fbDeleteAllMis(); // wipe entire misdata node at once
+    toast(`✅ সব MIS data (${misRows.length} rows) মুছে দেওয়া হয়েছে।`);
+  } catch(e){
+    toast('❌ Delete failed: ' + e.message);
+  }
+  btn.innerHTML=orig;
+  btn.disabled=false;
+}
+
+// ===== ENGINEER REPORT (MIS data grouped by uploader / engineer) =====
+let erSelectedEngineer = '';   // '' = no engineer selected
+let erView = 'day';            // 'day' | 'month'
+
+// MIS entryDate may be in any format — normalises everything to yyyy-mm-dd, returns null on failure.
+const _MON_MAP = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+
+// Detected date format for the current Excel batch: 'MM/DD' or 'DD/MM'.
+// Set by detectMisDateFmt() before parsing any row.
+let _misDateFmt = 'DD/MM'; // default: day-first (local convention)
+
+/**
+ * Scan raw date strings in an uploaded batch to decide whether they are
+ * MM/DD/YYYY or DD/MM/YYYY.  Uses unambiguous dates (where one of the first
+ * two numbers exceeds 12) to vote; picks the majority.  Falls back to DD/MM
+ * when there is no evidence either way.
+ */
+function detectMisDateFmt(rows, dateKey){
+  let mmddVotes = 0, ddmmVotes = 0;
+  for(const row of rows){
+    const raw = row[dateKey];
+    if(!raw || raw instanceof Date) continue; // JS Dates already resolved
+    const s = String(raw).trim();
+    const hit = s.match(/^(\d{1,2})[-\/\.](\d{1,2})[-\/\.](\d{2,4})/);
+    if(!hit) continue;
+    const a = parseInt(hit[1]), b = parseInt(hit[2]);
+    if(b > 12) mmddVotes++;   // second part >12 → can't be month → first IS month (MM/DD)
+    if(a > 12) ddmmVotes++;   // first part >12  → can't be month → second IS month (DD/MM)
+    // both ≤12 → ambiguous, skip
+  }
+  _misDateFmt = mmddVotes > ddmmVotes ? 'MM/DD' : 'DD/MM';
+}
+
+function _localISOFromDate(d){
+  if(!d||isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function _isValidDate(y,m,d){
+  const dt=new Date(y,m-1,d);
+  return dt.getFullYear()===parseInt(y)&&dt.getMonth()===m-1&&dt.getDate()===parseInt(d);
+}
+function misParseDateISO(raw){
+  if(!raw) return null;
+  // Handle JS Date objects directly (from XLSX cellDates:true)
+  if(raw instanceof Date) return _localISOFromDate(raw);
+  const s = String(raw).trim();
+  if(!s || s==='—') return null;
+  // yyyy-mm-dd or yyyy/mm/dd (unambiguous — year first)
+  let m = s.match(/^(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})/);
+  if(m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  // dd-Mon-yyyy or dd/Mon/yyyy (e.g. 15-Jul-2026, 15/Jul/2026, 15 Jul 2026)
+  m = s.match(/^(\d{1,2})[-\/\. ]([A-Za-z]{3,9})[-\/\. ](\d{2,4})/);
+  if(m){
+    const mon = _MON_MAP[m[2].slice(0,3).toLowerCase()];
+    if(mon){
+      const yr = m[3].length===2 ? (parseInt(m[3])<50?'20'+m[3]:'19'+m[3]) : m[3];
+      return `${yr}-${mon}-${String(m[1]).padStart(2,'0')}`;
+    }
+  }
+  // d/m/yyyy or m/d/yyyy — resolve using batch-detected format or unambiguous digit range
+  m = s.match(/^(\d{1,2})[-\/\.](\d{1,2})[-\/\.](\d{2,4})/);
+  if(m){
+    const a=parseInt(m[1]), b=parseInt(m[2]);
+    const yr = m[3].length===2 ? (parseInt(m[3])<50?'20'+m[3]:'19'+m[3]) : m[3];
+    let day, mon;
+    if(a > 12 && b <= 12){
+      // First number can't be a month → DD/MM
+      day = a; mon = b;
+    } else if(b > 12 && a <= 12){
+      // Second number can't be a month → MM/DD
+      mon = a; day = b;
+    } else if(_misDateFmt === 'MM/DD'){
+      // Both ≤12 — use batch-detected format
+      mon = a; day = b;
+    } else {
+      // Default: DD/MM (local convention)
+      day = a; mon = b;
+    }
+    return `${yr}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  }
+  // Excel serial number (integer or decimal like 46217 or 46217.5)
+  if(/^\d+(\.\d+)?$/.test(s)){
+    const n = parseFloat(s);
+    if(n>20000 && n<80000){
+      // Use local date parts to avoid UTC midnight day-shift in +offset timezones
+      const d = new Date(Math.round((n-25569)*86400*1000));
+      return _localISOFromDate(d);
+    }
+  }
+  // Fallback: let the browser parse ("Thu Jul 15 2026...", ISO variants, etc.)
+  const d2 = new Date(s);
+  return _localISOFromDate(d2);
+}
+
+// Updates the styled dd/mm/yy display spans for the Engineer Report date inputs
+function _erSyncDisp(){
+  function _fmt(iso){
+    if(!iso) return '—';
+    const p=iso.split('-');
+    if(p.length!==3) return iso;
+    return parseInt(p[2])+'/'+parseInt(p[1])+'/'+p[0]; // d/m/yyyy
+  }
+  const df=document.getElementById('er-df'), dt=document.getElementById('er-dt');
+  const dfd=document.getElementById('er-df-disp'), dtd=document.getElementById('er-dt-disp');
+  if(dfd) dfd.innerHTML=_fmt(df&&df.value)+'&nbsp;<i class="fas fa-calendar" style="font-size:.6rem;color:#2f9bff;opacity:.7"></i>';
+  if(dtd) dtd.innerHTML=_fmt(dt&&dt.value)+'&nbsp;<i class="fas fa-calendar" style="font-size:.6rem;color:#2f9bff;opacity:.7"></i>';
+}
+
+function setThisMonthEng(){
+  const n=new Date();
+  const y=n.getFullYear(), mi=n.getMonth();
+  const last=new Date(y,mi+1,0).getDate();
+  const m=String(mi+1).padStart(2,'0');
+  const df=document.getElementById('er-df'), dt=document.getElementById('er-dt'), sel=document.getElementById('er-month-sel');
+  // FROM = 1st of current month, TO = last day of current month
+  if(df) df.value = `${y}-${m}-01`;
+  if(dt) dt.value = `${y}-${m}-${String(last).padStart(2,'0')}`;
+  if(sel) sel.value = String(mi);
+  _erSyncDisp();
+}
+function resetErToday(){
+  // FROM = today, TO = end of current month
+  const n=new Date();
+  const y=n.getFullYear(), mi=n.getMonth();
+  const last=new Date(y,mi+1,0).getDate();
+  const m=String(mi+1).padStart(2,'0');
+  document.getElementById('er-df').value=n.toLocaleDateString('en-CA');
+  document.getElementById('er-dt').value=`${y}-${m}-${String(last).padStart(2,'0')}`;
+  document.getElementById('er-month-sel').value=String(mi);
+  _erSyncDisp();
+  renderEngReport();
+}
+function resetErFullMonth(){
+  // FROM = 1st of current month, TO = end of current month
+  const n=new Date();
+  const y=n.getFullYear(), mi=n.getMonth();
+  const last=new Date(y,mi+1,0).getDate();
+  const m=String(mi+1).padStart(2,'0');
+  document.getElementById('er-df').value=`${y}-${m}-01`;
+  document.getElementById('er-dt').value=`${y}-${m}-${String(last).padStart(2,'0')}`;
+  document.getElementById('er-month-sel').value=String(mi);
+  _erSyncDisp();
+  renderEngReport();
+}
+
+function applyMonthPresetEng(){
+  const sel=document.getElementById('er-month-sel');
+  if(sel.value==='') return;
+  const mi=parseInt(sel.value);
+  const n=new Date(); const y=n.getFullYear();
+  const last=new Date(y,mi+1,0).getDate();
+  const m=String(mi+1).padStart(2,'0');
+  document.getElementById('er-df').value=`${y}-${m}-01`;
+  document.getElementById('er-dt').value=`${y}-${m}-${String(last).padStart(2,'0')}`;
+  _erSyncDisp();
+  renderEngReport();
+}
+
+function setEngReportView(view, el){
+  erView = view;
+  document.querySelectorAll('.er-tab').forEach(b=>{
+    b.classList.remove('active');
+    b.style.background='transparent'; b.style.color='rgba(255,255,255,.7)'; b.style.border='1.5px solid rgba(255,255,255,.2)';
+  });
+  if(el){ el.classList.add('active'); el.style.background='rgba(255,255,255,.22)'; el.style.color='#fff'; el.style.border='1.5px solid rgba(255,255,255,.4)'; }
+  renderEngDetail();
+}
+
+function selectEngReportEngineer(name){
+  erSelectedEngineer = name;
+  // Reset tabs to Day Wise on each open
+  erView = 'day';
+  document.querySelectorAll('.er-tab').forEach(b=>{
+    b.classList.remove('active');
+    b.style.background='transparent'; b.style.color='rgba(255,255,255,.7)'; b.style.border='1.5px solid rgba(255,255,255,.2)';
+  });
+  const dayTab=document.getElementById('er-tab-day');
+  if(dayTab){ dayTab.classList.add('active'); dayTab.style.background='rgba(255,255,255,.22)'; dayTab.style.color='#fff'; dayTab.style.border='1.5px solid rgba(255,255,255,.4)'; }
+  renderEngDetail();
+  const overlay=document.getElementById('er-modal-overlay');
+  if(overlay){ overlay.style.display='flex'; document.body.style.overflow='hidden'; }
+}
+
+function closeEngModal(){
+  const overlay=document.getElementById('er-modal-overlay');
+  if(overlay) overlay.style.display='none';
+  document.body.style.overflow='';
+  erSelectedEngineer='';
+  renderEngReport();
+}
+
+// Resolve engineer/uploader name for each row
+function erRowsInRange(){
+  const df=document.getElementById('er-df')?document.getElementById('er-df').value:'';
+  const dt=document.getElementById('er-dt')?document.getElementById('er-dt').value:'';
+  return misRows.filter(r=>{
+    const iso = misParseDateISO(r.entryDate);
+    if(df && iso && iso<df) return false;
+    if(dt && iso && iso>dt) return false;
+    return true;
+  });
+}
+
+function renderEngReport(){
+  const badge=document.getElementById('er-period-badge');
+  const df=document.getElementById('er-df').value;
+  const dt=document.getElementById('er-dt').value;
+  if(df&&dt){ badge.textContent=`${fmtDateDisp(df)} → ${fmtDateDisp(dt)}`; }
+  else if(df){ badge.textContent=`From ${fmtDateDisp(df)}`; }
+  else if(dt){ badge.textContent=`Until ${fmtDateDisp(dt)}`; }
+  else { badge.textContent='All Time'; }
+
+  const thead=document.getElementById('er-summary-thead');
+  const tbody=document.getElementById('er-summary-tbody');
+
+  if(!misRows.length){
+    thead.innerHTML='';
+    tbody.innerHTML=`<tr><td><div class="empty-box"><span class="ei">📊</span><p>No MIS Excel data has been uploaded yet.</p></div></td></tr>`;
+    renderEngDetail();
+    return;
+  }
+
+  // Support Types are used as column headers in MIS Task Report (simple, no sub-split)
+  const supportTypes = [...new Map(misRows.map(r=>{const v=(r.supportType||'—').trim();return[v.toUpperCase(),v];})).values()].sort();
+
+  // Column width based on longest word in header to prevent overflow
+  const colWidth = t => {
+    // Split exactly as wrapHdr does, then measure the LONGEST LINE
+    const w = t.trim().split(/\s+/);
+    let longestLine;
+    if (w.length < 2) {
+      longestLine = w[0].length;
+    } else {
+      const m = Math.ceil(w.length / 2);
+      const line1 = w.slice(0, m).join(' ');
+      const line2 = w.slice(m).join(' ');
+      longestLine = Math.max(line1.length, line2.length);
+    }
+    // 0.54rem Montserrat 800 ≈ 5.5px/char + 10px padding
+    return Math.max(Math.ceil(longestLine * 5.5 + 10), 28) + 'px';
+  };
+
+  // Split multi-word headers at the natural word boundary — exactly 2 lines, no mid-word breaks
+  const wrapHdr = t => {
+    const w = t.trim().split(/\s+/);
+    if(w.length < 2) return t;
+    const m = Math.ceil(w.length / 2);
+    return w.slice(0,m).join(' ') + '<br>' + w.slice(m).join(' ');
+  };
+
+  thead.innerHTML=`<tr style="background:linear-gradient(90deg,#15318c,#1560ba)">
+    <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);width:170px;min-width:170px;text-align:left;padding:4px 9px;font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:900;letter-spacing:.3px;white-space:nowrap">Engineer Name</th>
+    ${supportTypes.map((t,i)=>`<th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);width:${colWidth(t)};min-width:${colWidth(t)};text-align:center;padding:3px 4px;font-family:'Montserrat',sans-serif;font-size:.54rem;font-weight:800;line-height:1.3;vertical-align:bottom;word-break:normal;overflow-wrap:normal;background:rgba(255,255,255,${i%2===0?'.06':'.02'})">${wrapHdr(t)}</th>`).join('')}
+    <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);width:44px;text-align:center;padding:3px 3px;font-family:'Montserrat',sans-serif;font-size:.58rem;font-weight:900;white-space:nowrap;vertical-align:bottom">Total</th>
+  </tr>`;
+
+  const ranged = erRowsInRange();
+
+  // ENGINEERS list + any names from Excel not in ENGINEERS list are also included
+  const extraNames = [...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n)).sort();
+  const engList = [...ENGINEERS, ...extraNames];
+
+  let colTotals = supportTypes.map(()=>0);
+  let grandTotal = 0;
+
+  tbody.innerHTML = engList.map(eng=>{
+    const er = ranged.filter(r=>r.engineerName===eng);
+    const counts = supportTypes.map(t=>er.filter(r=>(r.supportType||'—').trim().toUpperCase()===t.trim().toUpperCase()).length);
+    const tw = counts.reduce((a,b)=>a+b,0);
+    counts.forEach((c,i)=>colTotals[i]+=c);
+    grandTotal+=tw;
+    const cell=(v,ci)=>`<td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 3px;border-right:1px solid #e8f0f8;background:${ci%2===0?'rgba(236,244,255,.3)':'rgba(240,253,244,.3)'}">
+  <span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;border-radius:5px;font-size:.72rem;font-weight:800;padding:0 4px;
+  background:${v>0?'linear-gradient(135deg,#dbeafe,#bfdbfe)':'transparent'};
+  color:${v>0?'#2452e8':'#c0cce0'};
+  border:${v>0?'1.5px solid #93c5fd':'none'};">${v>0?v:'—'}</span></td>`;
+    return `<tr onclick="selectEngReportEngineer('${eng.replace(/'/g,"\\'")}')" style="cursor:pointer;border-bottom:1px solid #e8f0f8;transition:background .15s" onmouseover="this.style.background='rgba(47,155,255,.07)'" onmouseout="this.style.background=''" title="Click to view detail">
+      <td style="font-weight:700;font-family:'Outfit',sans-serif;color:var(--navy);font-size:.78rem;padding:3px 9px;text-align:left;white-space:nowrap;border-right:2px solid #cde3fb"><i class="fas fa-user-circle" style="font-size:.68rem;color:var(--accent);margin-right:5px"></i>${eng}</td>
+      ${counts.map((v,ci)=>cell(v,ci)).join('')}
+      <td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 3px;">
+  <span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;border-radius:5px;font-size:.72rem;font-weight:900;padding:0 4px;
+  background:${tw>0?'linear-gradient(135deg,#fed7aa,#fdba74)':'#f1f5f9'};
+  color:${tw>0?'#c2410c':'#90a4ae'};
+  border:${tw>0?'2px solid #fb923c':'none'};">${tw>0?tw:'—'}</span></td>
+    </tr>`;
+  }).join('');
+
+  tbody.innerHTML += `<tr style="background:linear-gradient(90deg,#f0fdf4,#dcfce7);border-top:2px solid #16a34a">
+    <td style="font-weight:900;font-family:'Montserrat',sans-serif;color:#14532d;font-size:.62rem;letter-spacing:.5px;padding:3px 9px;white-space:nowrap;border-right:2px solid #6ee7b7">TOTAL</td>
+    ${colTotals.map((v,ci)=>`<td style="text-align:center;padding:2px 3px;border-right:1px solid #bbf7d0;background:${ci%2===0?'rgba(220,252,231,.6)':'rgba(240,253,244,.6)'}"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:5px;font-size:.7rem;font-weight:900;color:#15803d;padding:0 3px;background:rgba(22,163,74,.12);border:1.5px solid #86efac">${v>0?v:'—'}</span></td>`).join('')}
+    <td style="text-align:center;padding:2px 3px;background:rgba(22,163,74,.2)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:20px;border-radius:5px;font-size:.76rem;font-weight:900;color:#14532d;padding:0 4px;background:rgba(22,163,74,.25);border:2px solid #4ade80">${grandTotal}</span></td>
+  </tr>`;
+
+  renderEngDetail();
+}
+
+function renderEngDetail(){
+  const nameEl=document.getElementById('er-detail-name');
+  const thead=document.getElementById('er-day-thead');
+  const tbody=document.getElementById('er-day-tbody');
+  if(!erSelectedEngineer){ thead.innerHTML=''; tbody.innerHTML=''; return; }
+  nameEl.textContent=erSelectedEngineer;
+
+  // Show ALL data for this engineer in the modal — no date range restriction
+  const ranged = misRows.filter(r=>r.engineerName===erSelectedEngineer);
+  const supportTypes = [...new Map(misRows.map(r=>{const v=(r.supportType||'—').trim();return[v.toUpperCase(),v];})).values()].sort();
+  const _rawStatuses=[...new Map(misRows.map(r=>{const v=(r.taskStatus||'—').trim();return[v.toUpperCase(),v];})).values()].sort();
+  const MERGE_STATUS={'ASSIGN ASSIGN ENGINEER':'ASSIGN ENGINEER','FORWARD':'FORWARD TO OTHER DEPARTMENT','LAN SURVEY':'LAN SURVEY UPDATE'};
+  // Exclude the blank-status "—" bucket — those rows are redistributed into
+  // matching taskStatus columns by supportType name (see count logic below).
+  const statuses=_rawStatuses.filter(s=>!MERGE_STATUS[s.trim().toUpperCase()] && s.trim()!=='—');
+  const grpBorder='border-right:2px solid rgba(255,255,255,.45);';
+
+  // Colour palette — one entry per support type row
+  const stPalette = [
+    {bg:'rgba(219,234,254,.55)',color:'#1d4ed8',border:'#93c5fd'},
+    {bg:'rgba(220,252,231,.55)',color:'#15803d',border:'#86efac'},
+    {bg:'rgba(254,243,199,.55)',color:'#b45309',border:'#fcd34d'},
+    {bg:'rgba(254,226,226,.55)',color:'#dc2626',border:'#fca5a5'},
+    {bg:'rgba(237,233,254,.55)',color:'#7c3aed',border:'#c4b5fd'},
+    {bg:'rgba(207,250,254,.55)',color:'#0891b2',border:'#67e8f9'},
+  ];
+
+  // Single header row: Date | Support Type | status cols... | Tot.
+  thead.innerHTML=`<tr style="background:linear-gradient(90deg,#15318c,#1560ba)">
+    <th style="width:72px;color:#fff;border-bottom:2px solid rgba(255,255,255,.25);border-right:2px solid rgba(255,255,255,.3);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;vertical-align:middle;padding:5px 6px;white-space:nowrap">${erView==='day'?'Date':'Month'}</th>
+    <th style="width:120px;color:#fff;border-bottom:2px solid rgba(255,255,255,.25);border-right:2px solid rgba(255,255,255,.4);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;vertical-align:middle;padding:5px 6px;white-space:nowrap">Support Type</th>
+    ${statuses.map(s=>{const ws=s.trim().split(/\s+/);const ml=Math.max(...ws.map(w=>w.length));const dw=Math.max(Math.ceil(ml*6+8),20)+'px';return`<th style="width:${dw};min-width:${dw};color:#ffe9b3;border-bottom:2px solid rgba(255,255,255,.25);border-right:1px solid rgba(255,255,255,.15);text-align:center;font-family:'Montserrat',sans-serif;font-size:.58rem;font-weight:700;padding:3px 2px;vertical-align:bottom"><div style="white-space:normal;word-break:normal;overflow-wrap:normal;line-height:1.25">${s}</div></th>`;}).join('')}
+    <th style="width:44px;color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:900;vertical-align:middle;padding:5px 4px;white-space:nowrap">Total</th>
+  </tr>`;
+
+  if(!ranged.length){
+    tbody.innerHTML=`<tr><td colspan="${statuses.length+3}"><div class="empty-box"><span class="ei">📭</span><p>No records found for ${erSelectedEngineer} in this date range.</p></div></td></tr>`;
+    return;
+  }
+
+  // Group by day or by month
+  const groups = {};
+  ranged.forEach(r=>{
+    const iso = misParseDateISO(r.entryDate);
+    const key = erView==='day' ? (iso||r.entryDate||'Unknown') : (iso?iso.slice(0,7):'Unknown');
+    if(!groups[key]) groups[key]=[];
+    groups[key].push(r);
+  });
+  const keys = Object.keys(groups).sort();
+
+  tbody.innerHTML = keys.map(k=>{
+    const rows = groups[k];
+    let label = k;
+    if(erView==='day'){
+      label = /^\d{4}-\d{2}-\d{2}$/.test(k) ? fmtDateDisp(k) : k;
+    } else if(/^\d{4}-\d{2}$/.test(k)){
+      const [yy,mm]=k.split('-'); label=`${MONTHS_FULL[parseInt(mm)-1]} ${yy}`;
+    }
+    // Accumulate per-column totals for the subtotal row
+    const dayColTotals = statuses.map(()=>0);
+    // One row per support type for this date/month
+    const supportRows = supportTypes.map((t,ti)=>{
+      const pal = stPalette[ti % stPalette.length];
+      const counts=statuses.map(s=>{
+        const su=s.trim().toUpperCase();
+        const aliases=Object.entries(MERGE_STATUS).filter(([k,v])=>v===su).map(([k])=>k);
+        return rows.filter(r=>{
+          const rs=(r.taskStatus||'\u2014').trim().toUpperCase();
+          const rt=(r.supportType||'\u2014').trim().toUpperCase();
+          const normalMatch = rt===t.trim().toUpperCase()&&(rs===su||aliases.includes(rs));
+          const blankStatusMatch = (rs==='\u2014'||rs==='—')&&rt===t.trim().toUpperCase()&&rt===su;
+          return normalMatch||blankStatusMatch;
+        }).length;
+      });
+      counts.forEach((c,i)=>dayColTotals[i]+=c);
+      const total = counts.reduce((a,b)=>a+b,0);
+      const dateCell = ti===0
+        ? `<td rowspan="${supportTypes.length}" style="text-align:center;font-weight:800;font-family:'Montserrat',sans-serif;color:var(--navy);font-size:.72rem;padding:4px 6px;white-space:nowrap;border-right:2px solid #c7dcf8;border-bottom:3px solid #4a90d9;vertical-align:middle;background:#e8f3ff">${label}</td>`
+        : '';
+      const countCells = counts.map(v=>`<td style="text-align:center;font-family:'Outfit',sans-serif;font-size:.74rem;font-weight:${v>0?'800':'400'};padding:3px 3px;border-right:1px solid #e8f0f8;color:${v>0?'#1a2340':'#cdd5e0'}">${v>0?v:'\u2014'}</td>`).join('');
+      const rowBorder = ti===supportTypes.length-1 ? '3px solid #4a90d9' : '1px solid #e8f0f8';
+      return `<tr style="border-bottom:${rowBorder};transition:background .15s" onmouseover="this.style.background='rgba(47,155,255,.05)'" onmouseout="this.style.background=''">
+        ${dateCell}
+        <td style="font-weight:700;font-family:'Montserrat',sans-serif;font-size:.67rem;padding:3px 8px;border-right:2px solid #c7dcf8;white-space:nowrap;background:${pal.bg};color:${pal.color};border-left:3px solid ${pal.border}">${t}</td>
+        ${countCells}
+        <td style="text-align:center;font-weight:900;color:${total>0?'#c2410c':'#cdd5e0'};font-family:'Outfit',sans-serif;font-size:.78rem;padding:3px 5px;background:${total>0?'rgba(254,215,170,.3)':'transparent'}">${total>0?total:'\u2014'}</td>
+      </tr>`;
+    }).join('');
+    // Subtotal row pinned below each day / month group
+    const dayTotal = dayColTotals.reduce((a,b)=>a+b,0);
+    const subtotalRow=`<tr style="background:linear-gradient(90deg,rgba(21,49,140,.09),rgba(47,155,255,.06));border-top:1px solid #93c5fd;border-bottom:3px solid #2452e8">
+      <td colspan="2" style="font-weight:900;font-family:'Montserrat',sans-serif;font-size:.6rem;color:#1e3a8a;letter-spacing:.5px;padding:3px 10px;border-right:2px solid #93c5fd;white-space:nowrap;text-align:right;text-transform:uppercase">${erView==='day'?'Day':'Month'} Total</td>
+      ${dayColTotals.map(v=>`<td style="text-align:center;font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:${v>0?'900':'400'};padding:3px 3px;border-right:1px solid #bfdbfe;color:${v>0?'#1e3a8a':'#cdd5e0'};background:${v>0?'rgba(219,234,254,.45)':'transparent'}">${v>0?v:'\u2014'}</td>`).join('')}
+      <td style="text-align:center;font-weight:900;font-family:'Outfit',sans-serif;font-size:.78rem;padding:3px 5px;color:${dayTotal>0?'#9a3412':'#cdd5e0'};background:${dayTotal>0?'rgba(254,215,170,.5)':'transparent'}">${dayTotal>0?dayTotal:'\u2014'}</td>
+    </tr>`;
+    return supportRows + subtotalRow;
+  }).join('');
+}
+
 let atPage = 1;
 const AT_PER_PAGE = 50;
 
@@ -2375,8 +3831,8 @@ function onRowCheck(el){
 
 async function deleteSelected(){
   if(!canDeleteAllTask()){ toast('❌ Permission denied!'); return; }
-  if(selectedKeys.size===0){ toast('⚠ কোনো ticket select করা হয়নি!'); return; }
-  if(!confirm(`${selectedKeys.size}টি ticket delete করবেন?`)) return;
+  if(selectedKeys.size===0){ toast('⚠ No tickets selected!'); return; }
+  if(!confirm(`Delete ${selectedKeys.size} ticket(s)?`)) return;
   const btn = document.getElementById('btn-del-selected');
   btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Deleting...';
   btn.disabled=true;
@@ -2392,7 +3848,7 @@ async function deleteSelected(){
   btn.style.display='none';
   btn.disabled=false;
   btn.innerHTML='<i class="fas fa-trash"></i> Delete Selected (<span id="sel-count">0</span>)';
-  toast(`✅ ${done}টি ticket delete করা হয়েছে!`);
+  toast(`✅ ${done} ticket(s) deleted!`);
   renderAll();
 }
 function renderAll(){
@@ -2602,7 +4058,7 @@ function renderWifi(){
   let arr=tickets.filter(t=>t.wifi==='YES'&&(!s||(t.ticket.toLowerCase().includes(s)||t.eng.toLowerCase().includes(s)))&&!(t.remarks && t.remarks.includes('[BNOC/Backend Support]')));
   arr.sort((a,b)=>b.date.localeCompare(a.date)||(b.id||0)-(a.id||0));
   
-// tbl-top এ total badge update
+// update total badge in tbl-top
 const wfTotal = document.getElementById('wf-total-badge');
 if(wfTotal) wfTotal.textContent = arr.length;
   const totalPages=Math.max(1,Math.ceil(arr.length/WF_PER_PAGE));
@@ -2698,7 +4154,7 @@ document.getElementById('l-user').addEventListener('keydown', e => { if(e.key===
   try {
     const user = JSON.parse(saved);
     const users = getUsers();
-    const dbUser = users[user.username];
+    const dbUser = users[user.username] || DEFAULT_USERS[user.username];
     if (!dbUser || dbUser.pass !== user.pass) {
       localStorage.removeItem('l3_session');
       return;
@@ -2709,6 +4165,7 @@ document.getElementById('l-user').addEventListener('keydown', e => { if(e.key===
     setupUserUI();
     renderUserTable();
     setDateDefaults();
+    setTimeout(()=>showPage('engreport', document.getElementById('nav-engreport')), 80);
   } catch(e) {
     localStorage.removeItem('l3_session');
   }
@@ -2970,6 +4427,567 @@ chartEng = new Chart(document.getElementById('chart-eng'),{
   }
 });
 }
+
+// ===== NEW WORK DASHBOARD (Date wise & Engineer wise bar charts) =====
+let wdChartDate=null, wdChartEng=null, wdChartCat=null;
+
+function onWdMonthChange(){
+  // Selecting a month clears any custom date-range so the month filter takes effect cleanly
+  document.getElementById('wd-df').value='';
+  document.getElementById('wd-dt').value='';
+  renderWorkDash();
+}
+
+function getWorkDashFiltered(){
+  const month = document.getElementById('wd-month').value;
+  const df    = document.getElementById('wd-df').value;
+  const dt    = document.getElementById('wd-dt').value;
+
+  return misRows.filter(r=>{
+    const iso = misParseDateISO(r.entryDate);
+    if(!iso) return false;
+    if(month && iso.substring(5,7)!==month) return false;
+    if(df && iso < df) return false;
+    if(dt && iso > dt) return false;
+    return true;
+  });
+}
+
+function clearWorkDashFilters(){
+  document.getElementById('wd-month').value='';
+  document.getElementById('wd-df').value='';
+  document.getElementById('wd-dt').value='';
+  renderWorkDash();
+}
+
+function destroyWorkDashCharts(){
+  [wdChartDate,wdChartEng,wdChartCat].forEach(c=>{ if(c) c.destroy(); });
+  wdChartDate=wdChartEng=wdChartCat=null;
+}
+
+function renderWorkDash(){
+  if(!misRows.length){
+    document.getElementById('wd-total-badge').textContent='0 tasks';
+    document.getElementById('wd-stat-row').innerHTML=`<div class="tbl-card" style="grid-column:1/-1;padding:18px;text-align:center;font-family:'Outfit',sans-serif;font-size:.78rem;color:var(--muted)"><i class="fas fa-chart-column" style="font-size:1.1rem;opacity:.4;display:block;margin-bottom:6px"></i>No MIS Excel data has been uploaded yet (Engineer Report er data theke ei dashboard toiri hoy — MIS Update theke Excel upload korun).</div>`;
+    const catTotalSubEl = document.getElementById('wd-cat-total-sub');
+    const catCenterNumEl = document.getElementById('wd-cat-center-num');
+    const catLegendEl2 = document.getElementById('wd-cat-legend');
+    if(catTotalSubEl) catTotalSubEl.textContent='0 total';
+    if(catCenterNumEl) catCenterNumEl.textContent='0';
+    if(catLegendEl2) catLegendEl2.innerHTML=`<div style="font-family:'Outfit',sans-serif;font-size:.76rem;color:var(--muted);padding:8px">No data</div>`;
+    destroyWorkDashCharts();
+    return;
+  }
+
+  const arr = getWorkDashFiltered();
+  document.getElementById('wd-total-badge').textContent = arr.length+' tasks';
+
+  // Summary stat cards (grouped by entryDate, same field Engineer Report uses)
+  const dayMap={};
+  arr.forEach(r=>{ const iso=misParseDateISO(r.entryDate); if(iso) dayMap[iso]=(dayMap[iso]||0)+1; });
+  const activeDays = Object.keys(dayMap).length;
+  const avgPerDay = activeDays ? (arr.length/activeDays).toFixed(1) : '0.0';
+  let busiestDay='—', busiestCount=0;
+  Object.entries(dayMap).forEach(([d,c])=>{ if(c>busiestCount){busiestCount=c; busiestDay=fmtDateDisp(d);} });
+  const activeEngineers = new Set(arr.map(r=>r.engineerName).filter(Boolean)).size;
+
+  const statRow = document.getElementById('wd-stat-row');
+  const statDefs = [
+    {icon:'fa-list-check',      label:'TOTAL TASKS',      val:arr.length,      grad:'135deg,#0a1642,#2452e8'},
+    {icon:'fa-user-gear',       label:'ACTIVE ENGINEERS',  val:activeEngineers, grad:'135deg,#059669,#10b981'},
+    {icon:'fa-chart-simple',    label:'AVG TASKS / DAY',   val:avgPerDay,       grad:'135deg,#d97706,#f59e0b'},
+    {icon:'fa-fire',            label:'BUSIEST DAY',       val:busiestDay+(busiestCount?' ('+busiestCount+')':''), grad:'135deg,#dc2626,#ef4444'}
+  ];
+  statRow.innerHTML = statDefs.map(s=>`
+    <div class="tbl-card" style="padding:9px 12px;display:flex;align-items:center;gap:9px;box-shadow:0 4px 14px rgba(21,49,140,.07)">
+      <span style="width:30px;height:30px;flex-shrink:0;border-radius:8px;background:linear-gradient(${s.grad});display:inline-flex;align-items:center;justify-content:center"><i class="fas ${s.icon}" style="color:#fff;font-size:.72rem"></i></span>
+      <div style="min-width:0">
+        <div style="font-family:'Montserrat',sans-serif;font-size:.86rem;font-weight:900;color:var(--navy);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.val}</div>
+        <div style="font-family:'Montserrat',sans-serif;font-size:.54rem;font-weight:800;color:var(--muted);letter-spacing:.3px">${s.label}</div>
+      </div>
+    </div>
+  `).join('');
+
+  destroyWorkDashCharts();
+
+  // Custom plugin: deep navy blue number (with shadow) above each dot on the line chart
+  const dateDotLabelPlugin = {
+    id: 'dateDotLabelPlugin',
+    afterDatasetsDraw(chart){
+      const {ctx} = chart;
+      chart.getDatasetMeta(0).data.forEach((point, idx)=>{
+        const value = chart.data.datasets[0].data[idx];
+        if(value===null || value===undefined) return;
+        ctx.save();
+        ctx.font = "800 9px 'Montserrat', sans-serif";
+        ctx.fillStyle = '#0a1642';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.shadowColor = 'rgba(0,0,0,.45)';
+        ctx.shadowBlur = 3;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 1;
+        ctx.fillText(value, point.x, point.y - 8);
+        ctx.restore();
+      });
+    }
+  };
+
+  // Custom plugin: white number (with black shadow) rotated vertically, running bottom-to-top along each bar
+  const barCountLabelPlugin = {
+    id: 'barCountLabelPlugin',
+    afterDatasetsDraw(chart){
+      const {ctx} = chart;
+      chart.getDatasetMeta(0).data.forEach((bar, idx)=>{
+        const value = chart.data.datasets[0].data[idx];
+        if(!value) return;
+        const yMid = (bar.y + bar.base) / 2;
+        ctx.save();
+        ctx.translate(bar.x, yMid);
+        ctx.rotate(-Math.PI/2);
+        ctx.font = "800 10px 'Montserrat', sans-serif";
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0,0,0,.75)';
+        ctx.shadowBlur = 3;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 1;
+        ctx.fillText(value, 0, 0);
+        ctx.restore();
+      });
+    }
+  };
+
+  // 1. Date wise line/area chart (kept visually distinct from the engineer bar chart)
+  const dayKeys = Object.keys(dayMap).sort();
+  const dayVals = dayKeys.map(k=>dayMap[k]);
+  const dayLabels = dayKeys.map(d=>fmtDateDisp(d));
+
+  const dateCtx = document.getElementById('wd-chart-date').getContext('2d');
+  const dateAreaGrad = dateCtx.createLinearGradient(0,0,0,200);
+  dateAreaGrad.addColorStop(0,'rgba(36,82,232,.38)');
+  dateAreaGrad.addColorStop(.55,'rgba(47,155,255,.14)');
+  dateAreaGrad.addColorStop(1,'rgba(47,155,255,0)');
+  const dateLineGrad = dateCtx.createLinearGradient(0,0,dateCtx.canvas.width||300,0);
+  dateLineGrad.addColorStop(0,'#0a1642');
+  dateLineGrad.addColorStop(.5,'#2452e8');
+  dateLineGrad.addColorStop(1,'#2f9bff');
+
+  wdChartDate = new Chart(dateCtx,{
+    type:'line',
+    data:{
+      labels:dayLabels,
+      datasets:[{
+        label:'Tasks',
+        data:dayVals,
+        borderColor:dateLineGrad,
+        backgroundColor:dateAreaGrad,
+        fill:true,
+        tension:.4,
+        pointBackgroundColor:'#fff',
+        pointBorderColor:'#2452e8',
+        pointBorderWidth:2,
+        pointRadius:3.5,
+        pointHoverRadius:7,
+        pointHoverBackgroundColor:'#2452e8',
+        pointHoverBorderColor:'#fff',
+        pointHoverBorderWidth:2,
+        borderWidth:3,
+        borderCapStyle:'round',
+        borderJoinStyle:'round',
+        shadowColor:'rgba(36,82,232,.35)'
+      }]
+    },
+    plugins:[dateDotLabelPlugin,{
+      id:'lineGlow',
+      beforeDatasetsDraw(chart){
+        const {ctx} = chart;
+        ctx.save();
+        ctx.shadowColor='rgba(36,82,232,.45)';
+        ctx.shadowBlur=10;
+        ctx.shadowOffsetY=3;
+      },
+      afterDatasetsDraw(chart){ chart.ctx.restore(); }
+    }],
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      animation:{duration:900, easing:'easeOutQuart'},
+      interaction:{mode:'index', intersect:false},
+      layout:{padding:{top:18}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          enabled:true,
+          backgroundColor:'#0a1642',
+          titleFont:{family:'Montserrat',size:11,weight:'800'},
+          bodyFont:{family:'Outfit',size:11,weight:'700'},
+          padding:10,
+          cornerRadius:9,
+          displayColors:false,
+          borderColor:'rgba(47,155,255,.5)',
+          borderWidth:1,
+          caretSize:6,
+          callbacks:{label:ctx=>` ${ctx.parsed.y} tasks`}
+        }
+      },
+      scales:{
+        y:{
+          beginAtZero:true,
+          ticks:{precision:0, font:{family:'Outfit',size:11}, color:'#5d7ba8'},
+          grid:{color:'rgba(21,49,140,.06)'}
+        },
+        x:{
+          ticks:{font:{family:'Outfit',size:10}, color:'#5d7ba8', maxRotation:45, minRotation:30, autoSkip:true, maxTicksLimit:20},
+          grid:{display:false}
+        }
+      }
+    }
+  });
+
+  // 2. Engineer wise bar chart (ENGINEERS list + any extra names found in the MIS/Excel data, same as Engineer Report)
+  const extraNames = [...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n)).sort();
+  const engList = [...ENGINEERS, ...extraNames];
+  const engColors = engList.map((_,i)=>ENG_COLORS[i % ENG_COLORS.length]);
+  const engCounts = engList.map(e=>arr.filter(r=>r.engineerName===e).length);
+
+  const engCtx = document.getElementById('wd-chart-eng').getContext('2d');
+  // Build a soft vertical gradient (solid color -> lighter tint) for every bar
+  const engGradients = engColors.map(color=>{
+    const g = engCtx.createLinearGradient(0,0,0,200);
+    g.addColorStop(0, color);
+    g.addColorStop(1, color+'99');
+    return g;
+  });
+  const engHoverGradients = engColors.map(color=>{
+    const g = engCtx.createLinearGradient(0,0,0,200);
+    g.addColorStop(0, color);
+    g.addColorStop(1, color);
+    return g;
+  });
+
+  wdChartEng = new Chart(engCtx,{
+    type:'bar',
+    data:{
+      labels: engList,
+      datasets:[{
+        label:'Tasks',
+        data: engCounts,
+        backgroundColor: engGradients,
+        hoverBackgroundColor: engHoverGradients,
+        borderRadius: 8,
+        borderSkipped: false,
+        maxBarThickness:34,
+        barPercentage:.78,
+        categoryPercentage:.82
+      }]
+    },
+    plugins:[barCountLabelPlugin,{
+      id:'barShadow',
+      beforeDatasetsDraw(chart){
+        const {ctx} = chart;
+        ctx.save();
+        ctx.shadowColor='rgba(21,49,140,.22)';
+        ctx.shadowBlur=8;
+        ctx.shadowOffsetY=4;
+      },
+      afterDatasetsDraw(chart){ chart.ctx.restore(); }
+    }],
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      animation:{duration:850, easing:'easeOutQuart'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          enabled:true,
+          backgroundColor:'#0a1642',
+          titleFont:{family:'Montserrat',size:11,weight:'800'},
+          bodyFont:{family:'Outfit',size:11,weight:'700'},
+          padding:10,
+          cornerRadius:9,
+          displayColors:true,
+          boxPadding:4,
+          borderColor:'rgba(16,185,129,.5)',
+          borderWidth:1,
+          caretSize:6,
+          callbacks:{title:i=>engList[i[0].dataIndex], label:ctx=>` ${ctx.parsed.y} tasks`}
+        }
+      },
+      scales:{
+        y:{
+          beginAtZero:true,
+          ticks:{precision:0, font:{family:'Outfit',size:11}, color:'#5d7ba8'},
+          grid:{color:'rgba(21,49,140,.06)'}
+        },
+        x:{
+          ticks:{
+            font:{family:'Outfit',size:10, weight:'700'},
+            color:'#5d7ba8',
+            maxRotation:40,
+            minRotation:30,
+            autoSkip:false,
+            callback:function(val,idx){ return shortEngName(engList[idx]); }
+          },
+          grid:{display:false}
+        }
+      }
+    }
+  });
+
+  // 3. Category Wise donut chart (Support Type breakdown)
+  const catCounts = {};
+  arr.forEach(r=>{ const v=(r.supportType||'—').trim()||'—'; catCounts[v]=(catCounts[v]||0)+1; });
+  const catEntries = Object.entries(catCounts).sort((a,b)=>b[1]-a[1]);
+  const catLabelsWd = catEntries.map(e=>e[0]);
+  const catDataWd   = catEntries.map(e=>e[1]);
+  const catTotalWd  = arr.length;
+  const catColorsWd = catLabelsWd.map((c,i)=> CAT_COLORS[c] || CHART_COLORS[i % CHART_COLORS.length]);
+
+  document.getElementById('wd-cat-total-sub').textContent = catTotalWd+' total';
+  document.getElementById('wd-cat-center-num').textContent = catTotalWd;
+
+  const catLegendEl = document.getElementById('wd-cat-legend');
+  catLegendEl.innerHTML = catLabelsWd.map((lbl,i)=>{
+    const pct = catTotalWd ? ((catDataWd[i]/catTotalWd)*100).toFixed(1) : '0.0';
+    return `<div class="wd-cat-leg-item">
+      <span class="wd-cat-leg-dot" style="background:${catColorsWd[i]}"></span>
+      <span class="wd-cat-leg-name">${lbl}</span>
+      <span class="wd-cat-leg-val">${catDataWd[i]}</span>
+      <span class="wd-cat-leg-pct">${pct}%</span>
+    </div>`;
+  }).join('') || `<div style="font-family:'Outfit',sans-serif;font-size:.76rem;color:var(--muted);padding:8px">No data</div>`;
+
+  const catCanvas = document.getElementById('wd-chart-cat');
+  if(catCanvas && catLabelsWd.length){
+    wdChartCat = new Chart(catCanvas.getContext('2d'),{
+      type:'doughnut',
+      data:{
+        labels: catLabelsWd,
+        datasets:[{
+          data: catDataWd,
+          backgroundColor: catColorsWd.map(c=>c+'E6'),
+          hoverBackgroundColor: catColorsWd,
+          borderColor:'#fff',
+          borderWidth: 3,
+          hoverOffset: 10,
+          borderRadius: 4,
+          spacing: 2
+        }]
+      },
+      plugins:[{
+        id:'catDonutShadow',
+        beforeDatasetsDraw(chart){
+          const {ctx} = chart;
+          ctx.save();
+          ctx.shadowColor='rgba(21,49,140,.28)';
+          ctx.shadowBlur=14;
+          ctx.shadowOffsetY=6;
+        },
+        afterDatasetsDraw(chart){ chart.ctx.restore(); }
+      }],
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        cutout:'72%',
+        animation:{ animateRotate:true, duration:900, easing:'easeOutQuart' },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{
+            backgroundColor:'#0a1642',
+            titleFont:{family:'Montserrat',size:11,weight:'800'},
+            bodyFont:{family:'Outfit',size:11,weight:'700'},
+            padding:10, cornerRadius:9, displayColors:true, boxPadding:4,
+            borderColor:'rgba(47,155,255,.5)', borderWidth:1, caretSize:6,
+            callbacks:{
+              label: ctx => ` ${ctx.label}: ${ctx.parsed} (${catTotalWd ? ((ctx.parsed/catTotalWd)*100).toFixed(1) : 0}%)`
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
+// Returns just the first name part, unless the first part is a generic prefix
+// (Md./Md/Muhammed/Mohammad) — in that case the second part is used instead.
+function shortEngName(name){
+  const parts = name.trim().split(/\s+/);
+  const genericPrefixes = ['md','muhammed','mohammad'];
+  const first = parts[0].toLowerCase().replace(/\.$/,'');
+  if(parts.length>=2 && genericPrefixes.includes(first)) return parts[1];
+  return parts[0];
+}
+
+
+// ===== DOWNLOAD TASK REPORT MODAL =====
+function openDownloadModal(){
+  if(!misRows.length){ toast('⚠ No MIS data available!'); return; }
+  const extraNames=[...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n)).sort();
+  const engList=[...ENGINEERS,...extraNames];
+  const container=document.getElementById('dl-eng-list');
+  container.innerHTML=engList.map(name=>`
+    <label style="display:flex;align-items:center;gap:9px;padding:7px 11px;background:#fff;border-radius:8px;cursor:pointer;border:1.5px solid #e2e8f0;transition:border-color .15s" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='#e2e8f0'">
+      <input type="checkbox" class="dl-eng-chk" value="${name.replace(/"/g,'&quot;')}" onchange="onDlEngCheck()" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+      <span style="font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:600;color:var(--text)">${name}</span>
+    </label>`).join('');
+  document.getElementById('dl-chk-all').checked=false;
+  document.getElementById('dl-chk-all').indeterminate=false;
+  document.getElementById('dl-df').value='';
+  document.getElementById('dl-dt').value='';
+  dlSyncDisp();
+  updateDlSelInfo();
+  document.getElementById('download-task-modal').style.display='flex';
+}
+function closeDownloadModal(){
+  document.getElementById('download-task-modal').style.display='none';
+}
+function dlSyncDisp(){
+  const df=document.getElementById('dl-df').value;
+  const dt=document.getElementById('dl-dt').value;
+  document.getElementById('dl-df-disp').innerHTML=df?`${fmtDateDisp(df)}&nbsp;<i class="fas fa-calendar" style="font-size:.58rem;color:#2f9bff;opacity:.7"></i>`:`—&nbsp;<i class="fas fa-calendar" style="font-size:.58rem;color:#2f9bff;opacity:.7"></i>`;
+  document.getElementById('dl-dt-disp').innerHTML=dt?`${fmtDateDisp(dt)}&nbsp;<i class="fas fa-calendar" style="font-size:.58rem;color:#2f9bff;opacity:.7"></i>`:`—&nbsp;<i class="fas fa-calendar" style="font-size:.58rem;color:#2f9bff;opacity:.7"></i>`;
+}
+function dlClearDates(){
+  document.getElementById('dl-df').value='';
+  document.getElementById('dl-dt').value='';
+  dlSyncDisp();
+}
+function toggleDlSelAll(el){
+  document.querySelectorAll('.dl-eng-chk').forEach(c=>c.checked=el.checked);
+  updateDlSelInfo();
+}
+function onDlEngCheck(){
+  const all=document.querySelectorAll('.dl-eng-chk');
+  const checked=document.querySelectorAll('.dl-eng-chk:checked');
+  const chkAll=document.getElementById('dl-chk-all');
+  chkAll.checked=checked.length===all.length&&all.length>0;
+  chkAll.indeterminate=checked.length>0&&checked.length<all.length;
+  updateDlSelInfo();
+}
+function updateDlSelInfo(){
+  const n=document.querySelectorAll('.dl-eng-chk:checked').length;
+  document.getElementById('dl-sel-info').textContent=`${n} engineer${n!==1?'s':''} selected`;
+}
+function downloadTaskReport(){
+  const df=document.getElementById('dl-df').value;
+  const dt=document.getElementById('dl-dt').value;
+  const selectedEngs=[...document.querySelectorAll('.dl-eng-chk:checked')].map(c=>c.value);
+  if(!selectedEngs.length){ toast('⚠ Please select at least one engineer!'); return; }
+
+  // Filter all rows within date range for selected engineers
+  const filterRow=r=>{
+    if(df||dt){
+      const iso=misParseDateISO(r.entryDate)||r.entryDate||'';
+      if(df&&iso<df) return false;
+      if(dt&&iso>dt) return false;
+    }
+    return true;
+  };
+
+  const wb=XLSX.utils.book_new();
+  const COLS=[{wch:5},{wch:13},{wch:28},{wch:24},{wch:20},{wch:16}];
+  const HDR=['#','Entry Date','Engineer Name','Ticket ID','Support Type','Task Status'];
+  let totalRows=0;
+
+  // One sheet per engineer
+  selectedEngs.forEach(eng=>{
+    const rows=misRows.filter(r=>(r.engineerName||'')=== eng && filterRow(r));
+    // Safe sheet name: max 31 chars, no special chars
+    const sheetName=eng.replace(/[:\\\/\?\*\[\]]/g,'').slice(0,31);
+    const data=[HDR,...rows.map((r,i)=>[
+      i+1,
+      fmtDateDisp(r.entryDate)||r.entryDate||'',
+      r.engineerName||'',
+      r.ticketId||'',
+      r.supportType||'',
+      r.taskStatus||''
+    ])];
+    const ws=XLSX.utils.aoa_to_sheet(data);
+    ws['!cols']=COLS;
+    XLSX.utils.book_append_sheet(wb,ws,sheetName);
+    totalRows+=rows.length;
+  });
+
+  if(!totalRows){ toast('⚠ No data found for selected engineers / date range!'); return; }
+
+  // Summary sheet at beginning with all selected engineers combined
+  const allRows=misRows.filter(r=>selectedEngs.includes(r.engineerName||'')&&filterRow(r));
+  const sumData=[HDR,...allRows.map((r,i)=>[
+    i+1,
+    fmtDateDisp(r.entryDate)||r.entryDate||'',
+    r.engineerName||'',
+    r.ticketId||'',
+    r.supportType||'',
+    r.taskStatus||''
+  ])];
+  const wsSum=XLSX.utils.aoa_to_sheet(sumData);
+  wsSum['!cols']=COLS;
+  // Insert summary as first sheet (re-order: move it to index 0)
+  wb.SheetNames.unshift('Summary');
+  wb.Sheets['Summary']=wsSum;
+
+  let fname='MIS_Task_Report';
+  if(df) fname+=`_${df}`;
+  if(dt) fname+=`_to_${dt}`;
+  if(selectedEngs.length===1) fname+=`_${selectedEngs[0].replace(/\s+/g,'_')}`;
+  fname+='.xlsx';
+  XLSX.writeFile(wb,fname);
+  toast(`✅ Downloaded! ${selectedEngs.length} tab(s) + Summary — ${totalRows} rows total`);
+  closeDownloadModal();
+}
+// Close modal when clicking backdrop
+document.addEventListener('click',function(e){
+  const modal=document.getElementById('download-task-modal');
+  if(modal&&e.target===modal) closeDownloadModal();
+});
 </script>
+
+<!-- ===== DOWNLOAD TASK REPORT MODAL ===== -->
+<div id="download-task-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,66,.72);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:18px;box-shadow:0 24px 70px rgba(10,22,66,.45);width:min(500px,96vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;animation:fadeInUp .22s ease">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#0a1642,#15318c,#2f9bff);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="color:#fff;font-family:'Montserrat',sans-serif;font-size:.88rem;font-weight:900;letter-spacing:.5px;display:flex;align-items:center;gap:9px"><i class="fas fa-file-excel" style="color:#4ade80"></i> Download Task Report</div>
+      <button onclick="closeDownloadModal()" style="background:rgba(255,255,255,.18);border:none;border-radius:7px;width:30px;height:30px;color:#fff;font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.3)'" onmouseout="this.style.background='rgba(255,255,255,.18)'"><i class="fas fa-times"></i></button>
+    </div>
+    <!-- Date Range -->
+    <div style="padding:14px 20px 12px;border-bottom:1.5px solid #e8f0fe;flex-shrink:0">
+      <div style="font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:900;color:var(--blue);letter-spacing:.8px;margin-bottom:9px"><i class="fas fa-calendar-alt"></i>&nbsp;DATE RANGE</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;color:var(--blue)">FROM</span>
+        <div style="position:relative;height:30px;display:inline-flex;align-items:center">
+          <span id="dl-df-disp" onclick="document.getElementById('dl-df').showPicker&&document.getElementById('dl-df').showPicker()" style="display:inline-flex;align-items:center;gap:5px;height:30px;padding:4px 10px;border:1.5px solid var(--border);border-radius:7px;background:#eaf3ff;font-size:.76rem;font-weight:800;font-family:'Montserrat',sans-serif;color:var(--navy);cursor:pointer;user-select:none;min-width:90px;white-space:nowrap">—&nbsp;<i class="fas fa-calendar" style="font-size:.58rem;color:#2f9bff;opacity:.7"></i></span>
+          <input type="date" id="dl-df" oninput="dlSyncDisp()" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;background:transparent">
+        </div>
+        <span style="font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;color:var(--blue)">TO</span>
+        <div style="position:relative;height:30px;display:inline-flex;align-items:center">
+          <span id="dl-dt-disp" onclick="document.getElementById('dl-dt').showPicker&&document.getElementById('dl-dt').showPicker()" style="display:inline-flex;align-items:center;gap:5px;height:30px;padding:4px 10px;border:1.5px solid var(--border);border-radius:7px;background:#eaf3ff;font-size:.76rem;font-weight:800;font-family:'Montserrat',sans-serif;color:var(--navy);cursor:pointer;user-select:none;min-width:90px;white-space:nowrap">—&nbsp;<i class="fas fa-calendar" style="font-size:.58rem;color:#2f9bff;opacity:.7"></i></span>
+          <input type="date" id="dl-dt" oninput="dlSyncDisp()" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;background:transparent">
+        </div>
+        <button onclick="dlClearDates()" style="height:28px;padding:0 11px;border-radius:7px;border:1.5px solid #d1d5db;background:#fff;color:#6b7280;font-size:.64rem;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'">Clear</button>
+      </div>
+    </div>
+    <!-- Select All -->
+    <div style="padding:10px 20px 8px;border-bottom:1.5px solid #e8f0fe;flex-shrink:0">
+      <div style="font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:900;color:var(--blue);letter-spacing:.8px;margin-bottom:8px"><i class="fas fa-users"></i>&nbsp;SELECT ENGINEERS</div>
+      <label style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:9px;cursor:pointer;border:1.5px solid #93c5fd">
+        <input type="checkbox" id="dl-chk-all" onchange="toggleDlSelAll(this)" style="width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+        <span style="font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:900;color:var(--navy)">Select All Engineers</span>
+      </label>
+    </div>
+    <!-- Scrollable engineer list -->
+    <div id="dl-eng-list" style="overflow-y:auto;padding:10px 20px;flex:1;display:flex;flex-direction:column;gap:5px"></div>
+    <!-- Footer -->
+    <div style="padding:12px 20px;border-top:1.5px solid #e8f0fe;display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border-radius:0 0 18px 18px;flex-shrink:0">
+      <span id="dl-sel-info" style="font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:700;color:var(--muted)">0 engineers selected</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeDownloadModal()" style="height:34px;padding:0 16px;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#6b7280;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'">Cancel</button>
+        <button onclick="downloadTaskReport()" style="height:34px;padding:0 18px;border-radius:8px;border:none;background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff;font-size:.72rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:7px;box-shadow:0 3px 12px rgba(20,184,166,.38)" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-file-excel"></i> Download Excel</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>

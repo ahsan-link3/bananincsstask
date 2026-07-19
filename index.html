@@ -9,7 +9,7 @@
 <!-- FIREBASE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, push, onValue, remove, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getDatabase, ref, push, onValue, remove, set, get, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyA2Sh4DHvRowyaf0ZvplxQWRZiGexi_tYA",
@@ -27,6 +27,35 @@
   const ticketsRef = ref(db, 'tickets');
 const usersRef = ref(db, 'users');
 const misDataRef = ref(db, 'misdata');
+const userStatusRef = ref(db, 'userStatus');
+
+// ===== ONLINE PRESENCE (who is currently logged in) =====
+// Marks a username as online, and automatically flips them to offline the moment
+// their browser disconnects (tab closed, connection lost, etc.) via onDisconnect().
+window._fbSetOnline = async function(username){
+  try {
+    const myStatusRef = ref(db, 'userStatus/' + username);
+    await onDisconnect(myStatusRef).set({ online: false, lastSeen: serverTimestamp() });
+    await set(myStatusRef, { online: true, lastSeen: serverTimestamp() });
+    return true;
+  } catch(e) { console.error(e); return false; }
+};
+
+window._fbSetOffline = async function(username){
+  try {
+    await set(ref(db, 'userStatus/' + username), { online: false, lastSeen: serverTimestamp() });
+    return true;
+  } catch(e) { console.error(e); return false; }
+};
+
+// Realtime listener — mirrors every user's online/offline state instantly to all
+// open sessions, so User Management always shows who is currently logged in.
+onValue(userStatusRef, (snapshot) => {
+  const data = snapshot.val() || {};
+  if (typeof window.__applyUserStatus === 'function') window.__applyUserStatus(data);
+}, (error) => {
+  console.error("Firebase UserStatus error:", error);
+});
 
 window._fbSaveUser = async function(username, userData) {
   try {
@@ -820,18 +849,18 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 .wd-cat-leg-val{font-family:'Montserrat',sans-serif;font-size:.66rem;font-weight:900;color:var(--navy)}
 .wd-cat-leg-pct{font-family:'Outfit',sans-serif;font-size:.52rem;font-weight:700;color:var(--muted);min-width:28px;text-align:right}
 .wd-cat-legend-more{
-  display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;padding-top:8px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px 8px;margin-top:8px;padding-top:8px;
   border-top:1px dashed rgba(190,227,248,.9);
 }
 .wd-cat-chip{
-  display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;
+  display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;width:100%;
   background:#f5f9ff;border:1px solid #e4f0fc;transition:all .2s ease;cursor:default;
 }
 .wd-cat-chip:hover{background:#eaf3ff;box-shadow:0 3px 10px rgba(21,49,140,.08)}
 .wd-cat-chip .chip-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;box-shadow:0 2px 5px rgba(0,0,0,.15)}
-.wd-cat-chip .chip-nm{font-family:'Outfit',sans-serif;font-size:.6rem;font-weight:700;color:var(--text);white-space:nowrap}
-.wd-cat-chip .chip-vl{font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:900;color:var(--navy)}
-.wd-cat-chip .chip-pc{font-family:'Outfit',sans-serif;font-size:.52rem;font-weight:700;color:var(--muted)}
+.wd-cat-chip .chip-nm{font-family:'Outfit',sans-serif;font-size:.6rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.wd-cat-chip .chip-vl{font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:900;color:var(--navy);flex-shrink:0}
+.wd-cat-chip .chip-pc{font-family:'Outfit',sans-serif;font-size:.52rem;font-weight:700;color:var(--muted);flex-shrink:0}
 
 /* ===== Mobile menu button + sidebar overlay (hidden on desktop) ===== */
 .mobile-menu-btn{
@@ -906,6 +935,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   .wd-cat-body{flex-direction:column;gap:14px}
   .wd-cat-donut-wrap{width:200px;height:200px}
   .wd-cat-legend{width:100%}
+  .wd-cat-legend-more{grid-template-columns:1fr}
 }
 
 @media (max-width:480px){
@@ -1685,8 +1715,9 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 
     <!-- ===== PASTE DATA DIRECTLY ===== -->
     <div style="margin-top:18px;border-top:1.5px dashed #cde3fb;padding-top:16px">
-      <div style="font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;color:var(--blue);margin-bottom:8px">
-        <i class="fas fa-paste"></i> Or Paste Data Directly (Excel থেকে header row সহ copy করে paste করুন)
+      <div style="background:linear-gradient(90deg,#fff7ed,#fef3c7,#fff7ed);border:2px solid #f59e0b;border-radius:12px;padding:11px 16px;margin-bottom:12px;box-shadow:0 4px 14px rgba(245,158,11,.22);display:flex;align-items:center;gap:10px;animation:pulse 2.2s ease-in-out infinite">
+        <span style="width:30px;height:30px;flex-shrink:0;border-radius:9px;background:linear-gradient(135deg,#d97706,#f59e0b);display:inline-flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(217,119,6,.4)"><i class="fas fa-paste" style="color:#fff;font-size:.85rem"></i></span>
+        <span style="font-family:'Montserrat',sans-serif;font-size:.92rem;font-weight:900;color:#92400e;letter-spacing:.2px">Or Paste Data Directly <span style="font-weight:700;color:#b45309">(Excel থেকে header row সহ copy করে paste করুন)</span></span>
       </div>
       <div style="background:#f5f9ff;border:1.5px dashed #8cc7f7;border-radius:10px;padding:10px 14px;margin-bottom:10px">
         <span style="font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--text)"><i class="fas fa-info-circle" style="color:var(--accent)"></i> প্রথম row অবশ্যই header হতে হবে (Entry Date, ID, Ticket ID, Support Type, Task Status ইত্যাদি কলাম নাম)। Excel থেকে header সহ পুরো data select করে Ctrl+C, তারপর নিচের বক্সে Ctrl+V করুন।</span>
@@ -2028,6 +2059,17 @@ async function syncUsersFromFirebase() {
 }
 let currentUser = null;
 
+// ===== ONLINE PRESENCE STATE =====
+let onlineUsers = {}; // { username: {online:true/false, lastSeen:...} }
+window.__applyUserStatus = function(statusData){
+  onlineUsers = statusData || {};
+  const usersPage = document.getElementById('page-users');
+  if (usersPage && usersPage.classList.contains('active') && typeof renderUserTable === 'function') renderUserTable();
+};
+function isUserOnline(uname){
+  return !!(onlineUsers[uname] && onlineUsers[uname].online);
+}
+
 async function doLogin() {
   const uname  = document.getElementById('l-user').value.trim().toLowerCase();
   const pass   = document.getElementById('l-pass').value;
@@ -2056,6 +2098,7 @@ async function doLogin() {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app-screen').style.display = 'block';
       setupUserUI();
+      if(typeof window._fbSetOnline === 'function') window._fbSetOnline(uname);
       if(typeof backfillLink3IdsForKnownEngineers==='function') await backfillLink3IdsForKnownEngineers();
       renderUserTable();
       setDateDefaults();
@@ -2151,6 +2194,7 @@ if (zoneBadge) {
 
 
 function doLogout() {
+  if(currentUser && typeof window._fbSetOffline === 'function') window._fbSetOffline(currentUser.username);
   currentUser = null;
   localStorage.removeItem('l3_session');
   document.getElementById('app-screen').style.display = 'none';
@@ -2336,9 +2380,13 @@ function renderUserTable() {
     const isMe = uname === currentUser.username;
     const isMainAdmin = uname === 'admin';
     const canDelete = isAdminUser && !isMe && !isMainAdmin;
+    const online = isUserOnline(uname);
+    const nameCell = online
+      ? `<span style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1.5px solid #34d399;border-radius:20px;padding:3px 12px;font-weight:800;font-family:'Montserrat',sans-serif;color:#065f46;box-shadow:0 2px 6px rgba(16,185,129,.25)"><span style="width:7px;height:7px;border-radius:50%;background:#16a34a;flex-shrink:0;animation:pulse 1.5s infinite"></span>${u.name}</span>`
+      : `<span style="font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy)">${u.name}</span>`;
     return `<tr>
       <td style="color:var(--muted);font-weight:700;font-family:'Montserrat',sans-serif">${i+1}</td>
-      <td style="font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy)">${u.name}</td>
+      <td>${nameCell}</td>
       <td>${u.link3Id
         ? `<span style="font-family:'Montserrat',sans-serif;background:#eef5ff;color:var(--navy);padding:3px 9px;border-radius:6px;font-size:.8rem;font-weight:700;border:1px solid #d8ebff">${u.link3Id}</span>`
         : `<span style="color:var(--muted);font-size:.72rem;font-family:'Outfit',sans-serif">— login only</span>`}</td>
@@ -2346,7 +2394,9 @@ function renderUserTable() {
       <td>${u.role==='admin'
         ?'<span class="um-badge-admin"><i class="fas fa-shield-alt"></i> Admin</span>'
         :'<span class="um-badge-eng"><i class="fas fa-hard-hat"></i> Engineer</span>'}</td>
-      <td><span class="chip chip-yes"><i class="fas fa-circle" style="font-size:.4rem;vertical-align:middle"></i> Active</span></td>
+      <td>${online
+        ? `<span class="chip chip-yes"><i class="fas fa-circle" style="font-size:.4rem;vertical-align:middle;animation:pulse 1.5s infinite"></i> Online</span>`
+        : `<span class="chip chip-no"><i class="fas fa-circle" style="font-size:.4rem;vertical-align:middle"></i> Offline</span>`}</td>
       <td>
         ${isAdminUser ? `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           
@@ -2356,7 +2406,8 @@ function renderUserTable() {
       </td>
     </tr>`;
   }).join('');
-  document.getElementById('usr-cnt').textContent = Object.keys(users).length + ' users';
+  const onlineCount = Object.keys(users).filter(u=>isUserOnline(u)).length;
+  document.getElementById('usr-cnt').textContent = Object.keys(users).length + ' users · ' + onlineCount + ' online';
 }
 
 function openCreateUser() {
@@ -4882,6 +4933,7 @@ document.getElementById('l-user').addEventListener('keydown', e => { if(e.key===
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'block';
     setupUserUI();
+    if(typeof window._fbSetOnline === 'function') window._fbSetOnline(user.username);
     if(typeof backfillLink3IdsForKnownEngineers==='function') backfillLink3IdsForKnownEngineers();
     renderUserTable();
     setDateDefaults();
@@ -4890,6 +4942,13 @@ document.getElementById('l-user').addEventListener('keydown', e => { if(e.key===
     localStorage.removeItem('l3_session');
   }
 })();
+
+// Also mark offline when the tab/window is closed without clicking Logout
+// (onDisconnect on the Firebase side already handles the connection-lost case;
+// this covers a graceful page unload too).
+window.addEventListener('beforeunload', function(){
+  if(currentUser && typeof window._fbSetOffline === 'function') window._fbSetOffline(currentUser.username);
+});
 function toggleInvBtn() {
   if (!currentUser || currentUser.role !== 'admin') return;
   const drop = document.getElementById('invIconDrop');

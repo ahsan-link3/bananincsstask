@@ -1416,6 +1416,47 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
             </button>
             <input type="hidden" id="f-wifi" value="NO">
           </div>
+          <div class="fg"><label><i class="fas fa-user-hard-hat"></i>Assigned Technician</label>
+            <select id="f-technician" style="font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:700;color:var(--navy)">
+              <option value="">— None selected —</option>
+              <option>Sohel Rana</option>
+              <option>Rafiqul Islam</option>
+              <option>Mahidur Rahman</option>
+              <option>Imam Hossain</option>
+              <option>Rabbi Ahmed</option>
+              <option>Shafayatullah</option>
+              <option>Mmahmudul Hasan</option>
+              <option>Masud Rana</option>
+              <option>Shahidul Islam</option>
+              <option>Mijanur Rahman</option>
+              <option>Al Mamun</option>
+              <option>Md. Emon</option>
+              <option>Amir Hossain</option>
+              <option>Hanifur Rahman</option>
+              <option>Didarul Islam</option>
+              <option>Abul Hasan</option>
+              <option>Md. Foysal</option>
+              <option>Md. Sumon</option>
+              <option>Md. Nayon</option>
+              <option>Zakir Hossen</option>
+              <option>Rahmat Miah</option>
+              <option>Sayeem Khan</option>
+              <option>Al-Amin (Robin)</option>
+              <option>Bijoy Nokrek</option>
+              <option>Abir Hasan</option>
+              <option>Mohidul Islam</option>
+              <option>Rayhan Howlader</option>
+              <option>Bacchu Gazi</option>
+              <option>Md Imram</option>
+              <option>Md. Akash</option>
+              <option>Alam Shikder</option>
+              <option>Md. Raju</option>
+              <option>Ratan Mia</option>
+              <option>Abdul Mannan</option>
+              <option>Asad Ullah</option>
+              <option>Ashikur Rahman Asif</option>
+            </select>
+          </div>
           <div class="fg fg-full"><label><i class="fas fa-comment-dots"></i>Remarks</label>
             <textarea id="f-remarks" placeholder="Please Enter Remarks...(If Needed)" maxlength="500"></textarea>
           </div>
@@ -1493,29 +1534,69 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
         </div>
       </div>
 
-      <!-- Engineer Summary Table (the main report badge) -->
-      <div class="tbl-card">
-        <div class="tbl-top" style="background:linear-gradient(90deg,#0a1642,#15318c,#2f9bff)">
-          <span class="tbl-title" style="color:#fff;font-size:.88rem;font-weight:900;letter-spacing:.5px"><i class="fas fa-users"></i>&nbsp;Engineer Task Summary</span>
-          <span id="tr-period-badge" style="font-size:.72rem;font-family:'Montserrat',sans-serif;font-weight:900;color:#ffd54f;letter-spacing:.5px;white-space:nowrap">—</span>
+      <!-- Tab bar -->
+      <div style="background:linear-gradient(90deg,#06103a,#0d1f5c);padding:8px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-top:1px solid rgba(255,255,255,.1)">
+        <button id="tr-tab-btn-eng" onclick="toggleTrPanel('eng')"
+          style="height:30px;padding:0 16px;border-radius:7px;border:1.5px solid rgba(99,179,255,.35);background:rgba(37,99,235,.18);color:rgba(147,197,253,.85);font-size:.66rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .22s;letter-spacing:.4px;text-transform:uppercase">
+          <i class="fas fa-users" style="font-size:.62rem"></i> Engineer Task Report
+        </button>
+        <button id="tr-tab-btn-tech" onclick="toggleTrPanel('tech')"
+          style="height:30px;padding:0 16px;border-radius:7px;border:1.5px solid rgba(167,139,250,.35);background:rgba(124,58,237,.18);color:rgba(196,181,253,.8);font-size:.66rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .22s;letter-spacing:.4px;text-transform:uppercase">
+          <i class="fas fa-user-hard-hat" style="font-size:.62rem"></i> Technician Task Report
+        </button>
+      </div>
+
+      <!-- Panel: Engineer Task Report (hidden by default) -->
+      <div id="tr-panel-eng" style="display:none">
+        <div class="tbl-card">
+          <div class="tbl-top" style="background:linear-gradient(90deg,#0a1642,#15318c,#2f9bff)">
+            <span class="tbl-title" style="color:#fff;font-size:.88rem;font-weight:900;letter-spacing:.5px"><i class="fas fa-users"></i>&nbsp;Engineer Task Summary</span>
+            <span id="tr-period-badge" style="font-size:.72rem;font-family:'Montserrat',sans-serif;font-weight:900;color:#ffd54f;letter-spacing:.5px;white-space:nowrap">—</span>
+          </div>
+          <div class="tbl-wrap">
+            <table style="min-width:860px">
+              <thead>
+                <tr style="background:linear-gradient(90deg,#15318c,#1560ba)">
+                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);min-width:150px;text-align:center;font-family:'Montserrat',sans-serif;font-size:.78rem;letter-spacing:.3px">Engineer Name</th>
+                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Troubleshoot</th>
+                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Installation</th>
+                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">CR</th>
+                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Survey</th>
+                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Backend Support</th>
+                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Non Ticket</th>
+                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Total Work</th>
+                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Phone Support</th>
+                </tr>
+              </thead>
+              <tbody id="tr-summary-tbody"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="tbl-wrap">
-          <table style="min-width:860px">
-            <thead>
-              <tr style="background:linear-gradient(90deg,#15318c,#1560ba)">
-                <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);min-width:150px;text-align:center;font-family:'Montserrat',sans-serif;font-size:.78rem;letter-spacing:.3px">Engineer Name</th>
-                <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Troubleshoot</th>
-                <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Installation</th>
-                <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">CR</th>
-                <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Survey</th>
-                <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Backend Support</th>
-                <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Non Ticket</th>
-                <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Total Work</th>
-                <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Phone Support</th>
-              </tr>
-            </thead>
-            <tbody id="tr-summary-tbody"></tbody>
-          </table>
+      </div>
+
+      <!-- Panel: Technician Task Report (hidden by default) -->
+      <div id="tr-panel-tech" style="display:none">
+
+        <div class="tbl-card">
+          <div class="tbl-top" style="background:linear-gradient(90deg,#4c1d95,#7c3aed,#a855f7)">
+            <span class="tbl-title" style="color:#fff;font-size:.88rem;font-weight:900;letter-spacing:.5px"><i class="fas fa-hard-hat"></i>&nbsp;Technician Task Summary</span>
+            <span id="tr-tech-period-badge" style="font-size:.72rem;font-family:'Montserrat',sans-serif;font-weight:900;color:#ffd54f;letter-spacing:.5px;white-space:nowrap">—</span>
+          </div>
+          <div class="tbl-wrap">
+            <table style="min-width:700px">
+              <thead>
+                <tr style="background:linear-gradient(90deg,#5b21b6,#7c3aed)">
+                  <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);min-width:180px;text-align:center;font-family:'Montserrat',sans-serif;font-size:.78rem;letter-spacing:.3px;text-shadow:0 1px 3px rgba(0,0,0,.4)">Technician Name</th>
+                  <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem;text-shadow:0 1px 2px rgba(0,0,0,.35)">Troubleshoot</th>
+                  <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem;text-shadow:0 1px 2px rgba(0,0,0,.35)">Installation</th>
+                  <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem;text-shadow:0 1px 2px rgba(0,0,0,.35)">CR</th>
+                  <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem;text-shadow:0 1px 2px rgba(0,0,0,.35)">Survey</th>
+                  <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:900;text-shadow:0 1px 2px rgba(0,0,0,.35)">Total Work</th>
+                </tr>
+              </thead>
+              <tbody id="tr-tech-tbody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -1564,6 +1645,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   <th>Task Type</th>
   <th>Team</th>
   <th>Engineer</th>
+  <th>Technician</th>
   <th>Backend Support</th>
   <th>MAC</th>
   <th>WiFi</th>
@@ -1590,7 +1672,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       </div>
       <div class="tbl-card">
         <div class="tbl-wrap"><table>
-          <thead><tr><th>#</th><th>Date</th><th>Ticket ID</th><th>ONU MAC Address</th><th>Engineer</th><th>Team</th><th>Remarks</th></tr></thead>
+          <thead><tr><th>#</th><th>Date</th><th>Ticket ID</th><th>ONU MAC Address</th><th>Engineer</th><th>Technician</th><th>Team</th><th>Remarks</th></tr></thead>
           <tbody id="dv-tbody"></tbody>
         </table></div>
       </div>
@@ -1622,7 +1704,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   </div>
 </div>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>#</th><th>Date</th><th>Ticket ID</th><th>Category</th><th>Engineer</th><th>Team</th><th>WiFi</th><th>Remarks</th></tr></thead>
+          <thead><tr><th>#</th><th>Date</th><th>Ticket ID</th><th>Category</th><th>Engineer</th><th>Technician</th><th>Team</th><th>WiFi</th><th>Remarks</th></tr></thead>
           <tbody id="wf-tbody"></tbody>
         </table></div>
       </div>
@@ -1922,6 +2004,53 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
     </div>
   </div>
 </div>
+
+<!-- Technician Detail Floating Modal -->
+<div id="tech-modal-overlay" onclick="if(event.target===this)closeTechModal()" style="display:none;position:fixed;inset:0;background:rgba(10,22,66,.55);z-index:4000;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:6px">
+  <div style="background:#fff;border-radius:16px;width:96vw;max-width:900px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 28px 70px rgba(10,22,66,.38),0 0 0 1.5px rgba(124,58,237,.18);overflow:hidden">
+    <div style="background:linear-gradient(90deg,#4c1d95,#7c3aed,#a855f7);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center"><i class="fas fa-hard-hat" style="color:#fff;font-size:.9rem"></i></div>
+        <div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:.65rem;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:.8px;text-transform:uppercase">Technician Detail</div>
+          <div id="tech-detail-name" style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:900;color:#fff;letter-spacing:.2px"></div>
+        </div>
+      </div>
+      <button onclick="closeTechModal()" title="Close" style="width:30px;height:30px;border-radius:50%;border:none;background:rgba(255,255,255,.18);color:#fff;font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.32)'" onmouseout="this.style.background='rgba(255,255,255,.18)'"><i class="fas fa-times"></i></button>
+    </div>
+    <div style="padding:12px 20px;border-bottom:1.5px solid #ede9fe;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#faf8ff;flex-shrink:0">
+      <span style="font-family:'Montserrat',sans-serif;font-size:.66rem;font-weight:800;color:#6d28d9"><i class="fas fa-filter"></i> FILTER</span>
+      <select id="tmod-month" onchange="onTechModalMonthChange()" style="font-size:.76rem;padding:5px 10px;border:1.5px solid #ddd6fe;border-radius:7px;height:32px;background:#fff;outline:none;font-family:'Montserrat',sans-serif;font-weight:700;color:#4c1d95">
+        <option value="">All Months</option>
+        <option value="01">January</option><option value="02">February</option>
+        <option value="03">March</option><option value="04">April</option>
+        <option value="05">May</option><option value="06">June</option>
+        <option value="07">July</option><option value="08">August</option>
+        <option value="09">September</option><option value="10">October</option>
+        <option value="11">November</option><option value="12">December</option>
+      </select>
+      <input type="date" id="tmod-df" onchange="renderTechDetail()" style="font-size:.76rem;height:32px;padding:5px 10px;border:1.5px solid #ddd6fe;border-radius:7px;background:#fff;outline:none;font-weight:700;font-family:'Montserrat',sans-serif;color:#4c1d95" title="From Date">
+      <span style="font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;color:#a78bfa">→</span>
+      <input type="date" id="tmod-dt" onchange="renderTechDetail()" style="font-size:.76rem;height:32px;padding:5px 10px;border:1.5px solid #ddd6fe;border-radius:7px;background:#fff;outline:none;font-weight:700;font-family:'Montserrat',sans-serif;color:#4c1d95" title="To Date">
+      <button onclick="clearTechModalFilters()" style="padding:0 14px;height:32px;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;border-radius:8px;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px"><i class="fas fa-times"></i> Clear</button>
+      <span id="tmod-cnt" style="margin-left:auto;font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:900;color:#7c3aed;background:#f3e8ff;border:1.5px solid #ddd6fe;padding:4px 14px;border-radius:20px">0 tickets</span>
+    </div>
+    <div style="overflow:auto;flex:1">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:linear-gradient(90deg,#5b21b6,#7c3aed)">
+          <th style="color:#ffd54f;text-align:center;font-family:'Montserrat',sans-serif;font-size:.68rem;padding:8px 6px;border-bottom:2px solid rgba(255,255,255,.25)">#</th>
+          <th style="color:#ffd54f;text-align:center;font-family:'Montserrat',sans-serif;font-size:.68rem;padding:8px 6px;border-bottom:2px solid rgba(255,255,255,.25)">Date</th>
+          <th style="color:#ffd54f;text-align:center;font-family:'Montserrat',sans-serif;font-size:.68rem;padding:8px 6px;border-bottom:2px solid rgba(255,255,255,.25)">Ticket ID</th>
+          <th style="color:#ffd54f;text-align:center;font-family:'Montserrat',sans-serif;font-size:.68rem;padding:8px 6px;border-bottom:2px solid rgba(255,255,255,.25)">Category</th>
+          <th style="color:#ffd54f;text-align:center;font-family:'Montserrat',sans-serif;font-size:.68rem;padding:8px 6px;border-bottom:2px solid rgba(255,255,255,.25)">Engineer</th>
+          <th style="color:#ffd54f;text-align:center;font-family:'Montserrat',sans-serif;font-size:.68rem;padding:8px 6px;border-bottom:2px solid rgba(255,255,255,.25)">Remarks</th>
+        </tr></thead>
+        <tbody id="tmod-tbody"><tr><td colspan="6"><div class="empty-box"><span class="ei">⏳</span><p>Loading…</p></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
     <div class="page" id="page-users">
       <div class="form-card" style="padding:14px 18px;margin-bottom:0;flex-shrink:0">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
@@ -2996,6 +3125,7 @@ async function submitTicket(){
       id:Date.now()+Math.random(),
       date:d,ticket:ti,cat,tt,tm,eng,
       bnoc:bnocVal,
+      technician:document.getElementById('f-technician')?document.getElementById('f-technician').value:'',
       mac:document.getElementById('f-mac').value.trim(),
       wifi:document.getElementById('f-wifi').value,
       remarks:document.getElementById('f-remarks').value.trim(),
@@ -3154,7 +3284,7 @@ function buildRows(arr,tbodyId,withDel,isMyTask,startIdx=0){
   const tb=document.getElementById(tbodyId);
   const isAt = tbodyId === 'at-tbody';
   if(!arr.length){
-    tb.innerHTML=`<tr><td colspan="${selMode && isAt ? 13 : 12}"><div class="empty-box"><span class="ei">📂</span><p>No tasks found.</p></div></td></tr>`;
+    tb.innerHTML=`<tr><td colspan="${selMode && isAt ? 14 : 13}"><div class="empty-box"><span class="ei">📂</span><p>No tasks found.</p></div></td></tr>`;
     return;
   }
   tb.innerHTML=arr.map((t,i)=>{
@@ -3166,6 +3296,7 @@ function buildRows(arr,tbodyId,withDel,isMyTask,startIdx=0){
     const chkCell=(selMode && isAt)
       ?`<td style="text-align:center;padding:4px 2px"><input type="checkbox" class="at-row-chk" data-key="${t.firebaseKey||t.id}" ${selectedKeys.has(t.firebaseKey||t.id)?'checked':''} onchange="onRowCheck(this)" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer"></td>`
       :'';
+    const techName=t.technician||'';
     return `<tr>
     ${chkCell}
     <td>${startIdx+i+1}</td>
@@ -3175,6 +3306,7 @@ function buildRows(arr,tbodyId,withDel,isMyTask,startIdx=0){
     <td>${t.tt}</td>
     <td>${t.tm}</td>
     <td style="color:var(--blue);font-weight:700">${t.eng}</td>
+    <td style="font-size:.75rem;color:#7c3aed;font-weight:600;white-space:nowrap">${techName?`<i class="fas fa-hard-hat" style="font-size:.6rem;margin-right:3px;color:#a855f7"></i>${techName}`:'<span style="color:#b0bec5">—</span>'}</td>
     <td id="bnoc-cell-${t.firebaseKey||t.id}">
       ${renderBnocCell(t)}
     </td>
@@ -3289,6 +3421,7 @@ function mtGoPage(p){
 }
 
 const ENGINEERS = ['Md. Mostafizur Rahman','Nabiul Ahsan Bakshi','Md. Asad','Taibul Hoque Zehad','Subroto Saha','Abu Hasnat','Muhammed Rabiul Islam','Md. Azizul Haque Sojol','Ainul Hoque Rubel','Md Juel Hossain','Mrithunjoy Das','Mohammad Badrul Islam','Abir Roy','Syed Ash Shams'];
+const TECHNICIANS = ['Sohel Rana','Rafiqul Islam','Mahidur Rahman','Imam Hossain','Rabbi Ahmed','Shafayatullah','Mmahmudul Hasan','Masud Rana','Shahidul Islam','Mijanur Rahman','Al Mamun','Md. Emon','Amir Hossain','Hanifur Rahman','Didarul Islam','Abul Hasan','Md. Foysal','Md. Sumon','Md. Nayon','Zakir Hossen','Rahmat Miah','Sayeem Khan','Al-Amin (Robin)','Bijoy Nokrek','Abir Hasan','Mohidul Islam','Rayhan Howlader','Bacchu Gazi','Md Imram','Md. Akash','Alam Shikder','Md. Raju','Ratan Mia','Abdul Mannan','Asad Ullah','Ashikur Rahman Asif'];
 
 // Names that should never show up in Engineer Report / Task Dashboard / charts,
 // even if a matching user account or uploaded MIS Excel row references them.
@@ -3518,6 +3651,169 @@ function renderReport(){
     <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem;background:rgba(22,163,74,.15)">${totalTW}</td>
     <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalPS}</td>
   </tr>`;
+}
+
+// ===== TECHNICIAN TASK REPORT =====
+function _initTechNameSelect(){
+  const sel=document.getElementById('tr-tech-name');
+  if(!sel||sel.options.length>1) return; // already populated
+  TECHNICIANS.forEach(n=>{
+    const o=document.createElement('option');
+    o.value=n; o.textContent=n; o.style.background='#4c1d95'; o.style.color='#fff';
+    sel.appendChild(o);
+  });
+}
+function clearTechFilters(){
+  const df=document.getElementById('tr-tech-df');
+  const dt=document.getElementById('tr-tech-dt');
+  const nm=document.getElementById('tr-tech-name');
+  if(df) df.value='';
+  if(dt) dt.value='';
+  if(nm) nm.value='';
+  renderTechnicianReport();
+}
+function renderTechnicianReport(){
+  _initTechNameSelect();
+  const df=(document.getElementById('tr-tech-df')||{}).value||'';
+  const dt=(document.getElementById('tr-tech-dt')||{}).value||'';
+  const filterName=(document.getElementById('tr-tech-name')||{}).value||'';
+  const ranged = tickets.filter(t=>(!df||t.date>=df)&&(!dt||t.date<=dt)&&!(t.remarks&&t.remarks.includes('[BNOC/Backend Support]')));
+
+  // Update period badge
+  const badge=document.getElementById('tr-tech-period-badge');
+  if(badge){
+    let parts=[];
+    if(df&&dt) parts.push(`${fmtDateDisp(df)} → ${fmtDateDisp(dt)}`);
+    else if(df) parts.push(`From ${fmtDateDisp(df)}`);
+    else if(dt) parts.push(`Until ${fmtDateDisp(dt)}`);
+    if(filterName) parts.push(`· ${filterName}`);
+    badge.textContent=parts.length?parts.join(' '):'All Time';
+  }
+
+  const sb=document.getElementById('tr-tech-tbody');
+  if(!sb) return;
+
+  let totalTS=0,totalIN=0,totalCR=0,totalSV=0,totalTW=0;
+
+  const cell=(v,pal)=>`<td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 4px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.7rem;font-weight:800;background:${v>0?pal.bg:'#f1f5f9'};color:${v>0?pal.col:'#b0bec5'};border:1.5px solid ${v>0?pal.bdr:'#e2e8f0'};">${v}</span></td>`;
+  const palettes={ts:{bg:'linear-gradient(135deg,#ede9fe,#ddd6fe)',col:'#6d28d9',bdr:'#c4b5fd'},ins:{bg:'linear-gradient(135deg,#dbeafe,#bfdbfe)',col:'#2452e8',bdr:'#93c5fd'},cr:{bg:'linear-gradient(135deg,#fce7f3,#fbcfe8)',col:'#be185d',bdr:'#f9a8d4'},sv:{bg:'linear-gradient(135deg,#d1fae5,#a7f3d0)',col:'#065f46',bdr:'#6ee7b7'}};
+
+  const listToRender = filterName ? [filterName] : TECHNICIANS;
+
+  sb.innerHTML = listToRender.map(tech=>{
+    const et = ranged.filter(t=>(t.technician||'')===tech);
+    const ts=et.filter(t=>t.cat==='Troubleshoot').length;
+    const ins=et.filter(t=>t.cat==='Installation').length;
+    const cr=et.filter(t=>t.cat==='CR').length;
+    const sv=et.filter(t=>t.cat==='Survey').length;
+    const tw=ts+ins+cr+sv;
+    totalTS+=ts;totalIN+=ins;totalCR+=cr;totalSV+=sv;totalTW+=tw;
+    return `<tr style="border-bottom:1px solid #ede9fe;transition:background .15s;cursor:pointer" onclick="openTechDetail('${tech.replace(/'/g,"\\'")}')" onmouseover="this.style.background='rgba(124,58,237,.08)'" onmouseout="this.style.background=''" title="Click to view assigned tickets">
+      <td style="font-weight:700;font-family:'Outfit',sans-serif;color:var(--navy);font-size:.8rem;padding:3px 10px;white-space:nowrap"><i class="fas fa-hard-hat" style="font-size:.65rem;color:#7c3aed;margin-right:5px"></i>${tech}</td>
+      ${cell(ts,palettes.ts)}${cell(ins,palettes.ins)}${cell(cr,palettes.cr)}${cell(sv,palettes.sv)}
+      <td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 4px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:.74rem;font-weight:900;background:${tw>0?'linear-gradient(135deg,#f3e8ff,#e9d5ff)':'#f1f5f9'};color:${tw>0?'#6d28d9':'#90a4ae'};border:2px solid ${tw>0?'#c084fc':'#e2e8f0'};">${tw}</span></td>
+    </tr>`;
+  }).join('');
+
+  sb.innerHTML+=`<tr style="background:linear-gradient(90deg,#f5f3ff,#ede9fe);border-top:2px solid #7c3aed">
+    <td style="font-weight:900;font-family:'Outfit',sans-serif;color:#4c1d95;font-size:.76rem;letter-spacing:.4px;padding:3px 10px;">TOTAL</td>
+    <td style="text-align:center;font-weight:900;color:#6d28d9;font-family:'Outfit',sans-serif;font-size:1rem">${totalTS}</td>
+    <td style="text-align:center;font-weight:900;color:#6d28d9;font-family:'Outfit',sans-serif;font-size:1rem">${totalIN}</td>
+    <td style="text-align:center;font-weight:900;color:#6d28d9;font-family:'Outfit',sans-serif;font-size:1rem">${totalCR}</td>
+    <td style="text-align:center;font-weight:900;color:#6d28d9;font-family:'Outfit',sans-serif;font-size:1rem">${totalSV}</td>
+    <td style="text-align:center;font-weight:900;color:#6d28d9;font-family:'Outfit',sans-serif;font-size:1rem;background:rgba(124,58,237,.12)">${totalTW}</td>
+  </tr>`;
+}
+
+// ===== TASK REPORT TAB TOGGLE =====
+const _trTabColors = {
+  eng:  { offBg:'rgba(37,99,235,.18)',  offBorder:'rgba(99,179,255,.35)',   offColor:'rgba(147,197,253,.85)', offShadow:'none',
+          onBg:'linear-gradient(135deg,#1d4ed8,#3b82f6)', onBorder:'#60a5fa', onColor:'#fff', onShadow:'0 4px 16px rgba(37,99,235,.5),0 0 0 2px rgba(96,165,250,.3)' },
+  tech: { offBg:'rgba(124,58,237,.18)', offBorder:'rgba(167,139,250,.35)',  offColor:'rgba(196,181,253,.8)',  offShadow:'none',
+          onBg:'linear-gradient(135deg,#7c3aed,#a855f7)', onBorder:'#c084fc', onColor:'#fff', onShadow:'0 4px 16px rgba(124,58,237,.5),0 0 0 2px rgba(192,132,252,.3)' }
+};
+function toggleTrPanel(type){
+  const panel=document.getElementById('tr-panel-'+type);
+  const btn=document.getElementById('tr-tab-btn-'+type);
+  if(!panel||!btn) return;
+  const c=_trTabColors[type]||_trTabColors.eng;
+  const nowVisible=panel.style.display!=='none';
+  if(nowVisible){
+    panel.style.display='none';
+    btn.style.background=c.offBg; btn.style.borderColor=c.offBorder;
+    btn.style.color=c.offColor;   btn.style.boxShadow=c.offShadow;
+  } else {
+    panel.style.display='block';
+    btn.style.background=c.onBg; btn.style.borderColor=c.onBorder;
+    btn.style.color=c.onColor;   btn.style.boxShadow=c.onShadow;
+    if(type==='eng') renderReport();
+    else if(type==='tech') renderTechnicianReport();
+  }
+}
+
+// ===== TECHNICIAN DETAIL MODAL (click technician name -> assigned ticket list) =====
+let techModalName = '';
+
+function openTechDetail(techName){
+  techModalName = techName;
+  document.getElementById('tech-detail-name').textContent = techName;
+  document.getElementById('tmod-month').value='';
+  document.getElementById('tmod-df').value='';
+  document.getElementById('tmod-dt').value='';
+  renderTechDetail();
+  document.getElementById('tech-modal-overlay').style.display='flex';
+  document.body.style.overflow='hidden';
+}
+
+function closeTechModal(){
+  document.getElementById('tech-modal-overlay').style.display='none';
+  document.body.style.overflow='';
+  techModalName='';
+}
+
+function onTechModalMonthChange(){
+  const mi=document.getElementById('tmod-month').value;
+  if(mi){
+    const n=new Date(); const y=n.getFullYear();
+    const last=new Date(y,parseInt(mi),0).getDate();
+    document.getElementById('tmod-df').value=`${y}-${mi}-01`;
+    document.getElementById('tmod-dt').value=`${y}-${mi}-${String(last).padStart(2,'0')}`;
+  } else {
+    document.getElementById('tmod-df').value='';
+    document.getElementById('tmod-dt').value='';
+  }
+  renderTechDetail();
+}
+
+function clearTechModalFilters(){
+  document.getElementById('tmod-month').value='';
+  document.getElementById('tmod-df').value='';
+  document.getElementById('tmod-dt').value='';
+  renderTechDetail();
+}
+
+function renderTechDetail(){
+  if(!techModalName) return;
+  const df=document.getElementById('tmod-df').value;
+  const dt=document.getElementById('tmod-dt').value;
+  let arr = tickets.filter(t=>(t.technician||'')===techModalName && !(t.remarks && t.remarks.includes('[BNOC/Backend Support]')));
+  if(df) arr = arr.filter(t=>t.date>=df);
+  if(dt) arr = arr.filter(t=>t.date<=dt);
+  arr.sort((a,b)=>b.date.localeCompare(a.date)||(b.id||0)-(a.id||0));
+  document.getElementById('tmod-cnt').textContent = arr.length+' tickets';
+  const tb=document.getElementById('tmod-tbody');
+  if(!arr.length){
+    tb.innerHTML = `<tr><td colspan="6"><div class="empty-box"><span class="ei">📭</span><p>No tickets found for this technician in this range.</p></div></td></tr>`;
+    return;
+  }
+  tb.innerHTML = arr.map((t,i)=>`<tr style="border-bottom:1px solid #ede9fe">
+    <td style="text-align:center;padding:6px 4px;font-family:'Outfit',sans-serif;font-size:.76rem;color:var(--muted)">${i+1}</td>
+    <td style="text-align:center;padding:6px 4px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.76rem;color:var(--navy)">${fmtDateDisp(t.date)}</td>
+    <td style="text-align:center;padding:6px 4px;font-family:'Outfit',sans-serif;font-weight:700;font-size:.78rem;white-space:nowrap">${t.ticket}</td>
+    <td style="text-align:center;padding:6px 4px"><span class="chip chip-cat">${t.cat}</span></td>
+    <td style="text-align:center;padding:6px 4px;font-family:'Outfit',sans-serif;font-weight:700;font-size:.76rem;color:var(--blue)">${t.eng}</td>
+    <td style="text-align:left;padding:6px 8px;font-family:'Outfit',sans-serif;font-size:.74rem;color:var(--text);max-width:220px;white-space:normal">${t.remarks||'—'}</td>
+  </tr>`).join('');
 }
 
 function clearAtDates(){
@@ -4843,7 +5139,7 @@ function renderAll(){
     (!cat||t.cat===cat)&&
     (!df||t.date>=df)&&
     (!dt||t.date<=dt)&&
-    (!s||(t.ticket.toLowerCase().includes(s)||t.eng.toLowerCase().includes(s)||(t.remarks||'').toLowerCase().includes(s)))&&
+    (!s||(t.ticket.toLowerCase().includes(s)||t.eng.toLowerCase().includes(s)||(t.remarks||'').toLowerCase().includes(s)||(t.technician||'').toLowerCase().includes(s)))&&
     !(t.remarks && t.remarks.includes('[BNOC/Backend Support]'))
   );
   arr.sort((a,b)=>b.date.localeCompare(a.date)||(b.id||0)-(a.id||0));
@@ -4975,7 +5271,7 @@ if(dvTotal) dvTotal.textContent=arr.length;
   const pageArr=arr.slice(start,start+DV_PER_PAGE);
   const tb=document.getElementById('dv-tbody');
   if(!arr.length){
-    tb.innerHTML=`<tr><td colspan="7"><div class="empty-box"><span class="ei">📡</span><p>No devices found.</p></div></td></tr>`;
+    tb.innerHTML=`<tr><td colspan="8"><div class="empty-box"><span class="ei">📡</span><p>No devices found.</p></div></td></tr>`;
     renderDvPagination(0,1);
     return;
   }
@@ -4985,6 +5281,7 @@ if(dvTotal) dvTotal.textContent=arr.length;
     <td>${t.ticket}</td>
     <td style="font-family:'JetBrains Mono',monospace">${t.mac}</td>
     <td>${t.eng}</td>
+    <td style="font-size:.75rem;color:#7c3aed;font-weight:600;white-space:nowrap">${t.technician?`<i class="fas fa-hard-hat" style="font-size:.6rem;margin-right:3px;color:#a855f7"></i>${t.technician}`:'<span style="color:#b0bec5">—</span>'}</td>
     <td>${t.tm}</td>
     <td>${renderRemarksCell(t)}</td>
   </tr>`).join('');
@@ -5046,7 +5343,7 @@ if(wfTotal) wfTotal.textContent = arr.length;
   const pageArr=arr.slice(start,start+WF_PER_PAGE);
   const tb=document.getElementById('wf-tbody');
   if(!arr.length){
-    tb.innerHTML=`<tr><td colspan="8"><div class="empty-box"><span class="ei">📶</span><p>No WiFi scored tickets.</p></div></td></tr>`;
+    tb.innerHTML=`<tr><td colspan="9"><div class="empty-box"><span class="ei">📶</span><p>No WiFi scored tickets.</p></div></td></tr>`;
     renderWfPagination(0,1);
     return;
   }
@@ -5056,6 +5353,7 @@ if(wfTotal) wfTotal.textContent = arr.length;
     <td>${t.ticket}</td>
     <td><span class="chip chip-cat">${t.cat}</span></td>
     <td>${t.eng}</td>
+    <td style="font-size:.75rem;color:#7c3aed;font-weight:600;white-space:nowrap">${t.technician?`<i class="fas fa-hard-hat" style="font-size:.6rem;margin-right:3px;color:#a855f7"></i>${t.technician}`:'<span style="color:#b0bec5">—</span>'}</td>
     <td>${t.tm}</td>
     <td><span class="chip chip-yes"><i class="fas fa-circle" style="font-size:.4rem;vertical-align:middle"></i> YES</span></td>
     <td>${t.remarks||'—'}</td>

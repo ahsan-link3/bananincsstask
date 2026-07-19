@@ -1531,6 +1531,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <div style="font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;color:var(--blue);margin-bottom:8px"><i class="fas fa-info-circle"></i> Instructions:</div>
       <ol style="font-family:'Outfit',sans-serif;font-size:.8rem;color:var(--text);padding-left:18px;line-height:2">
         <li>Select a <b>.xlsx / .xls / .csv</b> file below</li>
+        <li><b style="color:#dc2626">Engineer (non-admin) হলে:</b> ফাইলের সব row-এর ID অবশ্যই আপনার নিজের Link3 ID এর সাথে মিলতে হবে, নাহলে আপলোড ব্যর্থ হবে। শুধু Admin অন্য কারো ডেটা আপলোড করতে পারবে।</li>
       </ol>
     </div>
 
@@ -1543,6 +1544,26 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
         <i class="fas fa-times"></i> Clear
       </button>
       <span id="mis-file-status" style="font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:700;color:var(--muted)"></span>
+    </div>
+
+    <!-- ===== PASTE DATA DIRECTLY ===== -->
+    <div style="margin-top:18px;border-top:1.5px dashed #cde3fb;padding-top:16px">
+      <div style="font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;color:var(--blue);margin-bottom:8px">
+        <i class="fas fa-paste"></i> Or Paste Data Directly (MIS থেকে header row সহ copy করে paste করুন)
+      </div>
+      <div style="background:#f5f9ff;border:1.5px dashed #8cc7f7;border-radius:10px;padding:10px 14px;margin-bottom:10px">
+        <span style="font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--text)"><i class="fas fa-info-circle" style="color:var(--accent)"></i> প্রথম row অবশ্যই header হতে হবে (Entry Date, ID, Ticket ID, Support Type, Task Status ইত্যাদি কলাম নাম)। Excel থেকে header সহ পুরো data select করে Ctrl+C, তারপর নিচের বক্সে Ctrl+V করুন।</span>
+      </div>
+      <textarea id="mis-paste-data" rows="10" placeholder="এখানে Excel থেকে header row + data rows paste করুন..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text);background:#f8faff;resize:vertical;outline:none;line-height:1.6;margin-bottom:10px"></textarea>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <button id="btn-mis-paste-process" onclick="handleMisPaste()" style="background:linear-gradient(135deg,#0a1642,#2452e8,#2f9bff);color:#fff;border:none;padding:10px 24px;border-radius:9px;font-size:.78rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:'Montserrat',sans-serif;box-shadow:0 5px 14px rgba(21,49,140,.28);transition:all .22s" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">
+          <i class="fas fa-upload"></i> Process Pasted Data
+        </button>
+        <button onclick="document.getElementById('mis-paste-data').value=''" style="background:#fff;color:#6b7280;border:1.5px solid #d1d5db;padding:10px 18px;border-radius:9px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif">
+          <i class="fas fa-times"></i> Clear Box
+        </button>
+        <span id="mis-paste-status" style="font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:700;color:var(--muted)"></span>
+      </div>
     </div>
   </div>
 </div>
@@ -3174,6 +3195,39 @@ function misFindCol(headerMap, candidates){
   return null;
 }
 
+// ===== OWNERSHIP CHECK: non-admin users may only upload/paste rows that carry THEIR OWN Link3 ID =====
+// Returns {ok:true} if allowed to proceed, or {ok:false, msg:'...'} if blocked.
+function misCheckOwnership(json2, idKey){
+  // Admin can upload data for any/all engineers — no restriction.
+  if(currentUser && currentUser.role === 'admin') return {ok:true};
+
+  if(!idKey){
+    return {ok:false, msg:'❌ ID কলাম পাওয়া যায়নি! নিজের ডেটা আপলোড/পেস্ট করতে হলে ফাইলে/পেস্ট করা ডেটায় আপনার Link3 ID কলাম থাকতে হবে।'};
+  }
+  const myId = currentUser ? normLink3Id(currentUser.link3Id) : '';
+  if(!myId){
+    return {ok:false, msg:'❌ আপনার একাউন্টে কোনো Link3 ID সেট করা নেই! Admin-কে বলে আপনার Link3 ID যুক্ত করিয়ে নিন, তারপর ডেটা আপলোড করুন।'};
+  }
+
+  const mismatched = new Set();
+  let anyIdFound = false;
+  json2.forEach(row=>{
+    const rawId = String(row[idKey]??'').trim();
+    if(!rawId) return;
+    anyIdFound = true;
+    const norm = normLink3Id(rawId);
+    if(norm !== myId) mismatched.add(rawId);
+  });
+
+  if(!anyIdFound){
+    return {ok:false, msg:'❌ ডেটার কোনো row-এ ID পাওয়া যায়নি! আপনার নিজের Link3 ID সহ ডেটা আপলোড করুন।'};
+  }
+  if(mismatched.size > 0){
+    return {ok:false, msg:`❌ আপলোড ব্যর্থ! এই ডেটায় ${mismatched.size}টি ভিন্ন Link3 ID পাওয়া গেছে (${[...mismatched].slice(0,5).join(', ')}${mismatched.size>5?'...':''}) যা আপনার নিজের ID (${currentUser.link3Id||''}) এর সাথে মিলছে না। আপনি শুধু নিজের ডেটা আপলোড করতে পারবেন।`};
+  }
+  return {ok:true};
+}
+
 function handleMisFile(input){
   const file = input.files && input.files[0];
   if(!file) return;
@@ -3246,6 +3300,14 @@ function handleMisFile(input){
       if(missing.length){
         const foundCols = Object.values(headerMap).join(', ');
         toast('❌ Required columns not found: ' + missing.join(', ') + '\nColumns present in file: ' + foundCols.slice(0,120));
+        document.getElementById('mis-upload-label').textContent='Upload Excel File';
+        return;
+      }
+
+      // ===== NON-ADMIN OWNERSHIP CHECK =====
+      const ownCheck = misCheckOwnership(json2, idKey);
+      if(!ownCheck.ok){
+        toast(ownCheck.msg);
         document.getElementById('mis-upload-label').textContent='Upload Excel File';
         return;
       }
@@ -3329,6 +3391,123 @@ function handleMisFile(input){
   };
   reader.readAsArrayBuffer(file);
   input.value = '';
+}
+
+// ===== MIS UPDATE — PASTE DATA DIRECTLY (no file needed) =====
+async function handleMisPaste(){
+  const raw = document.getElementById('mis-paste-data').value;
+  const statusEl = document.getElementById('mis-paste-status');
+  if(!raw || !raw.trim()){ toast('⚠ কোনো data paste করা হয়নি!'); return; }
+
+  const lines = raw.split(/\r?\n/).filter(l=>l.trim().length>0);
+  if(lines.length < 2){ toast('⚠ Header row + কমপক্ষে একটা data row লাগবে!'); return; }
+
+  // Header row + data rows কে object-array এ রূপান্তর (XLSX sheet_to_json এর মতোই আচরণ)
+  const headerCells = lines[0].split('\t').map(h=>String(h||'').trim());
+  let json2 = lines.slice(1).map(line=>{
+    const cells = line.split('\t');
+    const obj = {};
+    headerCells.forEach((h,i)=>{ obj[h] = cells[i] !== undefined ? cells[i] : ''; });
+    return obj;
+  }).filter(r=>Object.values(r).some(v=>String(v||'').trim()));
+
+  if(!json2.length){ toast('⚠ কোনো valid data row পাওয়া যায়নি!'); return; }
+
+  const headerMap = {};
+  Object.keys(json2[0]).forEach(k=>{ headerMap[misNormHeader(k)] = k; });
+
+  const entryDateKey = misFindCol(headerMap, ['entrydate','date','entrydatetime','entrydt','dateofentry','ticketdate','datetime','opendate','createddate','createdate']);
+  const ticketIdKey  = misFindCol(headerMap, ['ticketid','ticket','ticketno','ticketnumber','tktid','tktno','incidentid','incidentno','callid','callno','issueid','id2','tid']);
+  const supportKey   = misFindCol(headerMap, ['supporttype','support','type','category','servicetype','calltype','tasktype','worktype','jobtype','supportcategory','callcategory']);
+  const statusKey    = misFindCol(headerMap, ['taskstatus','status','ticketstatus','callstatus','state','resolution','currentstatus','workstatus','jobstatus']);
+  const idKey        = misFindCol(headerMap, ['entryuser','entry user','entryuserid','entryusername','entryby','enteredby','createdby','openedby','user','username','usercode','useridcode','empcode','staffcode','engcode','id','employeeid','empid','engineerid','staffid','userid','l3tid','empno','employeeno','staffno','engineerno','engid','eid']);
+
+  const missing = [];
+  if(!entryDateKey) missing.push('Entry Date');
+  if(!ticketIdKey)  missing.push('Ticket ID');
+  if(!supportKey)   missing.push('Support Type');
+  if(!statusKey)    missing.push('Task Status');
+
+  if(missing.length){
+    toast('❌ Required columns পাওয়া যায়নি: ' + missing.join(', ') + '। পাওয়া গেছে কলামগুলো: ' + headerCells.join(', ').slice(0,120));
+    return;
+  }
+
+  // ===== NON-ADMIN OWNERSHIP CHECK =====
+  const ownCheck = misCheckOwnership(json2, idKey);
+  if(!ownCheck.ok){
+    toast(ownCheck.msg);
+    return;
+  }
+
+  const btn = document.getElementById('btn-mis-paste-process');
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...'; }
+  if(statusEl) statusEl.textContent = '';
+
+  const uploaderName = currentUser ? currentUser.name : 'Unknown';
+  const uploaderUsername = currentUser ? currentUser.username : '';
+  detectMisDateFmt(json2, entryDateKey);
+
+  let unknownIdSet = new Set();
+  const newRows = json2.map(row=>{
+    const rowId = idKey ? String(row[idKey]??'').trim() : '';
+    const engName = misLookupNameById(rowId);
+    if(rowId && !engName) unknownIdSet.add(rowId);
+    return {
+      id: rowId,
+      engineerName: engName || (rowId ? rowId : 'Unknown'),
+      entryDate: misParseDateISO(row[entryDateKey]) || String(row[entryDateKey]??'').trim(),
+      ticketId: String(row[ticketIdKey]??'').trim(),
+      supportType: normSupportType(String(row[supportKey]??'').trim()) || '—',
+      taskStatus: String(row[statusKey]??'').trim() || '—',
+      uploadedBy: uploaderName,
+      uploadedByUsername: uploaderUsername,
+      uploadedAt: new Date().toISOString()
+    };
+  });
+
+  // Update vs Add — একই ID+TicketID key logic (Excel upload এর মতোই, ফলে re-paste করলে duplicate হবে না)
+  const misKeyOf = r => `${String(r.id||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}__${String(r.ticketId||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}`;
+  const existingByKey = {};
+  misRows.forEach(r=>{ if(r.ticketId) existingByKey[misKeyOf(r)] = r.firebaseKey; });
+
+  const toUpdate = []; // {key, row}
+  const toAdd = [];    // row
+  newRows.forEach(row=>{
+    const k = misKeyOf(row);
+    if(row.ticketId && existingByKey[k]){
+      toUpdate.push({ key: existingByKey[k], row });
+    } else {
+      toAdd.push(row);
+    }
+  });
+
+  misActiveSupport=''; misActiveStatus=''; misPage=1;
+
+  let updateFail=0;
+  for(const {key,row} of toUpdate){
+    const ok = await window._fbSetMisRow(key, row);
+    if(!ok) updateFail++;
+  }
+  let addOk = true;
+  if(toAdd.length){
+    addOk = await window._fbPushMisRows(toAdd);
+  }
+
+  if(btn){ btn.disabled = false; btn.innerHTML = '<i class="fas fa-upload"></i> Process Pasted Data'; }
+
+  if(!updateFail && addOk){
+    document.getElementById('mis-paste-data').value = '';
+    if(statusEl) statusEl.textContent = `${toAdd.length} new, ${toUpdate.length} updated (by ${uploaderName})`;
+    if(unknownIdSet.size){
+      toast(`⚠ ${newRows.length} rows processed (${toAdd.length} new, ${toUpdate.length} updated), কিন্তু ${unknownIdSet.size}টা ID মিলেনি: ${[...unknownIdSet].slice(0,5).join(', ')}${unknownIdSet.size>5?'...':''}`);
+    } else {
+      toast(`✅ ${toAdd.length} নতুন row যোগ হয়েছে, ${toUpdate.length} row update হয়েছে (pasted data) — by ${uploaderName}!`);
+    }
+  } else {
+    if(statusEl) statusEl.textContent = '';
+    toast('❌ Pasted data Firebase-এ save করা যায়নি!');
+  }
 }
 
 async function clearMisData(){

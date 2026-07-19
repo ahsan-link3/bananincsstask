@@ -120,7 +120,7 @@ onValue(ticketsRef, (snapshot) => {
         if(pg==='alltask') renderAll();
         if(pg==='devices') renderDevices();
         if(pg==='wifi') renderWifi();
-        if(pg==='taskreport') renderReport();
+        if(pg==='taskreport'){renderReport();renderTechnicianReport();}
         if(pg==='workdash') renderWorkDash();
       }
     });
@@ -959,6 +959,10 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   .page-ttl{font-size:.82rem}
   .tbl-card:hover{transform:none}
 }
+@keyframes panelGlowOrange{
+  0%,100%{ box-shadow:0 0 4px 0 rgba(47,155,255,.35), 0 0 0 0 rgba(47,155,255,.15); }
+  50%{ box-shadow:0 0 10px 2px rgba(47,155,255,.65), 0 0 16px 4px rgba(47,155,255,.25); }
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1045,7 +1049,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   </div>
   <nav class="sb-nav">
     <div class="nav-sec"></div>
-    <div class="nav-item nav-parent" id="nav-userpanel" style="background:linear-gradient(135deg,rgba(168,85,247,.42),rgba(126,34,206,.36));border-radius:9px;margin-bottom:2px" onclick="toggleNavGroup('userpanel',this)">
+    <div class="nav-item nav-parent" id="nav-userpanel" style="background:linear-gradient(135deg,rgba(168,85,247,.42),rgba(126,34,206,.36));border-radius:9px;margin-bottom:2px;border:2px solid transparent;animation:panelGlowOrange 2.2s ease-in-out infinite" onclick="toggleNavGroup('userpanel',this)">
       <div class="nav-icon-wrap"><i class="fas fa-user" style="color:#4fc3f7"></i></div><span class="nav-label">Engineer Panel</span><i class="fas fa-chevron-down nav-chevron"></i>
     </div>
     <div class="nav-submenu" id="submenu-userpanel">
@@ -1058,7 +1062,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <div class="nav-item eng-visible" id="nav-wifi" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('wifi',this)"><div class="nav-icon-wrap"><i class="fas fa-wifi" style="color:#22d3ee"></i></div><span class="nav-label">WiFi Scoring</span></div>
     </div>
 
-    <div class="nav-item nav-parent" id="nav-adminpanel" style="background:linear-gradient(135deg,rgba(34,197,94,.42),rgba(21,128,61,.36));border-radius:9px;margin-bottom:2px" onclick="toggleNavGroup('adminpanel',this)">
+    <div class="nav-item nav-parent" id="nav-adminpanel" style="background:linear-gradient(135deg,rgba(34,197,94,.42),rgba(21,128,61,.36));border-radius:9px;margin-bottom:2px;border:2px solid transparent;animation:panelGlowOrange 2.2s ease-in-out infinite" onclick="toggleNavGroup('adminpanel',this)">
       <div class="nav-icon-wrap"><i class="fas fa-user-shield" style="color:#c084fc"></i></div><span class="nav-label">Admin Panel</span><i class="fas fa-chevron-down nav-chevron"></i>
     </div>
     <div class="nav-submenu" id="submenu-adminpanel">
@@ -1306,7 +1310,12 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
     <div class="page active" id="page-dashboard">
       <div class="form-card">
         <div class="form-grid">
-          <div class="fg"><label><i class="fas fa-calendar-alt"></i>Work Date</label><input type="date" id="f-date"></div>
+          <div class="fg"><label><i class="fas fa-calendar-alt"></i>Work Date</label>
+            <div style="position:relative;width:100%;height:34px">
+              <span id="f-date-disp" onclick="document.getElementById('f-date').showPicker&&document.getElementById('f-date').showPicker()" style="display:flex;align-items:center;width:100%;height:34px;padding:7px 11px;border:1.5px solid var(--border);border-radius:9px;font-size:.85rem;font-weight:800;color:var(--navy);background:rgba(235,245,255,.75);cursor:pointer;user-select:none;box-sizing:border-box;font-family:'Outfit',sans-serif">—<i class="fas fa-calendar" style="font-size:.7rem;opacity:.6;margin-left:auto"></i></span>
+              <input type="date" id="f-date" oninput="_fDateSyncDisp()" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;background:transparent">
+            </div>
+          </div>
           <div class="fg"><label><i class="fas fa-ticket-alt"></i>Ticket ID</label><input type="text" id="f-ticket" placeholder="e.g. L3-31Jan26-1234, L3-31Jan26-5678"></div>
           <!-- TASK CATEGORY -->
           <div class="fg" style="position:relative">
@@ -1500,9 +1509,15 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
               <option value="10">November</option><option value="11">December</option>
             </select>
             <span style="font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;color:var(--blue)">FROM</span>
-            <input type="date" id="tr-df" oninput="renderReport()" style="font-size:.76rem;height:30px;padding:4px 10px;border:1.5px solid var(--border);border-radius:6px;background:#eaf3ff;outline:none;font-weight:800;font-family:'Montserrat',sans-serif;color:var(--navy)">
+            <div style="position:relative;height:30px;display:inline-flex;align-items:center">
+              <span id="tr-df-disp" onclick="document.getElementById('tr-df').showPicker&&document.getElementById('tr-df').showPicker()" style="display:inline-flex;align-items:center;gap:4px;height:30px;padding:4px 10px;border:1.5px solid var(--border);border-radius:6px;background:#eaf3ff;font-size:.76rem;font-weight:800;font-family:'Montserrat',sans-serif;color:var(--navy);cursor:pointer;user-select:none;min-width:88px;white-space:nowrap">—&nbsp;<i class="fas fa-calendar" style="font-size:.6rem;opacity:.6"></i></span>
+              <input type="date" id="tr-df" oninput="_trSyncDisp();renderReport();renderTechnicianReport()" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;background:transparent">
+            </div>
             <span style="font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;color:var(--blue)">TO</span>
-            <input type="date" id="tr-dt" oninput="renderReport()" style="font-size:.76rem;height:30px;padding:4px 10px;border:1.5px solid var(--border);border-radius:6px;background:#eaf3ff;outline:none;font-weight:800;font-family:'Montserrat',sans-serif;color:var(--navy)">
+            <div style="position:relative;height:30px;display:inline-flex;align-items:center">
+              <span id="tr-dt-disp" onclick="document.getElementById('tr-dt').showPicker&&document.getElementById('tr-dt').showPicker()" style="display:inline-flex;align-items:center;gap:4px;height:30px;padding:4px 10px;border:1.5px solid var(--border);border-radius:6px;background:#eaf3ff;font-size:.76rem;font-weight:800;font-family:'Montserrat',sans-serif;color:var(--navy);cursor:pointer;user-select:none;min-width:88px;white-space:nowrap">—&nbsp;<i class="fas fa-calendar" style="font-size:.6rem;opacity:.6"></i></span>
+              <input type="date" id="tr-dt" oninput="_trSyncDisp();renderReport();renderTechnicianReport()" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;background:transparent">
+            </div>
           </div>
         </div>
       </div>
@@ -1758,7 +1773,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       </ol>
     </div>
 
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div id="mis-upload-block" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <label for="mis-file-input" style="background:linear-gradient(135deg,#0a1642,#2452e8,#2f9bff);color:#fff;border:none;padding:11px 28px;border-radius:10px;font-size:.82rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:9px;letter-spacing:.5px;font-family:'Montserrat',sans-serif;box-shadow:0 5px 16px rgba(21,49,140,.32);transition:all .25s">
         <i class="fas fa-upload"></i> <span id="mis-upload-label">Upload Excel File</span>
       </label>
@@ -1770,13 +1785,13 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
     </div>
 
     <!-- ===== PASTE DATA DIRECTLY ===== -->
-    <div style="margin-top:18px;border-top:1.5px dashed #cde3fb;padding-top:16px">
+    <div id="mis-paste-block" style="margin-top:18px;border-top:1.5px dashed #cde3fb;padding-top:16px">
       <div style="background:linear-gradient(90deg,#fff7ed,#fef3c7,#fff7ed);border:2px solid #f59e0b;border-radius:12px;padding:11px 16px;margin-bottom:12px;box-shadow:0 4px 14px rgba(245,158,11,.22);display:flex;align-items:center;gap:10px;animation:pulse 2.2s ease-in-out infinite">
         <span style="width:30px;height:30px;flex-shrink:0;border-radius:9px;background:linear-gradient(135deg,#d97706,#f59e0b);display:inline-flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(217,119,6,.4)"><i class="fas fa-paste" style="color:#fff;font-size:.85rem"></i></span>
-        <span style="font-family:'Montserrat',sans-serif;font-size:.92rem;font-weight:900;color:#92400e;letter-spacing:.2px">Or Paste Data Directly <span style="font-weight:700;color:#b45309">(Excel থেকে header row সহ copy করে paste করুন)</span></span>
+        <span style="font-family:'Montserrat',sans-serif;font-size:.92rem;font-weight:900;color:#92400e;letter-spacing:.2px">Or Paste Data Directly <span style="font-weight:700;color:#b45309">(MIS থেকে Header Row সহ copy করে paste করুন)</span></span>
       </div>
       <div style="background:#f5f9ff;border:1.5px dashed #8cc7f7;border-radius:10px;padding:10px 14px;margin-bottom:10px">
-        <span style="font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--text)"><i class="fas fa-info-circle" style="color:var(--accent)"></i> প্রথম row অবশ্যই header হতে হবে (Entry Date, ID, Ticket ID, Support Type, Task Status ইত্যাদি কলাম নাম)। Excel থেকে header সহ পুরো data select করে Ctrl+C, তারপর নিচের বক্সে Ctrl+V করুন।</span>
+        <span style="font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--text)"><i class="fas fa-info-circle" style="color:var(--accent)"></i> প্রথম row অবশ্যই header হতে হবে (Entry Date, ID, Ticket ID, Support Type, Task Status ইত্যাদি কলাম নাম)। MIS থেকে Header সহ পুরো data select করে Ctrl+C, তারপর নিচের বক্সে Ctrl+V করুন।</span>
       </div>
       <textarea id="mis-paste-data" rows="10" placeholder="এখানে Excel থেকে header row + data rows paste করুন..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text);background:#f8faff;resize:vertical;outline:none;line-height:1.6;margin-bottom:10px"></textarea>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -1788,6 +1803,12 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
         </button>
         <span id="mis-paste-status" style="font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:700;color:var(--muted)"></span>
       </div>
+    </div>
+
+    <!-- Shown to Engineers instead of the upload controls above -->
+    <div id="mis-view-only-notice" style="display:none;background:#f0fdf4;border:1.5px dashed #86efac;border-radius:12px;padding:16px 18px;align-items:center;gap:12px">
+      <i class="fas fa-eye" style="font-size:1.1rem;color:#16a34a;flex-shrink:0"></i>
+      <span style="font-family:'Outfit',sans-serif;font-size:.82rem;color:#14532d;font-weight:600">আপনি শুধুমাত্র ডেটা ফিল্টার করে দেখতে পারবেন — ফাইল আপলোড / পেস্ট করার সুবিধা শুধু Admin-এর জন্য।</span>
     </div>
   </div>
 </div>
@@ -2301,6 +2322,20 @@ function setupUserUI() {
   if (excelBtn) {
     excelBtn.style.display = canExcelDownload() ? 'flex' : 'none';
   }
+
+  // MIS Data Update page: upload/paste controls are admin-only.
+  // Engineers only get to filter/view — see mis-view-only-notice below.
+  const misUploadBlock = document.getElementById('mis-upload-block');
+  const misPasteBlock  = document.getElementById('mis-paste-block');
+  const misViewNotice  = document.getElementById('mis-view-only-notice');
+  if (misUploadBlock) misUploadBlock.style.display = isAdmin ? 'flex' : 'none';
+  if (misPasteBlock)  misPasteBlock.style.display  = isAdmin ? 'block' : 'none';
+  if (misViewNotice)  misViewNotice.style.display  = isAdmin ? 'none' : 'flex';
+
+  // MIS Task Report: "Download Task Report" (Excel) is admin-only
+  const misDownloadBtn = document.getElementById('btn-download-task-report');
+  if (misDownloadBtn) misDownloadBtn.style.display = isAdmin ? 'flex' : 'none';
+
 // Inventory popup - for Admins only
 const zoneBadge = document.getElementById('zone-badge');
 if (zoneBadge) {
@@ -2805,12 +2840,24 @@ function updateClock(){
   if(fDate && fDate._autoDate && fDate.value === fDate._autoDate && fDate.value !== newToday){
     fDate.value = newToday;
     fDate._autoDate = newToday;
+    _fDateSyncDisp();
   }
   const mtDate = document.getElementById('mt-date');
   if(mtDate && mtDate.value){
     // Only update mt-date if it still holds yesterday's today value
     // (won't touch if user manually changed it)
   }
+}
+function _fDateSyncDisp(){
+  const fd=document.getElementById('f-date'), disp=document.getElementById('f-date-disp');
+  if(!disp) return;
+  const iso=fd&&fd.value;
+  let text='—';
+  if(iso){
+    const p=iso.split('-');
+    if(p.length===3) text=parseInt(p[2])+'/'+parseInt(p[1])+'/'+p[0];
+  }
+  disp.innerHTML=text+'<i class="fas fa-calendar" style="font-size:.7rem;opacity:.6;margin-left:auto"></i>';
 }
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fmtDateDisp(iso){
@@ -2828,6 +2875,7 @@ function setDateDefaults(){
   const fd = document.getElementById('f-date');
   fd.value=today;
   fd._autoDate=today;
+  _fDateSyncDisp();
   document.getElementById('mt-date').value=today;
 // Add at the very end of the script
 const _initMi = new Date().getMonth();
@@ -2916,14 +2964,14 @@ function showPage(pg,el){
   ht.style.opacity='0';
   setTimeout(()=>{ht.textContent=titles[pg]||'Daily Work Dashboard';ht.style.opacity='1';},150);
   if(pg==='mytask')renderMyTask();
-  if(pg==='taskreport'){setThisMonth();renderReport();}
+  if(pg==='taskreport'){setTodayTR();setTrPanel('eng');renderReport();renderTechnicianReport();}
   if(pg==='alltask')renderAll();
   if(pg==='devices')renderDevices();
   if(pg==='wifi')renderWifi();
   if(pg==='users')renderUserTable();
   if(pg==='mis')renderMis();
   if(pg==='misreport')renderMis();
-  if(pg==='engreport'){setThisMonthEng();renderEngReport();}
+  if(pg==='engreport'){setThisMonthEng();renderEngReport();openErTaskTypeDefault();}
   if(pg==='maindash'){
   document.getElementById('db-month').value = String(new Date().getMonth() + 1).padStart(2, '0');
   renderDash();
@@ -3425,6 +3473,18 @@ function misLookupNameById(rawId){
 const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+function _trSyncDisp(){
+  function _fmt(iso){
+    if(!iso) return '—';
+    const p=iso.split('-');
+    if(p.length!==3) return iso;
+    return parseInt(p[2])+'/'+parseInt(p[1])+'/'+p[0]; // d/m/yyyy
+  }
+  const df=document.getElementById('tr-df'), dt=document.getElementById('tr-dt');
+  const dfd=document.getElementById('tr-df-disp'), dtd=document.getElementById('tr-dt-disp');
+  if(dfd) dfd.innerHTML=_fmt(df&&df.value)+'&nbsp;<i class="fas fa-calendar" style="font-size:.6rem;opacity:.6"></i>';
+  if(dtd) dtd.innerHTML=_fmt(dt&&dt.value)+'&nbsp;<i class="fas fa-calendar" style="font-size:.6rem;opacity:.6"></i>';
+}
 function setThisMonth(){
   const n=new Date();
   const y=n.getFullYear(), mi=n.getMonth();
@@ -3434,6 +3494,15 @@ function setThisMonth(){
   document.getElementById('tr-df').value=`${y}-${m}-01`;
   document.getElementById('tr-dt').value=`${y}-${m}-${String(last).padStart(2,'0')}`;
   document.getElementById('tr-month-sel').value=String(mi);
+  _trSyncDisp();
+}
+function setTodayTR(){
+  // Default view: only today's date, same for everyone. User can still change/filter via the date inputs or month preset.
+  const today=new Date().toLocaleDateString('en-CA');
+  document.getElementById('tr-df').value=today;
+  document.getElementById('tr-dt').value=today;
+  document.getElementById('tr-month-sel').value='';
+  _trSyncDisp();
 }
 
 function applyMonthPreset(){
@@ -3445,7 +3514,9 @@ function applyMonthPreset(){
   const m=String(mi+1).padStart(2,'0');
   document.getElementById('tr-df').value=`${y}-${m}-01`;
   document.getElementById('tr-dt').value=`${y}-${m}-${String(last).padStart(2,'0')}`;
+  _trSyncDisp();
   renderReport();
+  renderTechnicianReport();
 }
 
 function renderReport(){
@@ -3533,21 +3604,21 @@ function clearTechFilters(){
   renderTechnicianReport();
 }
 function renderTechnicianReport(){
-  _initTechNameSelect();
-  const df=(document.getElementById('tr-tech-df')||{}).value||'';
-  const dt=(document.getElementById('tr-tech-dt')||{}).value||'';
+  const df=document.getElementById('tr-df').value;
+  const dt=document.getElementById('tr-dt').value;
   const filterName=(document.getElementById('tr-tech-name')||{}).value||'';
   const ranged = tickets.filter(t=>(!df||t.date>=df)&&(!dt||t.date<=dt));
 
-  // Update period badge
+  // Update period badge — mirrors the Engineer Task Report badge
   const badge=document.getElementById('tr-tech-period-badge');
   if(badge){
-    let parts=[];
-    if(df&&dt) parts.push(`${fmtDateDisp(df)} → ${fmtDateDisp(dt)}`);
-    else if(df) parts.push(`From ${fmtDateDisp(df)}`);
-    else if(dt) parts.push(`Until ${fmtDateDisp(dt)}`);
-    if(filterName) parts.push(`· ${filterName}`);
-    badge.textContent=parts.length?parts.join(' '):'All Time';
+    let text;
+    if(df&&dt) text=`${fmtDateDisp(df)} → ${fmtDateDisp(dt)}`;
+    else if(df) text=`From ${fmtDateDisp(df)}`;
+    else if(dt) text=`Until ${fmtDateDisp(dt)}`;
+    else text='All Time';
+    if(filterName) text+=` · ${filterName}`;
+    badge.textContent=text;
   }
 
   const sb=document.getElementById('tr-tech-tbody');
@@ -3592,6 +3663,25 @@ const _trTabColors = {
   tech: { offBg:'rgba(124,58,237,.18)', offBorder:'rgba(167,139,250,.35)',  offColor:'rgba(196,181,253,.8)',  offShadow:'none',
           onBg:'linear-gradient(135deg,#7c3aed,#a855f7)', onBorder:'#c084fc', onColor:'#fff', onShadow:'0 4px 16px rgba(124,58,237,.5),0 0 0 2px rgba(192,132,252,.3)' }
 };
+function setTrPanel(type){
+  const panels={eng:'tr-panel-eng',tech:'tr-panel-tech'};
+  const btns={eng:'tr-tab-btn-eng',tech:'tr-tab-btn-tech'};
+  Object.keys(panels).forEach(k=>{
+    const panel=document.getElementById(panels[k]);
+    const btn=document.getElementById(btns[k]);
+    if(!panel||!btn) return;
+    const c=_trTabColors[k]||_trTabColors.eng;
+    if(k===type){
+      panel.style.display='block';
+      btn.style.background=c.onBg; btn.style.borderColor=c.onBorder;
+      btn.style.color=c.onColor;   btn.style.boxShadow=c.onShadow;
+    } else {
+      panel.style.display='none';
+      btn.style.background=c.offBg; btn.style.borderColor=c.offBorder;
+      btn.style.color=c.offColor;   btn.style.boxShadow=c.offShadow;
+    }
+  });
+}
 function toggleTrPanel(type){
   const panel=document.getElementById('tr-panel-'+type);
   const btn=document.getElementById('tr-tab-btn-'+type);
@@ -3754,6 +3844,11 @@ function misCheckOwnership(json2, idKey){
 }
 
 function handleMisFile(input){
+  if(!currentUser || currentUser.role !== 'admin'){
+    toast('❌ শুধুমাত্র Admin ডেটা আপলোড করতে পারবেন!');
+    input.value = '';
+    return;
+  }
   const file = input.files && input.files[0];
   if(!file) return;
   document.getElementById('mis-upload-label').textContent = 'Reading...';
@@ -3920,6 +4015,10 @@ function handleMisFile(input){
 
 // ===== MIS UPDATE — PASTE DATA DIRECTLY (no file needed) =====
 async function handleMisPaste(){
+  if(!currentUser || currentUser.role !== 'admin'){
+    toast('❌ শুধুমাত্র Admin ডেটা আপলোড/পেস্ট করতে পারবেন!');
+    return;
+  }
   const raw = document.getElementById('mis-paste-data').value;
   const statusEl = document.getElementById('mis-paste-status');
   if(!raw || !raw.trim()){ toast('⚠ কোনো data paste করা হয়নি!'); return; }
@@ -4567,6 +4666,32 @@ function toggleErPanel(type){
     // Re-render the relevant table so it's populated when revealed
     if(type==='support') renderEngReport();
     else if(type==='tasktype') renderEngMonthTable();
+  }
+}
+
+// Always opens the Task Type Criteria panel by default whenever Engineer Report page loads,
+// and keeps Support Type Criteria panel closed (user can still click either tab to toggle).
+function openErTaskTypeDefault(){
+  const panel = document.getElementById('er-panel-tasktype');
+  const btn   = document.getElementById('er-tab-btn-tasktype');
+  const supportPanel = document.getElementById('er-panel-support');
+  const supportBtn   = document.getElementById('er-tab-btn-support');
+  if(panel && btn){
+    const c = _erTabColors.tasktype;
+    panel.style.display = 'block';
+    btn.style.background = c.onBg;
+    btn.style.borderColor = c.onBorder;
+    btn.style.color = c.onColor;
+    btn.style.boxShadow = c.onShadow;
+    renderEngMonthTable();
+  }
+  if(supportPanel && supportBtn){
+    const c = _erTabColors.support;
+    supportPanel.style.display = 'none';
+    supportBtn.style.background = c.offBg;
+    supportBtn.style.borderColor = c.offBorder;
+    supportBtn.style.color = c.offColor;
+    supportBtn.style.boxShadow = c.offShadow;
   }
 }
 
@@ -5847,7 +5972,7 @@ function renderWorkDash(){
   wdBuildEngineerOptions();
   if(!misRows.length){
     document.getElementById('wd-total-badge').textContent='0 tasks';
-    document.getElementById('wd-stat-row').innerHTML=`<div class="tbl-card" style="grid-column:1/-1;padding:18px;text-align:center;font-family:'Outfit',sans-serif;font-size:.78rem;color:var(--muted)"><i class="fas fa-chart-column" style="font-size:1.1rem;opacity:.4;display:block;margin-bottom:6px"></i>No MIS Excel data has been uploaded yet (this dashboard is built from Engineer Report data — please upload an Excel file from MIS Data Update).</div>`;
+    document.getElementById('wd-stat-row').innerHTML=`<div class="tbl-card" style="grid-column:1/-1;padding:18px;text-align:center;font-family:'Outfit',sans-serif;font-size:.78rem;color:var(--muted)"><i class="fas fa-chart-column" style="font-size:1.1rem;opacity:.4;display:block;margin-bottom:6px"></i>No MIS data has been uploaded yet (this dashboard is built from Engineer Report data — please upload MIS Data Update).</div>`;
     const catTotalSubEl = document.getElementById('wd-cat-total-sub');
     const catCenterNumEl = document.getElementById('wd-cat-center-num');
     const catLegendEl2 = document.getElementById('wd-cat-legend');
@@ -6339,6 +6464,10 @@ function shortEngName(name){
 
 // ===== DOWNLOAD TASK REPORT MODAL =====
 function openDownloadModal(){
+  if(!currentUser || currentUser.role !== 'admin'){
+    toast('❌ শুধুমাত্র Admin ডাউনলোড করতে পারবেন!');
+    return;
+  }
   if(!misRows.length){ toast('⚠ No MIS data available!'); return; }
   const extraNames=[...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n) && !EXCLUDED_ENGINEER_NAMES.includes(n)).sort();
   const engList=[...ENGINEERS,...extraNames];

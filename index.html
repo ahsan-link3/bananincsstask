@@ -1049,10 +1049,10 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <div class="nav-icon-wrap"><i class="fas fa-user" style="color:#4fc3f7"></i></div><span class="nav-label">User Panel</span><i class="fas fa-chevron-down nav-chevron"></i>
     </div>
     <div class="nav-submenu" id="submenu-userpanel">
-      <div class="nav-item admin-only" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('maindash',this)"><div class="nav-icon-wrap"><i class="fas fa-tachometer-alt" style="color:#4fc3f7"></i></div><span class="nav-label">Dashboard</span></div>
+      <div class="nav-item eng-visible" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('maindash',this)"><div class="nav-icon-wrap"><i class="fas fa-tachometer-alt" style="color:#4fc3f7"></i></div><span class="nav-label">Dashboard</span></div>
       <div class="nav-item eng-visible active" id="nav-ticketentry" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('dashboard',this)"><div class="nav-icon-wrap"><i class="fas fa-ticket-alt" style="color:#f472b6"></i></div><span class="nav-label">Ticket Entry</span></div>
-      <div class="nav-item admin-only" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('mytask',this)"><div class="nav-icon-wrap"><i class="fas fa-calendar-check" style="color:#4ade80"></i></div><span class="nav-label">My Task</span></div>
-      <div class="nav-item admin-only" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('taskreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-bar" style="color:#fb923c"></i></div><span class="nav-label">Task Report</span></div>
+      <div class="nav-item eng-visible" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('mytask',this)"><div class="nav-icon-wrap"><i class="fas fa-calendar-check" style="color:#4ade80"></i></div><span class="nav-label">My Task</span></div>
+      <div class="nav-item eng-visible" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('taskreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-bar" style="color:#fb923c"></i></div><span class="nav-label">Task Report</span></div>
       <div class="nav-item eng-visible" id="nav-alltask" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('alltask',this)"><div class="nav-icon-wrap"><i class="fas fa-clipboard-list" style="color:#2dd4bf"></i></div><span class="nav-label">All Completed Tasks</span></div>
       <div class="nav-item eng-visible" id="nav-devices" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('devices',this)"><div class="nav-icon-wrap"><i class="fas fa-network-wired" style="color:#818cf8"></i></div><span class="nav-label">Used Devices</span></div>
       <div class="nav-item eng-visible" id="nav-wifi" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('wifi',this)"><div class="nav-icon-wrap"><i class="fas fa-wifi" style="color:#22d3ee"></i></div><span class="nav-label">WiFi Scoring</span></div>
@@ -2511,7 +2511,11 @@ function renderUserTable() {
   tb.innerHTML = sortedEntries.map(([uname, u], i) => {
     const isMe = uname === currentUser.username;
     const isMainAdmin = uname === 'admin';
-    const canDelete = isAdminUser && !isMe && !isMainAdmin;
+    // Protected user: "Ahsanul Kabir" — the Reset PW button stays visible for every admin,
+    // but actually performing a reset is blocked in openResetModal() unless it's himself.
+    // Delete is fully hidden for this account regardless of who is viewing.
+    const isProtectedUser = !!(u.name && u.name.trim().toLowerCase() === 'ahsanul kabir');
+    const canDelete = isAdminUser && !isMe && !isMainAdmin && !isProtectedUser;
     const online = isUserOnline(uname);
     const nameCell = online
       ? `<span style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1.5px solid #34d399;border-radius:20px;padding:3px 12px;font-weight:800;font-family:'Montserrat',sans-serif;color:#065f46;box-shadow:0 2px 6px rgba(16,185,129,.25)"><span style="width:7px;height:7px;border-radius:50%;background:#16a34a;flex-shrink:0;animation:pulse 1.5s infinite"></span>${u.name}</span>`
@@ -2531,7 +2535,6 @@ function renderUserTable() {
         : `<span class="chip chip-no"><i class="fas fa-circle" style="font-size:.4rem;vertical-align:middle"></i> Offline</span>`}</td>
       <td>
         ${isAdminUser ? `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          
           <button onclick="openResetModal('${uname}','${u.name}')" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;padding:5px 12px;border-radius:7px;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px;transition:filter .2s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-key"></i> Reset PW</button>
           ${canDelete ? `<button onclick="doDeleteUser('${uname}','${u.name}')" style="background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;padding:5px 12px;border-radius:7px;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px;transition:filter .2s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-trash"></i> Delete</button>` : ''}
         </div>` : `<span style="color:var(--muted);font-size:.7rem;font-family:'Outfit',sans-serif;font-style:italic"><i class="fas fa-eye"></i> View only</span>`}
@@ -2680,6 +2683,11 @@ async function doSaveLink3(){
 }
 
 function openResetModal(uname, displayName) {
+  const isProtectedTarget = !!(displayName && displayName.trim().toLowerCase() === 'ahsanul kabir');
+  if (isProtectedTarget && currentUser.username !== uname) {
+    toast('⛔ You have no permission to reset this user password!');
+    return;
+  }
   resetTargetKey = uname;
   document.getElementById('um-reset-pass').value='';
   document.getElementById('um-reset-err').style.display='none';
@@ -2697,6 +2705,12 @@ async function doResetPW() {
   if(!resetTargetKey||!users[resetTargetKey]){closeResetModal();return;}
 
   const targetKey = resetTargetKey;      // ✅ আগে থেকেই ধরে রাখলাম
+  const targetName = users[targetKey].name;
+  if (targetName && targetName.trim().toLowerCase() === 'ahsanul kabir' && currentUser.username !== targetKey) {
+    closeResetModal();
+    toast('⛔ You have no permission to reset this user password!');
+    return;
+  }
   users[targetKey].pass=newP;
   if(currentUser.username===targetKey) currentUser.pass=newP;
   saveUsers(users);
@@ -3184,14 +3198,14 @@ function buildRows(arr,tbodyId,withDel,isMyTask,startIdx=0){
     <td>${startIdx+i+1}</td>
     <td style="padding:5px 4px">${fmtDateDisp(t.date)}</td>
     <td style="white-space:nowrap">${t.ticket}</td>
-    <td><span class="chip chip-cat">${t.cat}</span></td>
+    <td><span class="chip chip-cat" style="font-family:'Outfit',sans-serif">${t.cat}</span></td>
     <td>${t.tt}</td>
     <td>${t.tm}</td>
     <td style="color:var(--blue);font-weight:700">${t.eng}</td>
-    <td style="font-size:.75rem;color:#7c3aed;font-weight:600;white-space:nowrap">${techName?`<i class="fas fa-hard-hat" style="font-size:.6rem;margin-right:3px;color:#a855f7"></i>${techName}`:'<span style="color:#b0bec5">—</span>'}</td>
-    <td style="font-family:'JetBrains Mono',monospace;padding:5px 4px">${t.mac||'—'}</td>
-    <td><span class="chip ${t.wifi==='YES'?'chip-yes':'chip-no'}">${t.wifi}</span></td>
-    <td style="max-width:150px;white-space:normal">${t.remarks||'—'}</td>
+    <td style="font-size:.75rem;color:#7c3aed;font-weight:600;white-space:nowrap;font-family:'Outfit',sans-serif">${techName?`<i class="fas fa-hard-hat" style="font-size:.6rem;margin-right:3px;color:#a855f7"></i>${techName}`:'<span style="color:#b0bec5">—</span>'}</td>
+    <td style="font-family:'Outfit',sans-serif;padding:5px 4px">${t.mac||'—'}</td>
+    <td><span class="chip ${t.wifi==='YES'?'chip-yes':'chip-no'}" style="font-family:'Outfit',sans-serif">${t.wifi}</span></td>
+    <td style="max-width:150px;white-space:normal;font-family:'Outfit',sans-serif">${t.remarks||'—'}</td>
     ${showDel?`<td><button class="btn-row-del" onclick="delTicket('${t.firebaseKey||t.id}',${isMyTask?'true':'false'})"><i class="fas fa-times"></i></button></td>`:'<td></td>'}
     </tr>`;
   }).join('');
@@ -5123,9 +5137,9 @@ if(dvTotal) dvTotal.textContent=arr.length;
     <td>${start+i+1}</td>
     <td>${fmtDateDisp(t.date)}</td>
     <td>${t.ticket}</td>
-    <td style="font-family:'JetBrains Mono',monospace">${t.mac}</td>
+    <td style="font-family:'Outfit',sans-serif">${t.mac}</td>
     <td>${t.eng}</td>
-    <td style="font-size:.75rem;color:#7c3aed;font-weight:600;white-space:nowrap">${t.technician?`<i class="fas fa-hard-hat" style="font-size:.6rem;margin-right:3px;color:#a855f7"></i>${t.technician}`:'<span style="color:#b0bec5">—</span>'}</td>
+    <td style="font-size:.75rem;color:#7c3aed;font-weight:600;white-space:nowrap;font-family:'Outfit',sans-serif">${t.technician?`<i class="fas fa-hard-hat" style="font-size:.6rem;margin-right:3px;color:#a855f7"></i>${t.technician}`:'<span style="color:#b0bec5">—</span>'}</td>
     <td>${t.tm}</td>
     <td>${renderRemarksCell(t)}</td>
   </tr>`).join('');

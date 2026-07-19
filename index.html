@@ -2512,12 +2512,14 @@ async function doResetPW() {
   if(newP.length<4){errEl.textContent='❌ Password must be at least 4 characters!';errEl.style.display='block';return;}
   const users=getUsers();
   if(!resetTargetKey||!users[resetTargetKey]){closeResetModal();return;}
-  users[resetTargetKey].pass=newP;
-  if(currentUser.username===resetTargetKey) currentUser.pass=newP;
+
+  const targetKey = resetTargetKey;      // ✅ আগে থেকেই ধরে রাখলাম
+  users[targetKey].pass=newP;
+  if(currentUser.username===targetKey) currentUser.pass=newP;
   saveUsers(users);
   closeResetModal();
   toast('⏳ Password saving to Firebase...');
-  const ok = await window._fbSaveUser(resetTargetKey, users[resetTargetKey]);
+  const ok = await window._fbSaveUser(targetKey, users[targetKey]);  // ✅ null নয়, সঠিক username
   if(ok) toast('✅ Password reset & saved to Firebase!');
   else toast('⚠ Locally saved, Firebase sync failed!');
 }

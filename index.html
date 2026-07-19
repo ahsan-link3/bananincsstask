@@ -216,12 +216,17 @@ onValue(ticketsRef, (snapshot) => {
 .layout{display:flex;height:100vh;overflow:hidden}
 
 /* SIDEBAR */
-.sidebar{width:var(--nav-w);min-height:100vh;
+.sidebar{width:var(--nav-w);height:100vh;
   background:
     repeating-linear-gradient(45deg,transparent 0px,transparent 46px,rgba(255,255,255,.05) 46px,rgba(255,255,255,.05) 48px,transparent 48px,transparent 94px),
     repeating-linear-gradient(135deg,transparent 0px,transparent 46px,rgba(0,0,0,.14) 46px,rgba(0,0,0,.14) 48px,transparent 48px,transparent 94px),
     linear-gradient(160deg,#020a38 0%,#051233 20%,#0a1a6b 40%,#124fce 68%,#1f7dff 100%);
-  display:flex;flex-direction:column;flex-shrink:0;position:relative;overflow:hidden;}
+  display:flex;flex-direction:column;flex-shrink:0;position:relative;overflow-x:hidden;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:rgba(95,168,255,.55) rgba(255,255,255,.06);}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-track{background:rgba(255,255,255,.05)}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(95,168,255,.5);border-radius:10px;transition:background .2s}
+.sidebar::-webkit-scrollbar-thumb:hover{background:rgba(95,168,255,.85)}
 .sidebar::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;}
 .sidebar::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.05) 0%,transparent 50%);pointer-events:none;z-index:0;}
 .sidebar>*{position:relative;z-index:1;}
@@ -246,14 +251,21 @@ onValue(ticketsRef, (snapshot) => {
   padding:10px 0 2px;
   margin-top:6px;
   border-top:1px solid rgba(255,255,255,.14);
-  overflow-y:hidden;
+  overflow-y:auto;
   overflow-x:hidden;
   display:flex;
   flex-direction:column;
   gap:2px;
   min-height:0;
   justify-content:flex-start;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(95,168,255,.55) rgba(255,255,255,.06);
+  scroll-behavior:smooth;
 }
+.sb-nav::-webkit-scrollbar{width:6px}
+.sb-nav::-webkit-scrollbar-track{background:rgba(255,255,255,.05);border-radius:10px}
+.sb-nav::-webkit-scrollbar-thumb{background:rgba(95,168,255,.5);border-radius:10px;transition:background .2s}
+.sb-nav::-webkit-scrollbar-thumb:hover{background:rgba(95,168,255,.85)}
 .nav-sec{display:none}
 .nav-sep{display:none}
 .nav-item{margin:1px 10px;padding:0 12px;height:36px;flex-shrink:0;display:flex;align-items:center;gap:12px;cursor:pointer;border-radius:8px;border-left:3px solid transparent;position:relative;overflow:hidden;transition:background .25s ease,border-color .25s ease,box-shadow .25s ease,transform .2s ease;text-decoration:none;}
@@ -295,7 +307,11 @@ onValue(ticketsRef, (snapshot) => {
 .nav-parent .nav-chevron{margin-left:auto;font-size:.62rem;color:rgba(255,255,255,.85);transition:transform .3s ease;flex-shrink:0;}
 .nav-parent.open .nav-chevron{transform:rotate(180deg);}
 .nav-submenu{max-height:0;overflow:hidden;transition:max-height .35s ease;display:flex;flex-direction:column;gap:1px;}
-.nav-submenu.open{max-height:320px;}
+.nav-submenu.open{max-height:260px;overflow-y:auto;overflow-x:hidden;}
+.nav-submenu.open::-webkit-scrollbar{width:5px}
+.nav-submenu.open::-webkit-scrollbar-track{background:rgba(255,255,255,.05);border-radius:10px}
+.nav-submenu.open::-webkit-scrollbar-thumb{background:rgba(95,168,255,.5);border-radius:10px}
+.nav-submenu.open::-webkit-scrollbar-thumb:hover{background:rgba(95,168,255,.85)}
 .nav-submenu .nav-item{margin:0px 6px;margin-left:14px;padding-left:8px;height:28px;}
 .nav-submenu .nav-item .nav-icon-wrap{width:18px;height:18px;border-radius:4px;}
 .nav-submenu .nav-item .nav-icon-wrap i{font-size:.62rem;}
@@ -1549,7 +1565,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
     <!-- ===== PASTE DATA DIRECTLY ===== -->
     <div style="margin-top:18px;border-top:1.5px dashed #cde3fb;padding-top:16px">
       <div style="font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;color:var(--blue);margin-bottom:8px">
-        <i class="fas fa-paste"></i> Or Paste Data Directly (MIS থেকে header row সহ copy করে paste করুন)
+        <i class="fas fa-paste"></i> Or Paste Data Directly (Excel থেকে header row সহ copy করে paste করুন)
       </div>
       <div style="background:#f5f9ff;border:1.5px dashed #8cc7f7;border-radius:10px;padding:10px 14px;margin-bottom:10px">
         <span style="font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--text)"><i class="fas fa-info-circle" style="color:var(--accent)"></i> প্রথম row অবশ্যই header হতে হবে (Entry Date, ID, Ticket ID, Support Type, Task Status ইত্যাদি কলাম নাম)। Excel থেকে header সহ পুরো data select করে Ctrl+C, তারপর নিচের বক্সে Ctrl+V করুন।</span>
@@ -2457,8 +2473,28 @@ document.getElementById('db-month').value = String(new Date().getMonth() + 1).pa
 function toggleNavGroup(id, el){
   const menu = document.getElementById('submenu-'+id);
   if(!menu) return;
+  const opening = !menu.classList.contains('open');
   menu.classList.toggle('open');
   el.classList.toggle('open');
+  if(opening){
+    // Give the CSS max-height transition a moment to expand, then bring the
+    // whole submenu into view inside the scrollable sidebar nav automatically —
+    // so the user isn't forced to scroll manually to see items like
+    // "Used Devices" / "WiFi Scoring" that would otherwise sit below the fold.
+    setTimeout(()=>{
+      const nav = document.querySelector('.sb-nav');
+      if(!nav) return;
+      const navRect = nav.getBoundingClientRect();
+      const menuRect = menu.getBoundingClientRect();
+      const menuBottom = menuRect.bottom - navRect.top + nav.scrollTop;
+      const menuTop = menuRect.top - navRect.top + nav.scrollTop;
+      if(menuBottom > nav.scrollTop + nav.clientHeight){
+        nav.scrollTop = menuBottom - nav.clientHeight + 8;
+      } else if(menuTop < nav.scrollTop){
+        nav.scrollTop = menuTop - 8;
+      }
+    }, 370);
+  }
 }
 
 function showPage(pg,el){

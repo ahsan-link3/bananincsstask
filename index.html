@@ -959,10 +959,6 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   .page-ttl{font-size:.82rem}
   .tbl-card:hover{transform:none}
 }
-@keyframes panelGlowOrange{
-  0%,100%{ box-shadow:0 0 4px 0 rgba(47,155,255,.35), 0 0 0 0 rgba(47,155,255,.15); }
-  50%{ box-shadow:0 0 10px 2px rgba(47,155,255,.65), 0 0 16px 4px rgba(47,155,255,.25); }
-}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1049,7 +1045,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   </div>
   <nav class="sb-nav">
     <div class="nav-sec"></div>
-    <div class="nav-item nav-parent" id="nav-userpanel" style="background:linear-gradient(135deg,rgba(168,85,247,.42),rgba(126,34,206,.36));border-radius:9px;margin-bottom:2px;border:2px solid transparent;animation:panelGlowOrange 2.2s ease-in-out infinite" onclick="toggleNavGroup('userpanel',this)">
+    <div class="nav-item nav-parent" id="nav-userpanel" style="background:linear-gradient(135deg,rgba(168,85,247,.42),rgba(126,34,206,.36));border-radius:9px;margin-bottom:2px;border:1.5px solid #e8830f" onclick="toggleNavGroup('userpanel',this)">
       <div class="nav-icon-wrap"><i class="fas fa-user" style="color:#4fc3f7"></i></div><span class="nav-label">Engineer Panel</span><i class="fas fa-chevron-down nav-chevron"></i>
     </div>
     <div class="nav-submenu" id="submenu-userpanel">
@@ -1062,7 +1058,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <div class="nav-item eng-visible" id="nav-wifi" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('wifi',this)"><div class="nav-icon-wrap"><i class="fas fa-wifi" style="color:#22d3ee"></i></div><span class="nav-label">WiFi Scoring</span></div>
     </div>
 
-    <div class="nav-item nav-parent" id="nav-adminpanel" style="background:linear-gradient(135deg,rgba(34,197,94,.42),rgba(21,128,61,.36));border-radius:9px;margin-bottom:2px;border:2px solid transparent;animation:panelGlowOrange 2.2s ease-in-out infinite" onclick="toggleNavGroup('adminpanel',this)">
+    <div class="nav-item nav-parent" id="nav-adminpanel" style="background:linear-gradient(135deg,rgba(34,197,94,.42),rgba(21,128,61,.36));border-radius:9px;margin-bottom:2px;border:1.5px solid #e8830f" onclick="toggleNavGroup('adminpanel',this)">
       <div class="nav-icon-wrap"><i class="fas fa-user-shield" style="color:#c084fc"></i></div><span class="nav-label">Admin Panel</span><i class="fas fa-chevron-down nav-chevron"></i>
     </div>
     <div class="nav-submenu" id="submenu-adminpanel">
@@ -1773,7 +1769,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       </ol>
     </div>
 
-    <div id="mis-upload-block" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <label for="mis-file-input" style="background:linear-gradient(135deg,#0a1642,#2452e8,#2f9bff);color:#fff;border:none;padding:11px 28px;border-radius:10px;font-size:.82rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:9px;letter-spacing:.5px;font-family:'Montserrat',sans-serif;box-shadow:0 5px 16px rgba(21,49,140,.32);transition:all .25s">
         <i class="fas fa-upload"></i> <span id="mis-upload-label">Upload Excel File</span>
       </label>
@@ -1785,7 +1781,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
     </div>
 
     <!-- ===== PASTE DATA DIRECTLY ===== -->
-    <div id="mis-paste-block" style="margin-top:18px;border-top:1.5px dashed #cde3fb;padding-top:16px">
+    <div style="margin-top:18px;border-top:1.5px dashed #cde3fb;padding-top:16px">
       <div style="background:linear-gradient(90deg,#fff7ed,#fef3c7,#fff7ed);border:2px solid #f59e0b;border-radius:12px;padding:11px 16px;margin-bottom:12px;box-shadow:0 4px 14px rgba(245,158,11,.22);display:flex;align-items:center;gap:10px;animation:pulse 2.2s ease-in-out infinite">
         <span style="width:30px;height:30px;flex-shrink:0;border-radius:9px;background:linear-gradient(135deg,#d97706,#f59e0b);display:inline-flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(217,119,6,.4)"><i class="fas fa-paste" style="color:#fff;font-size:.85rem"></i></span>
         <span style="font-family:'Montserrat',sans-serif;font-size:.92rem;font-weight:900;color:#92400e;letter-spacing:.2px">Or Paste Data Directly <span style="font-weight:700;color:#b45309">(MIS থেকে Header Row সহ copy করে paste করুন)</span></span>
@@ -1803,12 +1799,6 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
         </button>
         <span id="mis-paste-status" style="font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:700;color:var(--muted)"></span>
       </div>
-    </div>
-
-    <!-- Shown to Engineers instead of the upload controls above -->
-    <div id="mis-view-only-notice" style="display:none;background:#f0fdf4;border:1.5px dashed #86efac;border-radius:12px;padding:16px 18px;align-items:center;gap:12px">
-      <i class="fas fa-eye" style="font-size:1.1rem;color:#16a34a;flex-shrink:0"></i>
-      <span style="font-family:'Outfit',sans-serif;font-size:.82rem;color:#14532d;font-weight:600">আপনি শুধুমাত্র ডেটা ফিল্টার করে দেখতে পারবেন — ফাইল আপলোড / পেস্ট করার সুবিধা শুধু Admin-এর জন্য।</span>
     </div>
   </div>
 </div>
@@ -2322,20 +2312,6 @@ function setupUserUI() {
   if (excelBtn) {
     excelBtn.style.display = canExcelDownload() ? 'flex' : 'none';
   }
-
-  // MIS Data Update page: upload/paste controls are admin-only.
-  // Engineers only get to filter/view — see mis-view-only-notice below.
-  const misUploadBlock = document.getElementById('mis-upload-block');
-  const misPasteBlock  = document.getElementById('mis-paste-block');
-  const misViewNotice  = document.getElementById('mis-view-only-notice');
-  if (misUploadBlock) misUploadBlock.style.display = isAdmin ? 'flex' : 'none';
-  if (misPasteBlock)  misPasteBlock.style.display  = isAdmin ? 'block' : 'none';
-  if (misViewNotice)  misViewNotice.style.display  = isAdmin ? 'none' : 'flex';
-
-  // MIS Task Report: "Download Task Report" (Excel) is admin-only
-  const misDownloadBtn = document.getElementById('btn-download-task-report');
-  if (misDownloadBtn) misDownloadBtn.style.display = isAdmin ? 'flex' : 'none';
-
 // Inventory popup - for Admins only
 const zoneBadge = document.getElementById('zone-badge');
 if (zoneBadge) {
@@ -3844,11 +3820,6 @@ function misCheckOwnership(json2, idKey){
 }
 
 function handleMisFile(input){
-  if(!currentUser || currentUser.role !== 'admin'){
-    toast('❌ শুধুমাত্র Admin ডেটা আপলোড করতে পারবেন!');
-    input.value = '';
-    return;
-  }
   const file = input.files && input.files[0];
   if(!file) return;
   document.getElementById('mis-upload-label').textContent = 'Reading...';
@@ -4015,10 +3986,6 @@ function handleMisFile(input){
 
 // ===== MIS UPDATE — PASTE DATA DIRECTLY (no file needed) =====
 async function handleMisPaste(){
-  if(!currentUser || currentUser.role !== 'admin'){
-    toast('❌ শুধুমাত্র Admin ডেটা আপলোড/পেস্ট করতে পারবেন!');
-    return;
-  }
   const raw = document.getElementById('mis-paste-data').value;
   const statusEl = document.getElementById('mis-paste-status');
   if(!raw || !raw.trim()){ toast('⚠ কোনো data paste করা হয়নি!'); return; }
@@ -6464,10 +6431,6 @@ function shortEngName(name){
 
 // ===== DOWNLOAD TASK REPORT MODAL =====
 function openDownloadModal(){
-  if(!currentUser || currentUser.role !== 'admin'){
-    toast('❌ শুধুমাত্র Admin ডাউনলোড করতে পারবেন!');
-    return;
-  }
   if(!misRows.length){ toast('⚠ No MIS data available!'); return; }
   const extraNames=[...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n) && !EXCLUDED_ENGINEER_NAMES.includes(n)).sort();
   const engList=[...ENGINEERS,...extraNames];

@@ -38,6 +38,19 @@ window._fbSaveUser = async function(username, userData) {
   }
 };
 
+// Permanently remove a user from Firebase (used when an admin deletes a user
+// from User Management — without this, the user would just reappear after
+// the next Firebase sync since only the local copy was being cleared).
+window._fbDeleteUser = async function(username) {
+  try {
+    await remove(ref(db, 'users/' + username));
+    return true;
+  } catch(e) {
+    console.error(e);
+    return false;
+  }
+};
+
 window._fbGetUsers = async function() {
   try {
     const snapshot = await get(usersRef);
@@ -160,6 +173,17 @@ onValue(ticketsRef, (snapshot) => {
   window._fbDeleteAllMis = async function() {
     await set(misDataRef, null);
   };
+
+  // Realtime users listener — mirrors the tickets/misdata listeners above, so a user
+  // created, edited, or deleted by one admin instantly propagates to every other
+  // open session (User Management table, Engineer dropdowns/lists, etc.) without
+  // anyone needing to log out and back in.
+  onValue(usersRef, (snapshot) => {
+    const data = snapshot.val();
+    if (typeof window.__applyRemoteUsers === 'function') window.__applyRemoteUsers(data);
+  }, (error) => {
+    console.error("Firebase Users error:", error);
+  });
 
   onValue(misDataRef, (snapshot) => {
     const data = snapshot.val();
@@ -312,10 +336,10 @@ onValue(ticketsRef, (snapshot) => {
 .nav-submenu.open::-webkit-scrollbar-track{background:rgba(255,255,255,.05);border-radius:10px}
 .nav-submenu.open::-webkit-scrollbar-thumb{background:rgba(95,168,255,.5);border-radius:10px}
 .nav-submenu.open::-webkit-scrollbar-thumb:hover{background:rgba(95,168,255,.85)}
-.nav-submenu .nav-item{margin:0px 6px;margin-left:14px;padding-left:8px;height:28px;}
-.nav-submenu .nav-item .nav-icon-wrap{width:18px;height:18px;border-radius:4px;}
-.nav-submenu .nav-item .nav-icon-wrap i{font-size:.62rem;}
-.nav-submenu .nav-item .nav-label{font-size:.63rem;letter-spacing:.2px;}
+.nav-submenu .nav-item{margin:0px 6px;margin-left:14px;padding-left:8px;height:32px;}
+.nav-submenu .nav-item .nav-icon-wrap{width:20px;height:20px;border-radius:4px;}
+.nav-submenu .nav-item .nav-icon-wrap i{font-size:.7rem;}
+.nav-submenu .nav-item .nav-label{font-size:.78rem;letter-spacing:.2px;}
 
 .sb-bottom{padding:4px 10px;border-top:1px solid rgba(255,255,255,.18);flex-shrink:0;}
 .sb-link{margin:0;padding:0 10px;height:24px;display:flex;align-items:center;gap:8px;cursor:pointer;border-radius:11px;border:1px solid transparent;transition:all .22s;font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:700;color:#fff;}
@@ -665,7 +689,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 #page-wifi .tbl-top{display:none;}
 #page-devices .tbl-top{display:none;}
 #page-mytask .tbl-top{display:none;}
-#tr-summary-tbody td{padding:0px 2px !important;line-height:1.2;}
+#tr-summary-tbody td{padding:0px 2px !important;line-height:1.15;height:26px;}
 #tr-summary-tbody tr td span{width:14px;height:14px;font-size:.58rem;}
 #page-alltask .tbl-top{display:none !important;}
 .fg label{font-weight:900 !important;font-size:.72rem !important;color:var(--navy) !important;letter-spacing:.8px !important;}
@@ -707,11 +731,51 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 }
 #wd-chart-date,#wd-chart-eng{filter:drop-shadow(0 6px 10px rgba(21,49,140,.06));}
 
-/* ===== Category Wise donut card (Work Dashboard) ===== */
-.wd-cat-card{
-  position:relative;overflow:hidden;margin-top:12px;padding:14px 18px;
+/* ===== Main Dashboard — smart/eye-catching chart cards ===== */
+@keyframes dbCardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.db-chart-card{
+  position:relative;overflow:hidden;
   background:linear-gradient(180deg,#ffffff 0%,#f9fcff 100%);
-  border:1px solid rgba(190,227,248,.75);border-radius:14px;
+  border:1px solid rgba(190,227,248,.75) !important;
+  transition:transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease, border-color .28s ease;
+  animation:dbCardIn .45s ease both;
+}
+.db-chart-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--db-accent,linear-gradient(90deg,#2452e8,#2f9bff));
+  opacity:.95;
+}
+.db-chart-card:hover{
+  transform:translateY(-4px);
+  border-color:rgba(47,155,255,.55) !important;
+  box-shadow:0 16px 34px rgba(21,49,140,.16) !important;
+}
+.db-card-hd{position:relative;z-index:1;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.db-card-icn{
+  width:22px;height:22px;border-radius:7px;flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 8px rgba(21,49,140,.3);transition:transform .3s ease;
+}
+.db-chart-card:hover .db-card-icn{transform:scale(1.12) rotate(-4deg);}
+.db-card-sub{
+  font-family:'Outfit',sans-serif;font-size:.58rem;font-weight:600;color:var(--muted);
+  margin-left:auto;background:#eef5ff;border:1px solid #d8ebff;padding:2px 8px;border-radius:20px;
+  letter-spacing:.2px;
+}
+#chart-cat,#chart-eng,#chart-day,#chart-tt{filter:drop-shadow(0 6px 10px rgba(21,49,140,.06));}
+
+/* Stat cards on Main Dashboard — small icon accent */
+#db-stat-row .stat-card{position:relative}
+#db-stat-row .stat-icon{font-size:.62rem;opacity:.55;transition:opacity .2s}
+
+/* ===== Category Wise / Task Status Wise donut cards (Work Dashboard) ===== */
+.wd-cat-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;align-items:stretch;
+}
+.wd-cat-card{
+  position:relative;overflow:hidden;padding:8px 10px;
+  background:linear-gradient(180deg,#ffffff 0%,#f9fcff 100%);
+  border:1px solid rgba(190,227,248,.75);border-radius:12px;
   box-shadow:0 6px 20px rgba(21,49,140,.08);
   animation:wdCardIn .45s ease both;
   transition:box-shadow .28s ease, transform .28s ease;
@@ -723,20 +787,20 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   opacity:.9;
 }
 .wd-cat-hd{
-  font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;color:var(--navy);
-  margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  font-family:'Montserrat',sans-serif;font-size:.64rem;font-weight:800;color:var(--navy);
+  margin-bottom:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;
 }
 .wd-cat-icn{
-  width:24px;height:24px;border-radius:7px;flex-shrink:0;
+  width:18px;height:18px;border-radius:5px;flex-shrink:0;
   background:linear-gradient(135deg,#185FA5,#2f9bff);color:#fff;
-  display:inline-flex;align-items:center;justify-content:center;font-size:.66rem;
+  display:inline-flex;align-items:center;justify-content:center;font-size:.54rem;
   box-shadow:0 3px 8px rgba(24,95,165,.35);
 }
 .wd-cat-sub{
-  margin-left:auto;font-family:'Outfit',sans-serif;font-size:.62rem;font-weight:700;color:var(--muted);
-  background:#eef5ff;border:1px solid #d8ebff;padding:2px 10px;border-radius:20px;
+  margin-left:auto;font-family:'Outfit',sans-serif;font-size:.56rem;font-weight:700;color:var(--muted);
+  background:#eef5ff;border:1px solid #d8ebff;padding:1px 7px;border-radius:20px;
 }
-.wd-cat-body{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.wd-cat-body{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
 .wd-cat-donut-wrap{position:relative;width:min(260px,44vw);height:220px;flex-shrink:0;margin:0 auto}
 .wd-cat-donut-wrap canvas{position:relative;z-index:2}
 .wd-cat-center{
@@ -745,16 +809,16 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 }
 .wd-cat-center .num{font-family:'Montserrat',sans-serif;font-size:1.5rem;font-weight:900;color:var(--navy);line-height:1}
 .wd-cat-center .lbl{font-family:'Outfit',sans-serif;font-size:.58rem;font-weight:700;color:var(--muted);letter-spacing:.4px;margin-top:2px}
-.wd-cat-legend{display:flex;flex-direction:column;gap:8px;flex:1;min-width:180px}
+.wd-cat-legend{display:flex;flex-direction:column;gap:4px;flex:1;min-width:130px}
 .wd-cat-leg-item{
-  display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;
+  display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;
   background:#f5f9ff;border:1px solid #e4f0fc;transition:all .2s ease;cursor:default;
 }
 .wd-cat-leg-item:hover{background:#eaf3ff;transform:translateX(3px);box-shadow:0 3px 10px rgba(21,49,140,.08)}
-.wd-cat-leg-dot{width:12px;height:12px;border-radius:4px;flex-shrink:0;box-shadow:0 2px 5px rgba(0,0,0,.15)}
-.wd-cat-leg-name{font-family:'Outfit',sans-serif;font-size:.76rem;font-weight:700;color:var(--text);flex:1}
-.wd-cat-leg-val{font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:900;color:var(--navy)}
-.wd-cat-leg-pct{font-family:'Outfit',sans-serif;font-size:.62rem;font-weight:700;color:var(--muted);min-width:38px;text-align:right}
+.wd-cat-leg-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0;box-shadow:0 2px 5px rgba(0,0,0,.15)}
+.wd-cat-leg-name{font-family:'Outfit',sans-serif;font-size:.68rem;font-weight:700;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wd-cat-leg-val{font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:900;color:var(--navy)}
+.wd-cat-leg-pct{font-family:'Outfit',sans-serif;font-size:.58rem;font-weight:700;color:var(--muted);min-width:32px;text-align:right}
 
 /* ===== Mobile menu button + sidebar overlay (hidden on desktop) ===== */
 .mobile-menu-btn{
@@ -776,6 +840,8 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 @media (max-width:1024px){
   :root{--nav-w:230px}
   #page-workdash [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr) !important}
+  .wd-cat-body{flex-direction:column}
+  .wd-cat-legend{width:100%}
 }
 
 @media (max-width:900px){
@@ -819,7 +885,8 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   }
   #wd-chart-date,#wd-chart-eng{max-height:180px}
 
-  /* Category Wise donut card on mobile */
+  /* Category Wise / Task Status Wise donut cards on mobile */
+  .wd-cat-grid{grid-template-columns:1fr !important;gap:10px}
   .wd-cat-card{padding:12px 12px}
   .wd-cat-hd{font-size:.64rem}
   .wd-cat-sub{margin-left:0;order:99;flex:0 0 auto}
@@ -935,26 +1002,28 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   </div>
   <nav class="sb-nav">
     <div class="nav-sec"></div>
-    <div class="nav-item" id="nav-workdash" onclick="showPage('workdash',this)">
-      <div class="nav-icon-wrap"><i class="fas fa-chart-column" style="color:#4fc3f7"></i></div><span class="nav-label">Task Dashboard</span>
+    <div class="nav-item nav-parent" id="nav-userpanel" style="background:linear-gradient(135deg,rgba(168,85,247,.42),rgba(126,34,206,.36));border-radius:9px;margin-bottom:2px" onclick="toggleNavGroup('userpanel',this)">
+      <div class="nav-icon-wrap"><i class="fas fa-user" style="color:#4fc3f7"></i></div><span class="nav-label">User Panel</span><i class="fas fa-chevron-down nav-chevron"></i>
     </div>
-    <div class="nav-item eng-visible" id="nav-mis" onclick="showPage('mis',this)"><div class="nav-icon-wrap"><i class="fas fa-file-upload" style="color:#4ade80"></i></div><span class="nav-label">MIS Data Update</span></div>
-    <div class="nav-item eng-visible" id="nav-misreport" onclick="showPage('misreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-pie" style="color:#fbbf24"></i></div><span class="nav-label">MIS Task Report</span></div>
-    <div class="nav-item eng-visible" id="nav-engreport" onclick="showPage('engreport',this)"><div class="nav-icon-wrap"><i class="fas fa-user-clock" style="color:#2dd4bf"></i></div><span class="nav-label">Engineer Report</span></div>
-    <div class="nav-item admin-only" id="nav-users" onclick="showPage('users',this)"><div class="nav-icon-wrap"><i class="fas fa-users-cog" style="color:#c084fc"></i></div><span class="nav-label">User Management</span></div>
-    <div class="nav-item nav-parent admin-only" id="nav-format-one" onclick="toggleNavGroup('format-one',this)">
-      <div class="nav-icon-wrap"><i class="fas fa-layer-group" style="color:#94a3b8"></i></div><span class="nav-label">Previous Format</span><i class="fas fa-chevron-down nav-chevron"></i>
+    <div class="nav-submenu" id="submenu-userpanel">
+      <div class="nav-item admin-only" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('maindash',this)"><div class="nav-icon-wrap"><i class="fas fa-tachometer-alt" style="color:#4fc3f7"></i></div><span class="nav-label">Dashboard</span></div>
+      <div class="nav-item admin-only active" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('dashboard',this)"><div class="nav-icon-wrap"><i class="fas fa-ticket-alt" style="color:#f472b6"></i></div><span class="nav-label">Ticket Entry</span></div>
+      <div class="nav-item admin-only" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('mytask',this)"><div class="nav-icon-wrap"><i class="fas fa-calendar-check" style="color:#4ade80"></i></div><span class="nav-label">My Task</span></div>
+      <div class="nav-item admin-only" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('taskreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-bar" style="color:#fb923c"></i></div><span class="nav-label">Task Report</span></div>
+      <div class="nav-item eng-visible" id="nav-alltask" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('alltask',this)"><div class="nav-icon-wrap"><i class="fas fa-clipboard-list" style="color:#2dd4bf"></i></div><span class="nav-label">All Completed Tasks</span></div>
+      <div class="nav-item eng-visible" id="nav-devices" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('devices',this)"><div class="nav-icon-wrap"><i class="fas fa-network-wired" style="color:#818cf8"></i></div><span class="nav-label">Used Devices</span></div>
+      <div class="nav-item eng-visible" id="nav-wifi" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('wifi',this)"><div class="nav-icon-wrap"><i class="fas fa-wifi" style="color:#22d3ee"></i></div><span class="nav-label">WiFi Scoring</span></div>
     </div>
-    <div class="nav-submenu admin-only" id="submenu-format-one">
-      <div class="nav-item" onclick="showPage('maindash',this)"><div class="nav-icon-wrap"><i class="fas fa-tachometer-alt" style="color:#4fc3f7"></i></div><span class="nav-label">Dashboard</span></div>
-      <div class="nav-item active" onclick="showPage('dashboard',this)"><div class="nav-icon-wrap"><i class="fas fa-ticket-alt" style="color:#f472b6"></i></div><span class="nav-label">Ticket Entry</span></div>
-      <div class="nav-item" onclick="showPage('mytask',this)"><div class="nav-icon-wrap"><i class="fas fa-calendar-check" style="color:#4ade80"></i></div><span class="nav-label">My Task</span></div>
-      <div class="nav-item" onclick="showPage('taskreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-bar" style="color:#fb923c"></i></div><span class="nav-label">Task Report</span></div>
-      <div class="nav-item eng-visible" id="nav-alltask" onclick="showPage('alltask',this)"><div class="nav-icon-wrap"><i class="fas fa-clipboard-list" style="color:#2dd4bf"></i></div><span class="nav-label">All Completed Tasks</span></div>
-      <div class="nav-item eng-visible" id="nav-devices" onclick="showPage('devices',this)"><div class="nav-icon-wrap"><i class="fas fa-network-wired" style="color:#818cf8"></i></div><span class="nav-label">Used Devices</span></div>
-      <div class="nav-item eng-visible" id="nav-wifi" onclick="showPage('wifi',this)"><div class="nav-icon-wrap"><i class="fas fa-wifi" style="color:#22d3ee"></i></div><span class="nav-label">WiFi Scoring</span></div>
-      <div class="nav-item admin-only" id="nav-import" onclick="showPage('import',this)">
-      <div class="nav-icon-wrap"><i class="fas fa-file-import" style="color:#facc15"></i></div><span class="nav-label">Import Data</span></div>
+
+    <div class="nav-item nav-parent" id="nav-adminpanel" style="background:linear-gradient(135deg,rgba(34,197,94,.42),rgba(21,128,61,.36));border-radius:9px;margin-bottom:2px" onclick="toggleNavGroup('adminpanel',this)">
+      <div class="nav-icon-wrap"><i class="fas fa-user-shield" style="color:#c084fc"></i></div><span class="nav-label">Admin Panel</span><i class="fas fa-chevron-down nav-chevron"></i>
+    </div>
+    <div class="nav-submenu" id="submenu-adminpanel">
+      <div class="nav-item" id="nav-workdash" style="background:rgba(34,197,94,0.30);border-left:3px solid rgba(34,197,94,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('workdash',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-column" style="color:#4fc3f7"></i></div><span class="nav-label">Task Dashboard</span></div>
+      <div class="nav-item eng-visible" id="nav-mis" style="background:rgba(34,197,94,0.30);border-left:3px solid rgba(34,197,94,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('mis',this)"><div class="nav-icon-wrap"><i class="fas fa-file-upload" style="color:#4ade80"></i></div><span class="nav-label">MIS Data Update</span></div>
+      <div class="nav-item eng-visible" id="nav-misreport" style="background:rgba(34,197,94,0.30);border-left:3px solid rgba(34,197,94,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('misreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-pie" style="color:#fbbf24"></i></div><span class="nav-label">MIS Task Report</span></div>
+      <div class="nav-item eng-visible" id="nav-engreport" style="background:rgba(34,197,94,0.30);border-left:3px solid rgba(34,197,94,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('engreport',this)"><div class="nav-icon-wrap"><i class="fas fa-user-clock" style="color:#2dd4bf"></i></div><span class="nav-label">Engineer Report</span></div>
+      <div class="nav-item admin-only" id="nav-users" style="background:rgba(34,197,94,0.30);border-left:3px solid rgba(34,197,94,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('users',this)"><div class="nav-icon-wrap"><i class="fas fa-users-cog" style="color:#c084fc"></i></div><span class="nav-label">User Management</span></div>
     </div>
     <div class="nav-sep"></div>
   </nav>
@@ -1050,23 +1119,39 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   <!-- Charts — all together in compact grid -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0">
 
-    <div class="tbl-card" style="padding:10px 14px;max-height:220px;overflow:hidden;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #bbf7d0;">
-      <div style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;gap:6px"><i class="fas fa-chart-pie" style="color:var(--accent)"></i> Category Wise</div>
+    <div class="tbl-card db-chart-card" style="--db-accent:linear-gradient(90deg,#185FA5,#2452e8,#2f9bff);padding:10px 14px;max-height:220px;overflow:hidden">
+      <div class="db-card-hd" style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;color:var(--navy);margin-bottom:6px">
+        <span class="db-card-icn" style="background:linear-gradient(135deg,#185FA5,#2f9bff)"><i class="fas fa-chart-pie" style="color:#fff;font-size:.62rem"></i></span>
+        Category Wise
+        <span class="db-card-sub"><i class="fas fa-layer-group" style="color:#2f9bff"></i>&nbsp;Split</span>
+      </div>
       <div style="height:170px;position:relative"><canvas id="chart-cat"></canvas></div>
     </div>
 
-    <div class="tbl-card" style="padding:10px 14px;max-height:220px;overflow:hidden;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #bbf7d0;">
-      <div style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;gap:6px"><i class="fas fa-users" style="color:var(--accent)"></i> Engineer Wise Tasks</div>
+    <div class="tbl-card db-chart-card" style="--db-accent:linear-gradient(90deg,#059669,#10b981,#34d399);padding:10px 14px;max-height:220px;overflow:hidden">
+      <div class="db-card-hd" style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;color:var(--navy);margin-bottom:6px">
+        <span class="db-card-icn" style="background:linear-gradient(135deg,#059669,#10b981)"><i class="fas fa-users" style="color:#fff;font-size:.62rem"></i></span>
+        Engineer Wise Tasks
+        <span class="db-card-sub"><i class="fas fa-ranking-star" style="color:#10b981"></i>&nbsp;Ranking</span>
+      </div>
       <div style="height:170px;position:relative"><canvas id="chart-eng"></canvas></div>
     </div>
 
-    <div class="tbl-card" style="padding:10px 14px;max-height:220px;overflow:hidden;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #bbf7d0;">
-      <div style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;gap:6px"><i class="fas fa-chart-line" style="color:var(--accent)"></i> Day Wise Trend</div>
+    <div class="tbl-card db-chart-card" style="--db-accent:linear-gradient(90deg,#d97706,#f59e0b,#fbbf24);padding:10px 14px;max-height:220px;overflow:hidden">
+      <div class="db-card-hd" style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;color:var(--navy);margin-bottom:6px">
+        <span class="db-card-icn" style="background:linear-gradient(135deg,#d97706,#f59e0b)"><i class="fas fa-chart-line" style="color:#fff;font-size:.62rem"></i></span>
+        Day Wise Trend
+        <span class="db-card-sub"><i class="fas fa-arrow-trend-up" style="color:#f59e0b"></i>&nbsp;Trend</span>
+      </div>
       <div style="height:170px;position:relative"><canvas id="chart-day"></canvas></div>
     </div>
 
-    <div class="tbl-card" style="padding:10px 14px;max-height:220px;overflow:hidden;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #bbf7d0;">
-      <div style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;gap:6px"><i class="fas fa-toolbox" style="color:var(--accent)"></i> Task Type Wise</div>
+    <div class="tbl-card db-chart-card" style="--db-accent:linear-gradient(90deg,#7c3aed,#a855f7,#c084fc);padding:10px 14px;max-height:220px;overflow:hidden">
+      <div class="db-card-hd" style="font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;color:var(--navy);margin-bottom:6px">
+        <span class="db-card-icn" style="background:linear-gradient(135deg,#7c3aed,#a855f7)"><i class="fas fa-toolbox" style="color:#fff;font-size:.62rem"></i></span>
+        Task Type Wise
+        <span class="db-card-sub"><i class="fas fa-chart-simple" style="color:#a855f7"></i>&nbsp;Breakdown</span>
+      </div>
       <div style="height:170px;position:relative"><canvas id="chart-tt"></canvas></div>
     </div>
 
@@ -1128,22 +1213,42 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 
   </div>
 
-  <!-- Category Wise Donut Chart -->
-  <div class="wd-cat-card">
-    <div class="wd-cat-hd">
-      <span class="wd-cat-icn"><i class="fas fa-chart-pie"></i></span>
-      Category Wise
-      <span class="wd-cat-sub" id="wd-cat-total-sub">0 total</span>
-    </div>
-    <div class="wd-cat-body">
-      <div class="wd-cat-donut-wrap">
-        <canvas id="wd-chart-cat"></canvas>
-        <div class="wd-cat-center">
-          <div class="num" id="wd-cat-center-num">0</div>
-          <div class="lbl">TOTAL</div>
-        </div>
+  <!-- Category Wise & Task Status Wise Donut Charts (side by side, compact) -->
+  <div class="wd-cat-grid">
+    <div class="wd-cat-card">
+      <div class="wd-cat-hd">
+        <span class="wd-cat-icn"><i class="fas fa-chart-pie"></i></span>
+        Category Wise
+        <span class="wd-cat-sub" id="wd-cat-total-sub">0 total</span>
       </div>
-      <div class="wd-cat-legend" id="wd-cat-legend"></div>
+      <div class="wd-cat-body">
+        <div class="wd-cat-donut-wrap">
+          <canvas id="wd-chart-cat"></canvas>
+          <div class="wd-cat-center">
+            <div class="num" id="wd-cat-center-num">0</div>
+            <div class="lbl">TOTAL</div>
+          </div>
+        </div>
+        <div class="wd-cat-legend" id="wd-cat-legend"></div>
+      </div>
+    </div>
+
+    <div class="wd-cat-card">
+      <div class="wd-cat-hd">
+        <span class="wd-cat-icn"><i class="fas fa-list-check"></i></span>
+        Task Status Wise
+        <span class="wd-cat-sub" id="wd-status-total-sub">0 total</span>
+      </div>
+      <div class="wd-cat-body">
+        <div class="wd-cat-donut-wrap">
+          <canvas id="wd-chart-status"></canvas>
+          <div class="wd-cat-center">
+            <div class="num" id="wd-status-center-num">0</div>
+            <div class="lbl">TOTAL</div>
+          </div>
+        </div>
+        <div class="wd-cat-legend" id="wd-status-legend"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1740,7 +1845,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <div class="form-card" style="padding:14px 18px;margin-bottom:0;flex-shrink:0">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
           <div class="page-ttl" style="margin-bottom:0"><i class="fas fa-users-cog"></i>User Management</div>
-          <button onclick="openCreateUser()" style="background:linear-gradient(135deg,#0a1642,#2452e8,#2f9bff);color:#fff;border:none;padding:9px 20px;border-radius:9px;font-size:.75rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:8px;letter-spacing:.5px;font-family:'Montserrat',sans-serif;box-shadow:0 4px 14px rgba(21,49,140,.3);transition:all .22s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-user-plus"></i> Create User</button>
+          <button id="btn-users-create" onclick="openCreateUser()" style="background:linear-gradient(135deg,#0a1642,#2452e8,#2f9bff);color:#fff;border:none;padding:9px 20px;border-radius:9px;font-size:.75rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:8px;letter-spacing:.5px;font-family:'Montserrat',sans-serif;box-shadow:0 4px 14px rgba(21,49,140,.3);transition:all .22s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-user-plus"></i> Create User</button>
         </div>
       </div>
 
@@ -1875,15 +1980,32 @@ async function saveUsersToFirebase(u) {
   }
 }
 
+// Apply a fresh users snapshot coming from Firebase (either a one-time fetch or the
+// realtime listener below) to the local app state: refreshes the cached user list,
+// re-syncs ENGINEERS + every dropdown/checkbox list, re-renders User Management if
+// it's the active page, and — if the currently logged-in account was deleted by
+// another admin — logs this session out immediately instead of leaving it stale.
+window.__applyRemoteUsers = function(fbUsers){
+  if (!fbUsers) return;
+  _cachedUsers = fbUsers;
+  localStorage.setItem('l3_users', JSON.stringify(fbUsers));
+  if (typeof syncEngineersFromUsers === 'function') syncEngineersFromUsers();
+  if (typeof refreshEngineerDependentPages === 'function') refreshEngineerDependentPages();
+  const usersPage = document.getElementById('page-users');
+  if (usersPage && usersPage.classList.contains('active') && typeof renderUserTable === 'function') renderUserTable();
+  if (typeof currentUser !== 'undefined' && currentUser && !fbUsers[currentUser.username]) {
+    if (typeof toast === 'function') toast('⚠ Your account was removed by an admin. Logging out...');
+    setTimeout(() => { if (typeof doLogout === 'function') doLogout(); }, 1200);
+  }
+};
+
 async function syncUsersFromFirebase() {
   try {
     if (typeof window._fbGetUsers !== 'function') return;
     const timeoutP = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),4000));
     const fbUsers = await Promise.race([window._fbGetUsers(), timeoutP]);
     if (fbUsers && Object.keys(fbUsers).length > 0) {
-      _cachedUsers = fbUsers;
-      localStorage.setItem('l3_users', JSON.stringify(fbUsers));
-      if(typeof syncEngineersFromUsers === 'function') syncEngineersFromUsers();
+      window.__applyRemoteUsers(fbUsers);
     }
   } catch(e) {
     console.warn('Firebase sync skipped:', e.message);
@@ -1960,10 +2082,14 @@ function setupUserUI() {
 
   const isAdmin = u.role === 'admin';
 
-  // admin-only = User Management (only admin sees this)
+  // admin-only nav items / controls (only admin sees these)
   document.querySelectorAll('.admin-only').forEach(el => {
     el.style.display = isAdmin ? 'flex' : 'none';
   });
+
+  // User Management nav item is admin-only (see .admin-only handling above); create button stays admin-gated too
+  const usersCreateBtn = document.getElementById('btn-users-create');
+  if (usersCreateBtn) usersCreateBtn.style.display = isAdmin ? 'flex' : 'none';
 
   // MIS Task Report delete buttons — admin only
   const misToggleSel = document.getElementById('btn-mis-toggle-sel');
@@ -2182,13 +2308,14 @@ let resetTargetKey = null;
 let link3TargetKey = null;
 
 function renderUserTable() {
-  if (!currentUser || currentUser.role !== 'admin') return;
+  if (!currentUser) return;
+  const isAdminUser = currentUser.role === 'admin';
   const users = getUsers();
   const tb = document.getElementById('usr-tbody');
   tb.innerHTML = Object.entries(users).map(([uname, u], i) => {
     const isMe = uname === currentUser.username;
     const isMainAdmin = uname === 'admin';
-    const canDelete = !isMe && !isMainAdmin;
+    const canDelete = isAdminUser && !isMe && !isMainAdmin;
     return `<tr>
       <td style="color:var(--muted);font-weight:700;font-family:'Montserrat',sans-serif">${i+1}</td>
       <td style="font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy)">${u.name}</td>
@@ -2201,11 +2328,11 @@ function renderUserTable() {
         :'<span class="um-badge-eng"><i class="fas fa-hard-hat"></i> Engineer</span>'}</td>
       <td><span class="chip chip-yes"><i class="fas fa-circle" style="font-size:.4rem;vertical-align:middle"></i> Active</span></td>
       <td>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        ${isAdminUser ? `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           <button onclick="openLink3Modal('${uname}','${u.name}','${u.link3Id||''}')" style="background:linear-gradient(135deg,#0a1642,#2f9bff);color:#fff;border:none;padding:5px 12px;border-radius:7px;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px;transition:filter .2s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-id-card"></i> ${u.link3Id?'Edit':'Set'} ID</button>
           <button onclick="openResetModal('${uname}','${u.name}')" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;padding:5px 12px;border-radius:7px;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px;transition:filter .2s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-key"></i> Reset PW</button>
           ${canDelete ? `<button onclick="doDeleteUser('${uname}','${u.name}')" style="background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;padding:5px 12px;border-radius:7px;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px;transition:filter .2s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-trash"></i> Delete</button>` : ''}
-        </div>
+        </div>` : `<span style="color:var(--muted);font-size:.7rem;font-family:'Outfit',sans-serif;font-style:italic"><i class="fas fa-eye"></i> View only</span>`}
       </td>
     </tr>`;
   }).join('');
@@ -2375,13 +2502,31 @@ async function doResetPW() {
   else toast('⚠ Locally saved, Firebase sync failed!');
 }
 
-function doDeleteUser(uname, displayName) {
+async function doDeleteUser(uname, displayName) {
   if(!confirm(`Delete user "${displayName}" (${uname})? This cannot be undone.`)) return;
   const users=getUsers();
+  const deletedUser = users[uname];
   delete users[uname];
-  saveUsers(users);
+  saveUsers(users); // also runs syncEngineersFromUsers() + populateEngineerDropdowns()
+
+  // ENGINEERS only ever grows on its own (syncEngineersFromUsers adds, never removes),
+  // so explicitly drop this person from the live Engineer list here — this instantly
+  // removes them from Ticket Entry, Dashboard/All Completed Tasks filters, and the
+  // BNOC/Backend Support picker, without needing a page reload.
+  if(deletedUser && deletedUser.name){
+    const idx = ENGINEERS.indexOf(deletedUser.name);
+    if(idx !== -1) ENGINEERS.splice(idx,1);
+  }
+  populateEngineerDropdowns();
+
+  // Remove from Firebase too, so the user doesn't come back on the next sync
+  // and is truly gone for every device/session, not just this browser.
+  if (typeof window._fbDeleteUser === 'function') {
+    try { await window._fbDeleteUser(uname); } catch(e) { console.error(e); }
+  }
   renderUserTable();
-  toast(`🗑️ User "${displayName}" deleted.`);
+  refreshEngineerDependentPages();
+  toast(`🗑️ User "${displayName}" deleted everywhere — app & Firebase.`);
 }
 
 // ===== TICKETS & FIREBASE =====
@@ -2499,8 +2644,11 @@ function toggleNavGroup(id, el){
 }
 
 function showPage(pg,el){
-  // Guard: only admin can access user management
-  if(pg==='users' && currentUser && currentUser.role !== 'admin') return;
+  // User Management is admin-only — block engineers from opening it even via direct call
+  if(pg==='users' && (!currentUser || currentUser.role!=='admin')){
+    toast('❌ Permission denied! User Management is admin only.');
+    return;
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+pg).classList.add('active');
@@ -3009,6 +3157,10 @@ function mtGoPage(p){
 
 const ENGINEERS = ['Prince Hedayet Zaman','Md. Mostafizur Rahman','Nabiul Ahsan Bakshi','Md. Asad','Taibul Hoque Zehad','Subroto Saha','Abu Hasnat','Muhammed Rabiul Islam','Md. Azizul Haque Sojol','Ainul Hoque Rubel','Md Juel Hossain','Mrithunjoy Das','Mohammad Badrul Islam','Abir Roy','Syed Ash Shams'];
 
+// Names that should never show up in Engineer Report / Task Dashboard / charts,
+// even if a matching user account or uploaded MIS Excel row references them.
+const EXCLUDED_ENGINEER_NAMES = ['Shimanto'];
+
 // ===== ID -> Engineer Name map (resolve names from ID column in MIS Excel files) =====
 const ID_NAME_MAP = {
   'L3T709':'Prince Hedayet Zaman',
@@ -3033,20 +3185,64 @@ Object.keys(ID_NAME_MAP).forEach(k=>{
   ID_NAME_MAP_NORM[k.toUpperCase().replace(/[^A-Z0-9]/g,'')] = ID_NAME_MAP[k];
 });
 
-// Keep ENGINEERS in sync with any user accounts that have a Link3 ID assigned via
-// User Management (Create User / Set ID) — so a newly-linked engineer immediately
-// shows up in Engineer Report, the bar chart, Work Dashboard, etc., even before any
-// MIS Excel data referencing their ID has been uploaded. ENGINEERS is const but its
-// array contents can still be mutated (push), which is what we do here.
+// Keep ENGINEERS in sync with any user accounts created via User Management —
+// so a brand-new engineer immediately shows up everywhere an "Engineer" list is
+// used (Ticket Entry, filters, Task Report, Engineer Report, Work Dashboard, MIS,
+// BNOC/Backend Support picker, etc.), even before a Link3 ID or any MIS Excel data
+// has been added for them. Generic admin-only accounts (e.g. "Admin"/"Test1") are
+// kept out unless they've been explicitly linked to a Link3 ID. ENGINEERS is const
+// but its array contents can still be mutated (push), which is what we do here.
 function syncEngineersFromUsers(){
   const users = getUsers();
   Object.values(users).forEach(u=>{
-    if(u && u.link3Id && u.name && !ENGINEERS.includes(u.name)){
+    if(!u || !u.name || EXCLUDED_ENGINEER_NAMES.includes(u.name)) return;
+    if(ENGINEERS.includes(u.name)) return;
+    if(u.role === 'engineer' || u.link3Id){
       ENGINEERS.push(u.name);
     }
   });
+  populateEngineerDropdowns();
 }
 syncEngineersFromUsers();
+
+// Refresh every static Engineer dropdown / checkbox-list in the User Panel (Dashboard
+// filter, Ticket Entry's Engineer Name select, All Completed Tasks filter, and the
+// BNOC/Backend Support Engineer picker) so they always mirror the live ENGINEERS list —
+// called on load and every time syncEngineersFromUsers() runs (new user, Link3 ID set,
+// Firebase sync, etc.).
+function populateEngineerDropdowns(){
+  const names = ENGINEERS.filter(n=>!EXCLUDED_ENGINEER_NAMES.includes(n));
+  const optionsHtml = names.map(n=>`<option>${n}</option>`).join('');
+
+  const dbEng = document.getElementById('db-eng');
+  if(dbEng){
+    const cur = dbEng.value;
+    dbEng.innerHTML = `<option value="">All Engineers</option>${optionsHtml}`;
+    dbEng.value = cur;
+  }
+
+  const atEng = document.getElementById('at-eng');
+  if(atEng){
+    const cur = atEng.value;
+    atEng.innerHTML = `<option value="">All Engineers</option>${optionsHtml}`;
+    atEng.value = cur;
+  }
+
+  const fEng = document.getElementById('f-eng');
+  if(fEng){
+    const cur = fEng.value;
+    fEng.innerHTML = `<option value="">Select Engineer</option>${optionsHtml}`;
+    fEng.value = cur;
+  }
+
+  const bnocList = document.getElementById('cdd-bnoc-list');
+  if(bnocList){
+    const checked = new Set(Array.from(bnocList.querySelectorAll('input[name="f-bnoc-eng"]:checked')).map(cb=>cb.value));
+    bnocList.innerHTML = names.map(name=>
+      `<label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="${name.replace(/"/g,'&quot;')}" onchange="pickBnoc()" ${checked.has(name)?'checked':''}><div class="cdd-check"></div><span>${name}</span></label>`
+    ).join('');
+  }
+}
 
 // One-time auto-heal: any already-existing user account whose Display Name exactly
 // matches one of the known engineers (ID_NAME_MAP) but doesn't have a link3Id saved yet
@@ -3131,7 +3327,7 @@ function renderReport(){
 
   // Build engineer summary — always show all engineers
   const sb=document.getElementById('tr-summary-tbody');
-  const engList = ENGINEERS;
+  const engList = ENGINEERS.filter(n=>!EXCLUDED_ENGINEER_NAMES.includes(n));
   let totalTS=0,totalIN=0,totalCR=0,totalSV=0,totalBN=0,totalNT=0,totalTW=0,totalPS=0;
 
   sb.innerHTML=engList.map(eng=>{
@@ -3157,16 +3353,16 @@ function renderReport(){
     const tw = ts+ins+cr+sv+nt;
 
     totalTS+=ts;totalIN+=ins;totalCR+=cr;totalSV+=sv;totalBN+=bn;totalNT+=nt;totalTW+=tw;totalPS+=ps;
-    const cell=(v)=>`<td style="text-align:center;font-family:'Outfit',sans-serif;padding:3px 4px;">
-  <span style="display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:50%;font-size:.82rem;font-weight:800;
+    const cell=(v)=>`<td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 4px;">
+  <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.7rem;font-weight:800;
   background:${v>0?'linear-gradient(135deg,#dbeafe,#bfdbfe)':'#f1f5f9'};
   color:${v>0?'#2452e8':'#b0bec5'};
   border:1.5px solid ${v>0?'#93c5fd':'#e2e8f0'};">${v}</span></td>`;
     return `<tr>
-      <td style="font-weight:800;font-family:'Outfit',sans-serif;color:var(--navy);font-size:1rem;padding:4px 10px;">${eng}</td>
+      <td style="font-weight:800;font-family:'Outfit',sans-serif;color:var(--navy);font-size:.8rem;padding:3px 8px;">${eng}</td>
       ${cell(ts)}${cell(ins)}${cell(cr)}${cell(sv)}${cell(bn)}${cell(nt)}
-      <td style="text-align:center;font-family:'Outfit',sans-serif;padding:3px 4px;">
-  <span style="display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;height:32px;border-radius:50%;font-size:.9rem;font-weight:900;
+      <td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 4px;">
+  <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.74rem;font-weight:900;
   background:${tw>0?'linear-gradient(135deg,#fed7aa,#fdba74)':'#f1f5f9'};
   color:${tw>0?'#c2410c':'#90a4ae'};
   border:2px solid ${tw>0?'#fb923c':'#e2e8f0'};">${tw}</span></td>
@@ -3176,15 +3372,15 @@ function renderReport(){
 
   // Total row
   sb.innerHTML+=`<tr style="background:linear-gradient(90deg,#f0fdf4,#dcfce7);border-top:2px solid #16a34a">
-    <td style="font-weight:900;font-family:'Outfit',sans-serif;color:#14532d;font-size:.84rem;letter-spacing:.5px">TOTAL</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1.3rem">${totalTS}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1.3rem">${totalIN}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1.3rem">${totalCR}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1.3rem">${totalSV}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1.3rem">${totalBN}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1.3rem">${totalNT}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1.3rem;background:rgba(22,163,74,.15)">${totalTW}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1.3rem">${totalPS}</td>
+    <td style="font-weight:900;font-family:'Outfit',sans-serif;color:#14532d;font-size:.76rem;letter-spacing:.4px;padding:3px 8px;">TOTAL</td>
+    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalTS}</td>
+    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalIN}</td>
+    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalCR}</td>
+    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalSV}</td>
+    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalBN}</td>
+    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalNT}</td>
+    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem;background:rgba(22,163,74,.15)">${totalTW}</td>
+    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalPS}</td>
   </tr>`;
 }
 
@@ -3623,7 +3819,7 @@ function clearMisDateEngFilter(){
 function misBuildEngineerOptions(){
   const sel = document.getElementById('mis-eng-filter');
   if(!sel) return;
-  const extraNames = [...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n)).sort();
+  const extraNames = [...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n) && !EXCLUDED_ENGINEER_NAMES.includes(n)).sort();
   const engList = [...ENGINEERS, ...extraNames];
   const current = misActiveEngineer;
   sel.innerHTML = `<option value="">All Engineers</option>` + engList.map(name=>
@@ -4111,7 +4307,7 @@ function renderEngReport(){
   const ranged = erRowsInRange();
 
   // ENGINEERS list + any names from Excel not in ENGINEERS list are also included
-  const extraNames = [...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n)).sort();
+  const extraNames = [...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n) && !EXCLUDED_ENGINEER_NAMES.includes(n)).sort();
   const engList = [...ENGINEERS, ...extraNames];
 
   let colTotals = supportTypes.map(()=>0);
@@ -4672,6 +4868,12 @@ let chartEng=null, chartCat=null, chartDay=null, chartTt=null;
 const CHART_COLORS = ['#2452e8','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#65a30d','#db2777','#ea580c'];
 const ENG_COLORS   = ['#185FA5','#0F6E56','#BA7517','#A32D2D','#534AB7','#0891b2','#3B6D11','#D4537E','#EA580C','#7C3AED','#0E7490','#B45309','#4D7C0F','#BE185D','#2452e8'];
 const CAT_COLORS   = {'Installation':'#185FA5','Troubleshoot':'#A32D2D','CR':'#BA7517','Survey':'#3B6D11','Non Ticket':'#534AB7'};
+// Colors for the Task Status Wise donut chart — matched (case-insensitively) against
+// common status wordings found in uploaded MIS Excel data; anything unmatched falls
+// back to CHART_COLORS cycling, so new/unexpected status values still get a color.
+const STATUS_COLORS = {'DONE':'#059669','COMPLETED':'#059669','CLOSED':'#059669','RESOLVED':'#059669',
+  'PENDING':'#d97706','IN PROGRESS':'#d97706','ONGOING':'#d97706','OPEN':'#2452e8',
+  'CANCELLED':'#dc2626','CANCELED':'#dc2626','REJECTED':'#dc2626','FAILED':'#dc2626','HOLD':'#7c3aed','ON HOLD':'#7c3aed'};
 const TT_COLORS    = {'Phone support':'#0891b2','Physical support':'#185FA5','Back office support for Tech':'#534AB7'};
 
 function getDashFiltered(){
@@ -4713,10 +4915,11 @@ function renderDash(){
 
   // Stat cards
   const cats=['Installation','Troubleshoot','CR','Survey','Non Ticket'];
+  const catIcons={'Installation':'fa-toolbox','Troubleshoot':'fa-triangle-exclamation','CR':'fa-file-signature','Survey':'fa-magnifying-glass-chart','Non Ticket':'fa-ticket'};
   const statRow = document.getElementById('db-stat-row');
   statRow.innerHTML = `
-    <div class="stat-card" style="height:40px"><div class="stat-num" style="font-size:.95rem">${arr.length}</div><div class="stat-lbl" style="font-size:.55rem">TOTAL</div></div>
-    ${cats.map(c=>`<div class="stat-card" style="height:40px"><div class="stat-num" style="font-size:.95rem">${arr.filter(t=>t.cat===c).length}</div><div class="stat-lbl" style="font-size:.55rem">${c.toUpperCase()}</div></div>`).join('')}
+    <div class="stat-card" style="height:40px"><i class="fas fa-list-check stat-icon" style="color:#2452e8"></i><div><div class="stat-num" style="font-size:.95rem">${arr.length}</div><div class="stat-lbl" style="font-size:.55rem">TOTAL</div></div></div>
+    ${cats.map(c=>`<div class="stat-card" style="height:40px"><i class="fas ${catIcons[c]} stat-icon" style="color:${CAT_COLORS[c]||'#5d7ba8'}"></i><div><div class="stat-num" style="font-size:.95rem">${arr.filter(t=>t.cat===c).length}</div><div class="stat-lbl" style="font-size:.55rem">${c.toUpperCase()}</div></div></div>`).join('')}
   `;
 
   destroyCharts();
@@ -4732,30 +4935,83 @@ const engCounts = ENGINEERS.map(e=>{
   return ts+ins+cr+sv+nt;
 });
   const engShort  = ENGINEERS.map(e=>e.split(' ')[0]);
-chartEng = new Chart(document.getElementById('chart-eng'),{
+  const engCtx2 = document.getElementById('chart-eng').getContext('2d');
+  const engGradients = ENG_COLORS.map(c=>{
+    const g = engCtx2.createLinearGradient(0,0,0,170);
+    g.addColorStop(0, c);
+    g.addColorStop(1, c+'99');
+    return g;
+  });
+  // Same "white number rotated vertically along the bar" style used on the Task Dashboard
+  const barCountLabelPluginMain = {
+    id: 'barCountLabelPluginMain',
+    afterDatasetsDraw(chart){
+      const {ctx} = chart;
+      chart.getDatasetMeta(0).data.forEach((bar, idx)=>{
+        const value = chart.data.datasets[0].data[idx];
+        if(!value) return;
+        const yMid = (bar.y + bar.base) / 2;
+        ctx.save();
+        ctx.translate(bar.x, yMid);
+        ctx.rotate(-Math.PI/2);
+        ctx.font = "800 10px 'Montserrat', sans-serif";
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0,0,0,.75)';
+        ctx.shadowBlur = 3;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 1;
+        ctx.fillText(value, 0, 0);
+        ctx.restore();
+      });
+    }
+  };
+chartEng = new Chart(engCtx2,{
   type:'bar',
   data:{
     labels: ENGINEERS,
     datasets:[{
       label:'Tasks',
       data: engCounts,
-      backgroundColor: ENG_COLORS,
+      backgroundColor: engGradients,
+      hoverBackgroundColor: ENG_COLORS,
       borderRadius: 6,
       borderSkipped: false
     }]
   },
+  plugins:[barCountLabelPluginMain,{
+    id:'engBarShadow',
+    beforeDatasetsDraw(chart){
+      const {ctx} = chart;
+      ctx.save();
+      ctx.shadowColor='rgba(21,49,140,.22)';
+      ctx.shadowBlur=8;
+      ctx.shadowOffsetY=4;
+    },
+    afterDatasetsDraw(chart){ chart.ctx.restore(); }
+  }],
   options:{
     responsive:true,
     maintainAspectRatio:false,
+    animation:{ duration:700, easing:'easeOutQuart' },
     plugins:{
       legend:{display:false},
-      tooltip:{animation:{duration:0}, callbacks:{title:i=>ENGINEERS[i[0].dataIndex], label:ctx=>` ${ctx.parsed.y} tasks`}}
+      tooltip:{
+        backgroundColor:'#0a1642',
+        titleColor:'#ffffff', bodyColor:'#ffffff',
+        titleFont:{family:'Montserrat',size:11,weight:'800'},
+        bodyFont:{family:'Montserrat',size:12,weight:'700'},
+        padding:10, cornerRadius:9, displayColors:true, boxPadding:4,
+        borderColor:'rgba(47,155,255,.5)', borderWidth:1, caretSize:6,
+        animation:{duration:0}, callbacks:{title:i=>ENGINEERS[i[0].dataIndex], label:ctx=>` ${ctx.parsed.y} tasks`}
+      }
     },
     scales:{
       y:{
         beginAtZero:true,
         ticks:{stepSize:50, font:{family:'Outfit',size:11}, color:'#5d7ba8'},
-        grid:{color:'rgba(0,0,0,.06)'}
+        grid:{color:'rgba(21,49,140,.06)'}
       },
       x:{
         ticks:{
@@ -4781,40 +5037,76 @@ chartEng = new Chart(document.getElementById('chart-eng'),{
   const catLabels = cats.filter(c=>arr.filter(t=>t.cat===c).length>0);
   const catData   = catLabels.map(c=>arr.filter(t=>t.cat===c).length);
   const catColors = catLabels.map(c=>CAT_COLORS[c]||'#999');
+  const catTotalMain = catData.reduce((a,b)=>a+b,0);
   chartCat = new Chart(document.getElementById('chart-cat'),{
   type:'doughnut',
   data:{
     labels: catLabels,
     datasets:[{
       data:catData,
-      backgroundColor:catColors,
-      borderWidth:2,
+      backgroundColor:catColors.map(c=>c+'E6'),
+      hoverBackgroundColor:catColors,
+      borderWidth:3,
       borderColor:'#fff',
-      hoverOffset:4
+      hoverOffset:8,
+      borderRadius:3,
+      spacing:2
     }]
   },
+  plugins:[{
+    id:'catDonutShadowMain',
+    beforeDatasetsDraw(chart){
+      const {ctx} = chart;
+      ctx.save();
+      ctx.shadowColor='rgba(21,49,140,.26)';
+      ctx.shadowBlur=12;
+      ctx.shadowOffsetY=5;
+    },
+    afterDatasetsDraw(chart){
+      chart.ctx.restore();
+      // Draw total count in the center of the donut
+      const {ctx, chartArea:{left,right,top,bottom}} = chart;
+      const cx=(left+right)/2, cy=(top+bottom)/2;
+      ctx.save();
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font="900 15px 'Montserrat', sans-serif"; ctx.fillStyle='#0a1642';
+      ctx.fillText(catTotalMain, cx, cy-6);
+      ctx.font="700 8px 'Outfit', sans-serif"; ctx.fillStyle='#5d7ba8';
+      ctx.fillText('TOTAL', cx, cy+9);
+      ctx.restore();
+    }
+  }],
   options:{
     responsive:true,
     maintainAspectRatio:false,
-    cutout:'65%',
+    cutout:'68%',
     devicePixelRatio: Math.max(window.devicePixelRatio || 1, 2),
+    animation:{ animateRotate:true, duration:800, easing:'easeOutQuart' },
     plugins:{
       legend:{
         display:true,
         position:'right',
         labels:{
-          font:{family:'Outfit',size:11},
+          font:{family:'Outfit',size:11,weight:'600'},
           padding:10,
-          boxWidth:12,
-          boxHeight:12,
-          color:'#1a2340'
+          boxWidth:10,
+          boxHeight:10,
+          color:'#1a2340',
+          usePointStyle:true,
+          pointStyle:'circle'
         }
       },
       tooltip:{
+        backgroundColor:'#0a1642',
+        titleColor:'#ffffff', bodyColor:'#ffffff',
+        titleFont:{family:'Montserrat',size:11,weight:'800'},
+        bodyFont:{family:'Montserrat',size:12,weight:'700'},
+        padding:10, cornerRadius:9, displayColors:true, boxPadding:4,
+        borderColor:'rgba(47,155,255,.5)', borderWidth:1, caretSize:6,
         animation:{ duration:0 },
         callbacks:{
           title: items => items[0].label,
-          label:ctx=>`${ctx.parsed}`
+          label:ctx=>` ${ctx.parsed} (${catTotalMain ? ((ctx.parsed/catTotalMain)*100).toFixed(1) : 0}%)`
         }
       }
     }
@@ -4827,31 +5119,71 @@ chartEng = new Chart(document.getElementById('chart-eng'),{
   const dayKeys = Object.keys(dayMap).sort();
   const dayVals = dayKeys.map(k=>dayMap[k]);
   const dayLabels = dayKeys.map(d=>fmtDateDisp(d));
-  chartDay = new Chart(document.getElementById('chart-day'),{
+  const dayCtx = document.getElementById('chart-day').getContext('2d');
+  const dayGradient = dayCtx.createLinearGradient(0,0,0,170);
+  dayGradient.addColorStop(0,'rgba(245,158,11,.35)');
+  dayGradient.addColorStop(1,'rgba(245,158,11,0)');
+  const dayDotLabelPlugin = {
+    id:'dayDotLabelPlugin',
+    afterDatasetsDraw(chart){
+      const {ctx} = chart;
+      chart.getDatasetMeta(0).data.forEach((point, idx)=>{
+        const value = chart.data.datasets[0].data[idx];
+        if(value===null || value===undefined) return;
+        ctx.save();
+        ctx.font = "800 9px 'Montserrat', sans-serif";
+        ctx.fillStyle = '#0a1642';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.shadowColor = 'rgba(0,0,0,.35)';
+        ctx.shadowBlur = 3;
+        ctx.fillText(value, point.x, point.y - 8);
+        ctx.restore();
+      });
+    }
+  };
+  chartDay = new Chart(dayCtx,{
   type:'line',
   data:{
     labels:dayLabels,
     datasets:[{
       label:'Tasks/Day',
       data:dayVals,
-      borderColor:'#2452e8',
-      backgroundColor:'rgba(36,82,232,.08)',
+      borderColor:'#d97706',
+      backgroundColor:dayGradient,
       fill:true,
       tension:.4,
-      pointBackgroundColor:'#2452e8',
+      borderWidth:2.5,
+      pointBackgroundColor:'#fff',
+      pointBorderColor:'#d97706',
+      pointBorderWidth:2,
       pointRadius:4,
-      pointHoverRadius:6
+      pointHoverRadius:6,
+      pointHoverBackgroundColor:'#d97706'
     }]
   },
+  plugins:[dayDotLabelPlugin],
   options:{
     responsive:true,
     maintainAspectRatio:false,
-    plugins:{legend:{display:false}},
+    animation:{ duration:700, easing:'easeOutQuart' },
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        backgroundColor:'#0a1642',
+        titleColor:'#ffffff', bodyColor:'#ffffff',
+        titleFont:{family:'Montserrat',size:11,weight:'800'},
+        bodyFont:{family:'Montserrat',size:12,weight:'700'},
+        padding:10, cornerRadius:9, displayColors:false,
+        borderColor:'rgba(217,119,6,.5)', borderWidth:1, caretSize:6,
+        animation:{duration:0}
+      }
+    },
     scales:{
       y:{
         beginAtZero:true,
         ticks:{stepSize:1, font:{family:'Outfit',size:11}, color:'#5d7ba8'},
-        grid:{color:'rgba(0,0,0,.06)'}
+        grid:{color:'rgba(21,49,140,.06)'}
       },
       x:{
         ticks:{
@@ -4872,28 +5204,92 @@ chartEng = new Chart(document.getElementById('chart-eng'),{
   const ttList=['Phone support','Physical support','Back office support for Tech'];
   const ttData = ttList.map(t=>arr.filter(r=>r.tt===t).length);
   const ttColors = ttList.map(t=>TT_COLORS[t]||'#999');
-  chartTt = new Chart(document.getElementById('chart-tt'),{
+  const ttCtx = document.getElementById('chart-tt').getContext('2d');
+  const ttGradients = ttColors.map(c=>{
+    const g = ttCtx.createLinearGradient(0,0,220,0);
+    g.addColorStop(0, c+'CC');
+    g.addColorStop(1, c);
+    return g;
+  });
+  const ttEndLabelPlugin = {
+    id:'ttEndLabelPlugin',
+    afterDatasetsDraw(chart){
+      const {ctx} = chart;
+      chart.getDatasetMeta(0).data.forEach((bar, idx)=>{
+        const value = chart.data.datasets[0].data[idx];
+        if(!value) return;
+        const barWidth = bar.x - bar.base;
+        ctx.save();
+        ctx.font = "800 11px 'Montserrat', sans-serif";
+        const textWidth = ctx.measureText(value).width;
+        if(barWidth > textWidth + 16){
+          // Enough room: white number with shadow, inside the bar near its end
+          ctx.fillStyle = '#fff';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = 'rgba(0,0,0,.75)';
+          ctx.shadowBlur = 3;
+          ctx.shadowOffsetY = 1;
+          ctx.fillText(value, bar.x - 8, bar.y);
+        } else {
+          // Bar too short: navy number just outside the bar end, no shadow needed
+          ctx.fillStyle = '#0a1642';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(value, bar.x + 6, bar.y);
+        }
+        ctx.restore();
+      });
+    }
+  };
+  chartTt = new Chart(ttCtx,{
   type:'bar',
   data:{
     labels:['Phone support','Physical support','Back office support for Tech'],
     datasets:[{
       label:'Tasks',
       data:ttData,
-      backgroundColor:ttColors,
+      backgroundColor:ttGradients,
+      hoverBackgroundColor:ttColors,
       borderRadius:6,
-      borderSkipped:false
+      borderSkipped:false,
+      barThickness:22
     }]
   },
+  plugins:[{
+    id:'ttBarShadow',
+    beforeDatasetsDraw(chart){
+      const {ctx} = chart;
+      ctx.save();
+      ctx.shadowColor='rgba(21,49,140,.22)';
+      ctx.shadowBlur=8;
+      ctx.shadowOffsetX=3;
+    },
+    afterDatasetsDraw(chart){ chart.ctx.restore(); }
+  }, ttEndLabelPlugin],
   options:{
     indexAxis:'y',
     responsive:true,
     maintainAspectRatio:false,
-    plugins:{legend:{display:false}},
+    animation:{ duration:700, easing:'easeOutQuart' },
+    layout:{ padding:{ right:16 } },
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        backgroundColor:'#0a1642',
+        titleColor:'#ffffff', bodyColor:'#ffffff',
+        titleFont:{family:'Montserrat',size:11,weight:'800'},
+        bodyFont:{family:'Montserrat',size:12,weight:'700'},
+        padding:10, cornerRadius:9, displayColors:true, boxPadding:4,
+        borderColor:'rgba(124,58,237,.5)', borderWidth:1, caretSize:6,
+        animation:{duration:0}
+      }
+    },
     scales:{
       x:{
         beginAtZero:true,
         ticks:{stepSize:1, font:{family:'Outfit',size:11}, color:'#5d7ba8'},
-        grid:{color:'rgba(0,0,0,.06)'}
+        grid:{color:'rgba(21,49,140,.06)'}
       },
       y:{
         ticks:{
@@ -4909,7 +5305,7 @@ chartEng = new Chart(document.getElementById('chart-eng'),{
 }
 
 // ===== NEW WORK DASHBOARD (Date wise & Engineer wise bar charts) =====
-let wdChartDate=null, wdChartEng=null, wdChartCat=null;
+let wdChartDate=null, wdChartEng=null, wdChartCat=null, wdChartStatus=null;
 
 // Once the custom webfonts are fully loaded, force a redraw of any chart(s)
 // already on screen. If a chart's first paint happens before its font has
@@ -4917,7 +5313,7 @@ let wdChartDate=null, wdChartEng=null, wdChartCat=null;
 // which is what made canvas tooltip text look blurry/garbled.
 if(document.fonts && document.fonts.ready){
   document.fonts.ready.then(()=>{
-    [chartEng,chartCat,chartDay,chartTt,wdChartDate,wdChartEng,wdChartCat].forEach(c=>{
+    [chartEng,chartCat,chartDay,chartTt,wdChartDate,wdChartEng,wdChartCat,wdChartStatus].forEach(c=>{
       if(c && typeof c.update==='function') c.update();
     });
   });
@@ -4953,8 +5349,8 @@ function clearWorkDashFilters(){
 }
 
 function destroyWorkDashCharts(){
-  [wdChartDate,wdChartEng,wdChartCat].forEach(c=>{ if(c) c.destroy(); });
-  wdChartDate=wdChartEng=wdChartCat=null;
+  [wdChartDate,wdChartEng,wdChartCat,wdChartStatus].forEach(c=>{ if(c) c.destroy(); });
+  wdChartDate=wdChartEng=wdChartCat=wdChartStatus=null;
 }
 
 function renderWorkDash(){
@@ -4967,6 +5363,12 @@ function renderWorkDash(){
     if(catTotalSubEl) catTotalSubEl.textContent='0 total';
     if(catCenterNumEl) catCenterNumEl.textContent='0';
     if(catLegendEl2) catLegendEl2.innerHTML=`<div style="font-family:'Outfit',sans-serif;font-size:.76rem;color:var(--muted);padding:8px">No data</div>`;
+    const statusTotalSubEl = document.getElementById('wd-status-total-sub');
+    const statusCenterNumEl = document.getElementById('wd-status-center-num');
+    const statusLegendEl2 = document.getElementById('wd-status-legend');
+    if(statusTotalSubEl) statusTotalSubEl.textContent='0 total';
+    if(statusCenterNumEl) statusCenterNumEl.textContent='0';
+    if(statusLegendEl2) statusLegendEl2.innerHTML=`<div style="font-family:'Outfit',sans-serif;font-size:.76rem;color:var(--muted);padding:8px">No data</div>`;
     destroyWorkDashCharts();
     return;
   }
@@ -5140,7 +5542,7 @@ function renderWorkDash(){
   });
 
   // 2. Engineer wise bar chart (ENGINEERS list + any extra names found in the MIS/Excel data, same as Engineer Report)
-  const extraNames = [...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n)).sort();
+  const extraNames = [...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n) && !EXCLUDED_ENGINEER_NAMES.includes(n)).sort();
   const engList = [...ENGINEERS, ...extraNames];
   const engColors = engList.map((_,i)=>ENG_COLORS[i % ENG_COLORS.length]);
   const engCounts = engList.map(e=>arr.filter(r=>r.engineerName===e).length);
@@ -5317,6 +5719,86 @@ function renderWorkDash(){
       }
     });
   }
+
+  // 4. Task Status Wise donut chart (Task Status breakdown)
+  const statusCounts = {};
+  arr.forEach(r=>{ const v=(r.taskStatus||'—').trim()||'—'; statusCounts[v]=(statusCounts[v]||0)+1; });
+  const statusEntries = Object.entries(statusCounts).sort((a,b)=>b[1]-a[1]);
+  const statusLabelsWd = statusEntries.map(e=>e[0]);
+  const statusDataWd   = statusEntries.map(e=>e[1]);
+  const statusTotalWd  = arr.length;
+  const statusColorsWd = statusLabelsWd.map((s,i)=> STATUS_COLORS[s.toUpperCase()] || CHART_COLORS[i % CHART_COLORS.length]);
+
+  document.getElementById('wd-status-total-sub').textContent = statusTotalWd+' total';
+  document.getElementById('wd-status-center-num').textContent = statusTotalWd;
+
+  const statusLegendEl = document.getElementById('wd-status-legend');
+  statusLegendEl.innerHTML = statusLabelsWd.map((lbl,i)=>{
+    const pct = statusTotalWd ? ((statusDataWd[i]/statusTotalWd)*100).toFixed(1) : '0.0';
+    return `<div class="wd-cat-leg-item">
+      <span class="wd-cat-leg-dot" style="background:${statusColorsWd[i]}"></span>
+      <span class="wd-cat-leg-name">${lbl}</span>
+      <span class="wd-cat-leg-val">${statusDataWd[i]}</span>
+      <span class="wd-cat-leg-pct">${pct}%</span>
+    </div>`;
+  }).join('') || `<div style="font-family:'Outfit',sans-serif;font-size:.76rem;color:var(--muted);padding:8px">No data</div>`;
+
+  const statusCanvas = document.getElementById('wd-chart-status');
+  if(statusCanvas && statusLabelsWd.length){
+    wdChartStatus = new Chart(statusCanvas.getContext('2d'),{
+      type:'doughnut',
+      data:{
+        labels: statusLabelsWd,
+        datasets:[{
+          data: statusDataWd,
+          backgroundColor: statusColorsWd.map(c=>c+'E6'),
+          hoverBackgroundColor: statusColorsWd,
+          borderColor:'#fff',
+          borderWidth: 3,
+          hoverOffset: 10,
+          borderRadius: 4,
+          spacing: 2
+        }]
+      },
+      plugins:[{
+        id:'statusDonutShadow',
+        beforeDatasetsDraw(chart){
+          const {ctx} = chart;
+          ctx.save();
+          ctx.shadowColor='rgba(21,49,140,.28)';
+          ctx.shadowBlur=14;
+          ctx.shadowOffsetY=6;
+        },
+        afterDatasetsDraw(chart){ chart.ctx.restore(); }
+      }],
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        cutout:'72%',
+        devicePixelRatio: Math.max(window.devicePixelRatio || 1, 2),
+        animation:{ animateRotate:true, duration:900, easing:'easeOutQuart' },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{
+            backgroundColor:'#0a1642',
+            titleColor:'#ffffff',
+            bodyColor:'#ffffff',
+            titleFont:{family:'Montserrat',size:11,weight:'800'},
+            bodyFont:{family:'Montserrat',size:12,weight:'700'},
+            bodySpacing:4,
+            padding:10, cornerRadius:9, displayColors:true, boxPadding:4,
+            boxWidth:10, boxHeight:10,
+            borderColor:'rgba(47,155,255,.5)', borderWidth:1, caretSize:6,
+            animation:{ duration:0 },
+            callbacks:{
+              title: items => items[0].label,
+              label: ctx => `${ctx.parsed} (${statusTotalWd ? ((ctx.parsed/statusTotalWd)*100).toFixed(1) : 0}%)`
+            }
+          }
+        }
+      }
+    });
+  }
 }
 
 // Returns just the first name part, unless the first part is a generic prefix
@@ -5333,7 +5815,7 @@ function shortEngName(name){
 // ===== DOWNLOAD TASK REPORT MODAL =====
 function openDownloadModal(){
   if(!misRows.length){ toast('⚠ No MIS data available!'); return; }
-  const extraNames=[...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n)).sort();
+  const extraNames=[...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n) && !EXCLUDED_ENGINEER_NAMES.includes(n)).sort();
   const engList=[...ENGINEERS,...extraNames];
   const container=document.getElementById('dl-eng-list');
   container.innerHTML=engList.map(name=>`

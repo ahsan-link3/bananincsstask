@@ -738,9 +738,10 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 }
 .wd-cat-body{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
 .wd-cat-donut-wrap{position:relative;width:min(260px,44vw);height:220px;flex-shrink:0;margin:0 auto}
+.wd-cat-donut-wrap canvas{position:relative;z-index:2}
 .wd-cat-center{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  text-align:center;pointer-events:none;
+  text-align:center;pointer-events:none;z-index:1;
 }
 .wd-cat-center .num{font-family:'Montserrat',sans-serif;font-size:1.5rem;font-weight:900;color:var(--navy);line-height:1}
 .wd-cat-center .lbl{font-family:'Outfit',sans-serif;font-size:.58rem;font-weight:700;color:var(--muted);letter-spacing:.4px;margin-top:2px}
@@ -4176,10 +4177,10 @@ function renderEngDetail(){
 
   // Single header row: Date | Support Type | status cols... | Tot.
   thead.innerHTML=`<tr style="background:linear-gradient(90deg,#15318c,#1560ba)">
-    <th style="width:72px;color:#fff;border-bottom:2px solid rgba(255,255,255,.25);border-right:2px solid rgba(255,255,255,.3);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;vertical-align:middle;padding:5px 6px;white-space:nowrap">${erView==='day'?'Date':'Month'}</th>
-    <th style="width:120px;color:#fff;border-bottom:2px solid rgba(255,255,255,.25);border-right:2px solid rgba(255,255,255,.4);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;vertical-align:middle;padding:5px 6px;white-space:nowrap">Support Type</th>
-    ${statuses.map(s=>{const ws=s.trim().split(/\s+/);const ml=Math.max(...ws.map(w=>w.length));const dw=Math.max(Math.ceil(ml*6+8),20)+'px';return`<th style="width:${dw};min-width:${dw};color:#ffe9b3;border-bottom:2px solid rgba(255,255,255,.25);border-right:1px solid rgba(255,255,255,.15);text-align:center;font-family:'Montserrat',sans-serif;font-size:.58rem;font-weight:700;padding:3px 2px;vertical-align:middle"><div style="white-space:normal;word-break:normal;overflow-wrap:normal;line-height:1.25;text-align:center">${s}</div></th>`;}).join('')}
-    <th style="width:44px;color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:900;vertical-align:middle;padding:5px 4px;white-space:nowrap">Total</th>
+    <th style="position:sticky;top:0;z-index:3;width:72px;color:#fff;background:linear-gradient(90deg,#15318c,#1560ba);border-bottom:2px solid rgba(255,255,255,.25);border-right:2px solid rgba(255,255,255,.3);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;vertical-align:middle;padding:5px 6px;white-space:nowrap">${erView==='day'?'Date':'Month'}</th>
+    <th style="position:sticky;top:0;z-index:3;width:120px;color:#fff;background:linear-gradient(90deg,#15318c,#1560ba);border-bottom:2px solid rgba(255,255,255,.25);border-right:2px solid rgba(255,255,255,.4);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;vertical-align:middle;padding:5px 6px;white-space:nowrap">Support Type</th>
+    ${statuses.map(s=>{const ws=s.trim().split(/\s+/);const ml=Math.max(...ws.map(w=>w.length));const dw=Math.max(Math.ceil(ml*6+8),20)+'px';return`<th style="position:sticky;top:0;z-index:3;width:${dw};min-width:${dw};color:#ffe9b3;background:linear-gradient(90deg,#15318c,#1560ba);border-bottom:2px solid rgba(255,255,255,.25);border-right:1px solid rgba(255,255,255,.15);text-align:center;font-family:'Montserrat',sans-serif;font-size:.58rem;font-weight:700;padding:3px 2px;vertical-align:middle"><div style="white-space:normal;word-break:normal;overflow-wrap:normal;line-height:1.25;text-align:center">${s}</div></th>`;}).join('')}
+    <th style="position:sticky;top:0;z-index:3;width:44px;color:#ffd54f;background:linear-gradient(90deg,#15318c,#1560ba);border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:900;vertical-align:middle;padding:5px 4px;white-space:nowrap">Total</th>
   </tr>`;
 
   if(!ranged.length){
@@ -4748,7 +4749,7 @@ chartEng = new Chart(document.getElementById('chart-eng'),{
     maintainAspectRatio:false,
     plugins:{
       legend:{display:false},
-      tooltip:{callbacks:{title:i=>ENGINEERS[i[0].dataIndex], label:ctx=>` ${ctx.parsed.y} tasks`}}
+      tooltip:{animation:{duration:0}, callbacks:{title:i=>ENGINEERS[i[0].dataIndex], label:ctx=>` ${ctx.parsed.y} tasks`}}
     },
     scales:{
       y:{
@@ -4796,6 +4797,7 @@ chartEng = new Chart(document.getElementById('chart-eng'),{
     responsive:true,
     maintainAspectRatio:false,
     cutout:'65%',
+    devicePixelRatio: Math.max(window.devicePixelRatio || 1, 2),
     plugins:{
       legend:{
         display:true,
@@ -4809,8 +4811,10 @@ chartEng = new Chart(document.getElementById('chart-eng'),{
         }
       },
       tooltip:{
+        animation:{ duration:0 },
         callbacks:{
-          label:ctx=>` ${ctx.label}: ${ctx.parsed}`
+          title: items => items[0].label,
+          label:ctx=>`${ctx.parsed}`
         }
       }
     }
@@ -4906,6 +4910,18 @@ chartEng = new Chart(document.getElementById('chart-eng'),{
 
 // ===== NEW WORK DASHBOARD (Date wise & Engineer wise bar charts) =====
 let wdChartDate=null, wdChartEng=null, wdChartCat=null;
+
+// Once the custom webfonts are fully loaded, force a redraw of any chart(s)
+// already on screen. If a chart's first paint happens before its font has
+// finished loading, Chart.js measures/draws text with a fallback font —
+// which is what made canvas tooltip text look blurry/garbled.
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(()=>{
+    [chartEng,chartCat,chartDay,chartTt,wdChartDate,wdChartEng,wdChartCat].forEach(c=>{
+      if(c && typeof c.update==='function') c.update();
+    });
+  });
+}
 
 function onWdMonthChange(){
   // Selecting a month clears any custom date-range so the month filter takes effect cleanly
@@ -5096,6 +5112,7 @@ function renderWorkDash(){
         legend:{display:false},
         tooltip:{
           enabled:true,
+          animation:{duration:0},
           backgroundColor:'#0a1642',
           titleFont:{family:'Montserrat',size:11,weight:'800'},
           bodyFont:{family:'Outfit',size:11,weight:'700'},
@@ -5178,6 +5195,7 @@ function renderWorkDash(){
         legend:{display:false},
         tooltip:{
           enabled:true,
+          animation:{duration:0},
           backgroundColor:'#0a1642',
           titleFont:{family:'Montserrat',size:11,weight:'800'},
           bodyFont:{family:'Outfit',size:11,weight:'700'},
@@ -5267,17 +5285,32 @@ function renderWorkDash(){
         responsive:true,
         maintainAspectRatio:false,
         cutout:'72%',
+        devicePixelRatio: Math.max(window.devicePixelRatio || 1, 2),
         animation:{ animateRotate:true, duration:900, easing:'easeOutQuart' },
         plugins:{
           legend:{ display:false },
           tooltip:{
             backgroundColor:'#0a1642',
+            titleColor:'#ffffff',
+            bodyColor:'#ffffff',
             titleFont:{family:'Montserrat',size:11,weight:'800'},
-            bodyFont:{family:'Outfit',size:11,weight:'700'},
+            bodyFont:{family:'Montserrat',size:12,weight:'700'},
+            bodySpacing:4,
             padding:10, cornerRadius:9, displayColors:true, boxPadding:4,
+            boxWidth:10, boxHeight:10,
             borderColor:'rgba(47,155,255,.5)', borderWidth:1, caretSize:6,
+            // The chart's own dataset animation duration (900ms, set below)
+            // was leaking into the tooltip's fade animation too, so quick
+            // hovers across the thin slices never let it reach full opacity —
+            // that's what let the ring/label behind show through the box.
+            animation:{ duration:0 },
             callbacks:{
-              label: ctx => ` ${ctx.label}: ${ctx.parsed} (${catTotalWd ? ((ctx.parsed/catTotalWd)*100).toFixed(1) : 0}%)`
+              // Category name already shows as the tooltip title — keep the body
+              // short (count + %) so it never has to wrap inside the small
+              // donut canvas. A long wrapped line was overlapping itself and
+              // rendering as garbled/unreadable text.
+              title: items => items[0].label,
+              label: ctx => `${ctx.parsed} (${catTotalWd ? ((ctx.parsed/catTotalWd)*100).toFixed(1) : 0}%)`
             }
           }
         }

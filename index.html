@@ -800,7 +800,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   margin-left:auto;font-family:'Outfit',sans-serif;font-size:.56rem;font-weight:700;color:var(--muted);
   background:#eef5ff;border:1px solid #d8ebff;padding:1px 7px;border-radius:20px;
 }
-.wd-cat-body{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+.wd-cat-body{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;justify-content:center}
 .wd-cat-donut-wrap{position:relative;width:min(260px,44vw);height:220px;flex-shrink:0;margin:0 auto}
 .wd-cat-donut-wrap canvas{position:relative;z-index:2}
 .wd-cat-center{
@@ -809,16 +809,29 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 }
 .wd-cat-center .num{font-family:'Montserrat',sans-serif;font-size:1.5rem;font-weight:900;color:var(--navy);line-height:1}
 .wd-cat-center .lbl{font-family:'Outfit',sans-serif;font-size:.58rem;font-weight:700;color:var(--muted);letter-spacing:.4px;margin-top:2px}
-.wd-cat-legend{display:flex;flex-direction:column;gap:4px;flex:1;min-width:130px}
+.wd-cat-legend{display:flex;flex-direction:column;gap:2px;flex:1;min-width:130px}
 .wd-cat-leg-item{
-  display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;
+  display:flex;align-items:center;gap:5px;padding:2px 7px;border-radius:6px;line-height:1.15;
   background:#f5f9ff;border:1px solid #e4f0fc;transition:all .2s ease;cursor:default;
 }
 .wd-cat-leg-item:hover{background:#eaf3ff;transform:translateX(3px);box-shadow:0 3px 10px rgba(21,49,140,.08)}
-.wd-cat-leg-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0;box-shadow:0 2px 5px rgba(0,0,0,.15)}
-.wd-cat-leg-name{font-family:'Outfit',sans-serif;font-size:.68rem;font-weight:700;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wd-cat-leg-val{font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:900;color:var(--navy)}
-.wd-cat-leg-pct{font-family:'Outfit',sans-serif;font-size:.58rem;font-weight:700;color:var(--muted);min-width:32px;text-align:right}
+.wd-cat-leg-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;box-shadow:0 2px 5px rgba(0,0,0,.15)}
+.wd-cat-leg-name{font-family:'Outfit',sans-serif;font-size:.62rem;font-weight:700;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wd-cat-leg-val{font-family:'Montserrat',sans-serif;font-size:.66rem;font-weight:900;color:var(--navy)}
+.wd-cat-leg-pct{font-family:'Outfit',sans-serif;font-size:.52rem;font-weight:700;color:var(--muted);min-width:28px;text-align:right}
+.wd-cat-legend-more{
+  display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;padding-top:8px;
+  border-top:1px dashed rgba(190,227,248,.9);
+}
+.wd-cat-chip{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;
+  background:#f5f9ff;border:1px solid #e4f0fc;transition:all .2s ease;cursor:default;
+}
+.wd-cat-chip:hover{background:#eaf3ff;box-shadow:0 3px 10px rgba(21,49,140,.08)}
+.wd-cat-chip .chip-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;box-shadow:0 2px 5px rgba(0,0,0,.15)}
+.wd-cat-chip .chip-nm{font-family:'Outfit',sans-serif;font-size:.6rem;font-weight:700;color:var(--text);white-space:nowrap}
+.wd-cat-chip .chip-vl{font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:900;color:var(--navy)}
+.wd-cat-chip .chip-pc{font-family:'Outfit',sans-serif;font-size:.52rem;font-weight:700;color:var(--muted)}
 
 /* ===== Mobile menu button + sidebar overlay (hidden on desktop) ===== */
 .mobile-menu-btn{
@@ -1007,7 +1020,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
     </div>
     <div class="nav-submenu" id="submenu-userpanel">
       <div class="nav-item admin-only" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('maindash',this)"><div class="nav-icon-wrap"><i class="fas fa-tachometer-alt" style="color:#4fc3f7"></i></div><span class="nav-label">Dashboard</span></div>
-      <div class="nav-item admin-only active" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('dashboard',this)"><div class="nav-icon-wrap"><i class="fas fa-ticket-alt" style="color:#f472b6"></i></div><span class="nav-label">Ticket Entry</span></div>
+      <div class="nav-item eng-visible active" id="nav-ticketentry" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('dashboard',this)"><div class="nav-icon-wrap"><i class="fas fa-ticket-alt" style="color:#f472b6"></i></div><span class="nav-label">Ticket Entry</span></div>
       <div class="nav-item admin-only" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('mytask',this)"><div class="nav-icon-wrap"><i class="fas fa-calendar-check" style="color:#4ade80"></i></div><span class="nav-label">My Task</span></div>
       <div class="nav-item admin-only" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('taskreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-bar" style="color:#fb923c"></i></div><span class="nav-label">Task Report</span></div>
       <div class="nav-item eng-visible" id="nav-alltask" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('alltask',this)"><div class="nav-icon-wrap"><i class="fas fa-clipboard-list" style="color:#2dd4bf"></i></div><span class="nav-label">All Completed Tasks</span></div>
@@ -1231,6 +1244,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
         </div>
         <div class="wd-cat-legend" id="wd-cat-legend"></div>
       </div>
+      <div class="wd-cat-legend-more" id="wd-cat-legend-more"></div>
     </div>
 
     <div class="wd-cat-card">
@@ -1249,6 +1263,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
         </div>
         <div class="wd-cat-legend" id="wd-status-legend"></div>
       </div>
+      <div class="wd-cat-legend-more" id="wd-status-legend-more"></div>
     </div>
   </div>
 </div>
@@ -2044,7 +2059,7 @@ async function doLogin() {
       if(typeof backfillLink3IdsForKnownEngineers==='function') await backfillLink3IdsForKnownEngineers();
       renderUserTable();
       setDateDefaults();
-      setTimeout(()=>showPage('engreport', document.getElementById('nav-engreport')), 80);
+      setTimeout(()=>applyDefaultRoleView(), 80);
     } else {
       const known = users[uname] || DEFAULT_USERS[uname];
       errMsg.textContent = known ? 'Incorrect password!' : 'Username not found!';
@@ -2614,6 +2629,31 @@ function setDateDefaults(){
 const _initMi = new Date().getMonth();
 document.getElementById('tr-month-sel').value = String(_initMi);
 document.getElementById('db-month').value = String(new Date().getMonth() + 1).padStart(2, '0');
+}
+
+function applyDefaultRoleView(){
+  if(!currentUser) return;
+  const isAdmin = currentUser.role === 'admin';
+
+  // Reset any open nav groups first
+  document.querySelectorAll('.nav-submenu.open').forEach(m=>m.classList.remove('open'));
+  document.querySelectorAll('.nav-parent.open').forEach(p=>p.classList.remove('open'));
+
+  if(isAdmin){
+    // Admin -> Admin Panel group open, Task Dashboard shown by default
+    const menu = document.getElementById('submenu-adminpanel');
+    const parent = document.getElementById('nav-adminpanel');
+    if(menu) menu.classList.add('open');
+    if(parent) parent.classList.add('open');
+    showPage('workdash', document.getElementById('nav-workdash'));
+  } else {
+    // Engineer -> User Panel group open, Ticket Entry shown by default
+    const menu = document.getElementById('submenu-userpanel');
+    const parent = document.getElementById('nav-userpanel');
+    if(menu) menu.classList.add('open');
+    if(parent) parent.classList.add('open');
+    showPage('dashboard', document.getElementById('nav-ticketentry'));
+  }
 }
 
 function toggleNavGroup(id, el){
@@ -4838,7 +4878,7 @@ document.getElementById('l-user').addEventListener('keydown', e => { if(e.key===
     if(typeof backfillLink3IdsForKnownEngineers==='function') backfillLink3IdsForKnownEngineers();
     renderUserTable();
     setDateDefaults();
-    setTimeout(()=>showPage('engreport', document.getElementById('nav-engreport')), 80);
+    setTimeout(()=>applyDefaultRoleView(), 80);
   } catch(e) {
     localStorage.removeItem('l3_session');
   }
@@ -5360,15 +5400,19 @@ function renderWorkDash(){
     const catTotalSubEl = document.getElementById('wd-cat-total-sub');
     const catCenterNumEl = document.getElementById('wd-cat-center-num');
     const catLegendEl2 = document.getElementById('wd-cat-legend');
+    const catLegendMoreEl2 = document.getElementById('wd-cat-legend-more');
     if(catTotalSubEl) catTotalSubEl.textContent='0 total';
     if(catCenterNumEl) catCenterNumEl.textContent='0';
     if(catLegendEl2) catLegendEl2.innerHTML=`<div style="font-family:'Outfit',sans-serif;font-size:.76rem;color:var(--muted);padding:8px">No data</div>`;
+    if(catLegendMoreEl2) catLegendMoreEl2.innerHTML='';
     const statusTotalSubEl = document.getElementById('wd-status-total-sub');
     const statusCenterNumEl = document.getElementById('wd-status-center-num');
     const statusLegendEl2 = document.getElementById('wd-status-legend');
+    const statusLegendMoreEl2 = document.getElementById('wd-status-legend-more');
     if(statusTotalSubEl) statusTotalSubEl.textContent='0 total';
     if(statusCenterNumEl) statusCenterNumEl.textContent='0';
     if(statusLegendEl2) statusLegendEl2.innerHTML=`<div style="font-family:'Outfit',sans-serif;font-size:.76rem;color:var(--muted);padding:8px">No data</div>`;
+    if(statusLegendMoreEl2) statusLegendMoreEl2.innerHTML='';
     destroyWorkDashCharts();
     return;
   }
@@ -5645,7 +5689,9 @@ function renderWorkDash(){
   document.getElementById('wd-cat-center-num').textContent = catTotalWd;
 
   const catLegendEl = document.getElementById('wd-cat-legend');
-  catLegendEl.innerHTML = catLabelsWd.map((lbl,i)=>{
+  const catLegendMoreEl = document.getElementById('wd-cat-legend-more');
+  const CAT_TOP_COUNT = catLabelsWd.length; // keep the full list in the single side column, no overflow split
+  catLegendEl.innerHTML = catLabelsWd.slice(0, CAT_TOP_COUNT).map((lbl,i)=>{
     const pct = catTotalWd ? ((catDataWd[i]/catTotalWd)*100).toFixed(1) : '0.0';
     return `<div class="wd-cat-leg-item">
       <span class="wd-cat-leg-dot" style="background:${catColorsWd[i]}"></span>
@@ -5654,6 +5700,19 @@ function renderWorkDash(){
       <span class="wd-cat-leg-pct">${pct}%</span>
     </div>`;
   }).join('') || `<div style="font-family:'Outfit',sans-serif;font-size:.76rem;color:var(--muted);padding:8px">No data</div>`;
+
+  if(catLegendMoreEl){
+    catLegendMoreEl.innerHTML = catLabelsWd.slice(CAT_TOP_COUNT).map((lbl,idx)=>{
+      const i = idx + CAT_TOP_COUNT;
+      const pct = catTotalWd ? ((catDataWd[i]/catTotalWd)*100).toFixed(1) : '0.0';
+      return `<div class="wd-cat-chip">
+        <span class="chip-dot" style="background:${catColorsWd[i]}"></span>
+        <span class="chip-nm">${lbl}</span>
+        <span class="chip-vl">${catDataWd[i]}</span>
+        <span class="chip-pc">${pct}%</span>
+      </div>`;
+    }).join('');
+  }
 
   const catCanvas = document.getElementById('wd-chart-cat');
   if(catCanvas && catLabelsWd.length){
@@ -5733,7 +5792,9 @@ function renderWorkDash(){
   document.getElementById('wd-status-center-num').textContent = statusTotalWd;
 
   const statusLegendEl = document.getElementById('wd-status-legend');
-  statusLegendEl.innerHTML = statusLabelsWd.map((lbl,i)=>{
+  const statusLegendMoreEl = document.getElementById('wd-status-legend-more');
+  const STATUS_TOP_COUNT = 11; // keep items through "SMS Send" beside the wheel, rest wrap below
+  statusLegendEl.innerHTML = statusLabelsWd.slice(0, STATUS_TOP_COUNT).map((lbl,i)=>{
     const pct = statusTotalWd ? ((statusDataWd[i]/statusTotalWd)*100).toFixed(1) : '0.0';
     return `<div class="wd-cat-leg-item">
       <span class="wd-cat-leg-dot" style="background:${statusColorsWd[i]}"></span>
@@ -5742,6 +5803,19 @@ function renderWorkDash(){
       <span class="wd-cat-leg-pct">${pct}%</span>
     </div>`;
   }).join('') || `<div style="font-family:'Outfit',sans-serif;font-size:.76rem;color:var(--muted);padding:8px">No data</div>`;
+
+  if(statusLegendMoreEl){
+    statusLegendMoreEl.innerHTML = statusLabelsWd.slice(STATUS_TOP_COUNT).map((lbl,idx)=>{
+      const i = idx + STATUS_TOP_COUNT;
+      const pct = statusTotalWd ? ((statusDataWd[i]/statusTotalWd)*100).toFixed(1) : '0.0';
+      return `<div class="wd-cat-chip">
+        <span class="chip-dot" style="background:${statusColorsWd[i]}"></span>
+        <span class="chip-nm">${lbl}</span>
+        <span class="chip-vl">${statusDataWd[i]}</span>
+        <span class="chip-pc">${pct}%</span>
+      </div>`;
+    }).join('');
+  }
 
   const statusCanvas = document.getElementById('wd-chart-status');
   if(statusCanvas && statusLabelsWd.length){

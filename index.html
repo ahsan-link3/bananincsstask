@@ -1126,7 +1126,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 
       <select id="db-eng" onchange="renderDash()" style="font-size:.76rem;padding:4px 10px;border:1.5px solid var(--border);border-radius:6px;height:30px;background:#eaf3ff;outline:none;font-family:'Outfit',sans-serif;font-weight:600;color:var(--navy)">
         <option value="">All Engineers</option>
-        <option>Prince Hedayet Zaman</option><option>Md. Mostafizur Rahman</option><option>Nabiul Ahsan Bakshi</option>
+        <option>Md. Mostafizur Rahman</option><option>Nabiul Ahsan Bakshi</option>
         <option>Md. Asad</option><option>Taibul Hoque Zehad</option><option>Subroto Saha</option>
         <option>Abu Hasnat</option><option>Muhammed Rabiul Islam</option><option>Md. Azizul Haque Sojol</option>
         <option>Ainul Hoque Rubel</option><option>Md Juel Hossain</option><option>Mrithunjoy Das</option>
@@ -1223,6 +1223,10 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <input type="date" id="wd-df" onchange="renderWorkDash()" style="font-size:.78rem;height:32px;padding:5px 12px;border:1.5px solid var(--border);border-radius:7px;background:#eaf3ff;outline:none;font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy)" title="From Date">
       <span style="font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;color:var(--muted)">→</span>
       <input type="date" id="wd-dt" onchange="renderWorkDash()" style="font-size:.78rem;height:32px;padding:5px 12px;border:1.5px solid var(--border);border-radius:7px;background:#eaf3ff;outline:none;font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy)" title="To Date">
+
+      <select id="wd-eng" onchange="onWdEngChange()" style="font-size:.78rem;padding:5px 12px;border:1.5px solid var(--border);border-radius:7px;height:32px;background:#eaf3ff;outline:none;font-family:'Montserrat',sans-serif;font-weight:700;color:var(--navy);max-width:220px">
+        <option value="">All Engineers</option>
+      </select>
 
       <button onclick="clearWorkDashFilters()" style="padding:0 16px;height:32px;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;border-radius:8px;font-size:.68rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:6px"><i class="fas fa-times"></i> Clear</button>
 
@@ -1358,7 +1362,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
           <div class="fg"><label><i class="fas fa-user-cog"></i>Engineer Name</label>
             <select id="f-eng">
               <option value="">Select Engineer</option>
-              <option>Prince Hedayet Zaman</option>
+              
               <option>Md. Mostafizur Rahman</option>
               <option>Nabiul Ahsan Bakshi</option>
               <option>Md. Asad</option>
@@ -1383,7 +1387,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
                 <span class="cdd-arrow" id="cdd-bnoc-arrow">▼</span>
               </div>
               <div class="cdd-list" id="cdd-bnoc-list" style="display:none">
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Prince Hedayet Zaman" onchange="pickBnoc()"><div class="cdd-check"></div><span>Prince Hedayet Zaman</span></label>
+                
                 <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Md. Mostafizur Rahman" onchange="pickBnoc()"><div class="cdd-check"></div><span>Md. Mostafizur Rahman</span></label>
                 <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Nabiul Ahsan Bakshi" onchange="pickBnoc()"><div class="cdd-check"></div><span>Nabiul Ahsan Bakshi</span></label>
                 <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Md. Asad" onchange="pickBnoc()"><div class="cdd-check"></div><span>Md. Asad</span></label>
@@ -1532,7 +1536,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
             </div>
             <select id="at-eng" onchange="atPage=1;renderAll()" style="flex-shrink:0;font-size:.8rem;padding:4px 10px;border:1.5px solid var(--border);border-radius:6px;height:30px;background:#eaf3ff;outline:none;font-family:'Outfit',sans-serif;font-weight:700;color:#0a1642">
               <option value="">All Engineers</option>
-              <option>Prince Hedayet Zaman</option><option>Md. Mostafizur Rahman</option><option>Nabiul Ahsan Bakshi</option>
+              <option>Md. Mostafizur Rahman</option><option>Nabiul Ahsan Bakshi</option>
               <option>Md. Asad</option><option>Taibul Hoque Zehad</option><option>Subroto Saha</option>
               <option>Abu Hasnat</option><option>Muhammed Rabiul Islam</option><option>Md. Azizul Haque Sojol</option>
               <option>Ainul Hoque Rubel</option><option>Md Juel Hossain</option><option>Mrithunjoy Das</option>
@@ -1848,13 +1852,44 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
     <span id="er-period-badge" style="margin-left:auto;font-size:.68rem;font-family:'Montserrat',sans-serif;font-weight:900;color:#ffd54f;letter-spacing:.5px;white-space:nowrap">—</span>
   </div>
 
-  <!-- Engineer Summary Table -->
-  <div class="tbl-card" style="margin-bottom:0;border-radius:0 0 12px 12px;border-top:none">
-    <div class="tbl-wrap">
-      <table id="er-summary-table" style="border-collapse:collapse;table-layout:fixed">
-        <thead id="er-summary-thead"></thead>
-        <tbody id="er-summary-tbody"></tbody>
-      </table>
+  <!-- Tab bar -->
+  <div style="background:linear-gradient(90deg,#06103a,#0d1f5c);padding:8px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-top:1px solid rgba(255,255,255,.1);box-shadow:inset 0 -1px 0 rgba(255,255,255,.06)">
+    <button id="er-tab-btn-support" onclick="toggleErPanel('support')"
+      style="height:30px;padding:0 16px;border-radius:7px;border:1.5px solid rgba(99,179,255,.35);background:rgba(37,99,235,.18);color:rgba(147,197,253,.85);font-size:.66rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .22s;letter-spacing:.4px;text-transform:uppercase;box-shadow:none">
+      <i class="fas fa-layer-group" style="font-size:.62rem"></i> Support Type Criteria
+    </button>
+    <button id="er-tab-btn-tasktype" onclick="toggleErPanel('tasktype')"
+      style="height:30px;padding:0 16px;border-radius:7px;border:1.5px solid rgba(45,212,191,.3);background:rgba(15,118,110,.18);color:rgba(94,234,212,.8);font-size:.66rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .22s;letter-spacing:.4px;text-transform:uppercase;box-shadow:none">
+      <i class="fas fa-tasks" style="font-size:.62rem"></i> Task Type Criteria
+    </button>
+  </div>
+
+  <!-- Panel: Support Type Criteria (hidden by default) -->
+  <div id="er-panel-support" style="display:none">
+    <div class="tbl-card" style="margin-bottom:0;border-radius:0 0 12px 12px;border-top:none">
+      <div class="tbl-wrap">
+        <table id="er-summary-table" style="border-collapse:collapse;table-layout:fixed">
+          <thead id="er-summary-thead"></thead>
+          <tbody id="er-summary-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel: Task Type Criteria (hidden by default) -->
+  <div id="er-panel-tasktype" style="display:none;margin-top:14px">
+    <div style="background:linear-gradient(90deg,#0f766e,#14b8a6);border-radius:12px 12px 0 0;padding:8px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <i class="fas fa-calendar-check" style="color:#ffe082;font-size:.88rem"></i>
+      <span style="font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:900;color:#fff;letter-spacing:.4px;white-space:nowrap">Engineer Month Wise Report</span>
+      <span style="font-family:'Outfit',sans-serif;font-size:.68rem;font-weight:600;color:rgba(255,255,255,.85)">— click an engineer's name to see day wise floating detail</span>
+    </div>
+    <div class="tbl-card" style="margin-bottom:0;border-radius:0 0 12px 12px;border-top:none">
+      <div class="tbl-wrap">
+        <table id="er-month-table" style="border-collapse:collapse;table-layout:fixed">
+          <thead id="er-month-thead"></thead>
+          <tbody id="er-month-tbody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -3253,11 +3288,14 @@ function mtGoPage(p){
   document.getElementById('page-mytask').scrollTop=0;
 }
 
-const ENGINEERS = ['Prince Hedayet Zaman','Md. Mostafizur Rahman','Nabiul Ahsan Bakshi','Md. Asad','Taibul Hoque Zehad','Subroto Saha','Abu Hasnat','Muhammed Rabiul Islam','Md. Azizul Haque Sojol','Ainul Hoque Rubel','Md Juel Hossain','Mrithunjoy Das','Mohammad Badrul Islam','Abir Roy','Syed Ash Shams'];
+const ENGINEERS = ['Md. Mostafizur Rahman','Nabiul Ahsan Bakshi','Md. Asad','Taibul Hoque Zehad','Subroto Saha','Abu Hasnat','Muhammed Rabiul Islam','Md. Azizul Haque Sojol','Ainul Hoque Rubel','Md Juel Hossain','Mrithunjoy Das','Mohammad Badrul Islam','Abir Roy','Syed Ash Shams'];
 
 // Names that should never show up in Engineer Report / Task Dashboard / charts,
 // even if a matching user account or uploaded MIS Excel row references them.
-const EXCLUDED_ENGINEER_NAMES = ['Shimanto'];
+// Prince Hedayet Zaman is kept out of every engineer list/dropdown/table since the
+// "prince" account is admin-only, not an engineer — but the login/user account itself
+// is untouched (still an admin in DEFAULT_USERS / User Management).
+const EXCLUDED_ENGINEER_NAMES = ['Shimanto','Prince Hedayet Zaman'];
 
 // ===== ID -> Engineer Name map (resolve names from ID column in MIS Excel files) =====
 const ID_NAME_MAP = {
@@ -4337,6 +4375,45 @@ function closeEngModal(){
   renderEngReport();
 }
 
+// ===== ENGINEER REPORT TAB TOGGLE =====
+// Per-button inactive/active color palettes
+const _erTabColors = {
+  support: {
+    offBg:'rgba(37,99,235,.18)', offBorder:'rgba(99,179,255,.35)', offColor:'rgba(147,197,253,.85)', offShadow:'none',
+    onBg:'linear-gradient(135deg,#1d4ed8,#3b82f6)', onBorder:'#60a5fa', onColor:'#fff', onShadow:'0 4px 16px rgba(37,99,235,.5),0 0 0 2px rgba(96,165,250,.3)'
+  },
+  tasktype: {
+    offBg:'rgba(15,118,110,.18)', offBorder:'rgba(45,212,191,.3)', offColor:'rgba(94,234,212,.8)', offShadow:'none',
+    onBg:'linear-gradient(135deg,#0f766e,#14b8a6)', onBorder:'#2dd4bf', onColor:'#fff', onShadow:'0 4px 16px rgba(15,118,110,.5),0 0 0 2px rgba(45,212,191,.3)'
+  }
+};
+// Each tab independently toggles its panel. Both can be open at the same time.
+function toggleErPanel(type){
+  const panel = document.getElementById('er-panel-'+type);
+  const btn   = document.getElementById('er-tab-btn-'+type);
+  if(!panel || !btn) return;
+  const c = _erTabColors[type] || _erTabColors.support;
+  const nowVisible = panel.style.display !== 'none';
+  if(nowVisible){
+    // Hide → reset to off state
+    panel.style.display  = 'none';
+    btn.style.background = c.offBg;
+    btn.style.borderColor= c.offBorder;
+    btn.style.color      = c.offColor;
+    btn.style.boxShadow  = c.offShadow;
+  } else {
+    // Show → set active/on state
+    panel.style.display  = 'block';
+    btn.style.background = c.onBg;
+    btn.style.borderColor= c.onBorder;
+    btn.style.color      = c.onColor;
+    btn.style.boxShadow  = c.onShadow;
+    // Re-render the relevant table so it's populated when revealed
+    if(type==='support') renderEngReport();
+    else if(type==='tasktype') renderEngMonthTable();
+  }
+}
+
 // Resolve engineer/uploader name for each row
 function erRowsInRange(){
   const df=document.getElementById('er-df')?document.getElementById('er-df').value:'';
@@ -4371,35 +4448,18 @@ function renderEngReport(){
   // Support Types are used as column headers in MIS Task Report (simple, no sub-split)
   const supportTypes = [...new Map(misRows.map(r=>{const v=(r.supportType||'—').trim();return[v.toUpperCase(),v];})).values()].sort();
 
-  // Column width based on longest word in header to prevent overflow
+  // Column width = longest single word * px-per-char so no word ever needs to break mid-letter
   const colWidth = t => {
-    // Split exactly as wrapHdr does, then measure the LONGEST LINE
-    const w = t.trim().split(/\s+/);
-    let longestLine;
-    if (w.length < 2) {
-      longestLine = w[0].length;
-    } else {
-      const m = Math.ceil(w.length / 2);
-      const line1 = w.slice(0, m).join(' ');
-      const line2 = w.slice(m).join(' ');
-      longestLine = Math.max(line1.length, line2.length);
-    }
-    // 0.54rem Montserrat 800 ≈ 5.5px/char + 10px padding
-    return Math.max(Math.ceil(longestLine * 5.5 + 10), 28) + 'px';
-  };
-
-  // Split multi-word headers at the natural word boundary — exactly 2 lines, no mid-word breaks
-  const wrapHdr = t => {
-    const w = t.trim().split(/\s+/);
-    if(w.length < 2) return t;
-    const m = Math.ceil(w.length / 2);
-    return w.slice(0,m).join(' ') + '<br>' + w.slice(m).join(' ');
+    const words = t.trim().split(/\s+/);
+    const maxW = Math.max(...words.map(w => w.length));
+    // 0.46rem Montserrat 800 ≈ 5.4px/char + 8px padding — generous enough to keep each word intact
+    return Math.max(Math.ceil(maxW * 5.4 + 8), 26) + 'px';
   };
 
   thead.innerHTML=`<tr style="background:linear-gradient(90deg,#15318c,#1560ba)">
-    <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);width:170px;min-width:170px;text-align:center;padding:4px 9px;font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:900;letter-spacing:.3px;white-space:nowrap;vertical-align:middle">Engineer Name</th>
-    ${supportTypes.map((t,i)=>`<th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);width:${colWidth(t)};min-width:${colWidth(t)};text-align:center;padding:3px 4px;font-family:'Montserrat',sans-serif;font-size:.54rem;font-weight:800;line-height:1.3;vertical-align:middle;word-break:normal;overflow-wrap:normal;background:rgba(255,255,255,${i%2===0?'.06':'.02'})">${wrapHdr(t)}</th>`).join('')}
-    <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);width:44px;text-align:center;padding:3px 3px;font-family:'Montserrat',sans-serif;font-size:.58rem;font-weight:900;white-space:nowrap;vertical-align:middle">Total</th>
+    <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);width:200px;min-width:200px;text-align:center;padding:4px 8px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:900;letter-spacing:.3px;white-space:nowrap;vertical-align:middle;text-shadow:0 1px 3px rgba(0,0,0,.4)">Engineer Name</th>
+    ${supportTypes.map((t,i)=>`<th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);width:${colWidth(t)};min-width:${colWidth(t)};text-align:center;padding:2px 3px;font-family:'Montserrat',sans-serif;font-size:.46rem;font-weight:800;line-height:1.3;vertical-align:middle;white-space:normal;word-break:normal;overflow-wrap:normal;text-shadow:0 1px 2px rgba(0,0,0,.35);background:rgba(255,255,255,${i%2===0?'.06':'.02'})">${t}</th>`).join('')}
+    <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);width:36px;min-width:36px;text-align:center;padding:2px 2px;font-family:'Montserrat',sans-serif;font-size:.5rem;font-weight:900;white-space:nowrap;vertical-align:middle;text-shadow:0 1px 3px rgba(0,0,0,.4)">Total</th>
   </tr>`;
 
   const ranged = erRowsInRange();
@@ -4423,7 +4483,7 @@ function renderEngReport(){
   color:${v>0?'#2452e8':'#c0cce0'};
   border:${v>0?'1.5px solid #93c5fd':'none'};">${v>0?v:'—'}</span></td>`;
     return `<tr onclick="selectEngReportEngineer('${eng.replace(/'/g,"\\'")}')" style="cursor:pointer;border-bottom:1px solid #e8f0f8;transition:background .15s" onmouseover="this.style.background='rgba(47,155,255,.07)'" onmouseout="this.style.background=''" title="Click to view detail">
-      <td style="font-weight:700;font-family:'Outfit',sans-serif;color:var(--navy);font-size:.78rem;padding:3px 9px;text-align:left;white-space:nowrap;border-right:2px solid #cde3fb"><i class="fas fa-user-circle" style="font-size:.68rem;color:var(--accent);margin-right:5px"></i>${eng}</td>
+      <td style="font-weight:700;font-family:'Outfit',sans-serif;color:var(--navy);font-size:.78rem;padding:3px 9px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;border-right:2px solid #cde3fb"><i class="fas fa-user-circle" style="font-size:.68rem;color:var(--accent);margin-right:5px"></i>${eng}</td>
       ${counts.map((v,ci)=>cell(v,ci)).join('')}
       <td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 3px;">
   <span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;border-radius:5px;font-size:.72rem;font-weight:900;padding:0 4px;
@@ -4440,24 +4500,159 @@ function renderEngReport(){
   </tr>`;
 
   renderEngDetail();
+  renderEngMonthTable();
 }
 
-function renderEngDetail(){
-  const nameEl=document.getElementById('er-detail-name');
-  const thead=document.getElementById('er-day-thead');
-  const tbody=document.getElementById('er-day-tbody');
-  if(!erSelectedEngineer){ thead.innerHTML=''; tbody.innerHTML=''; return; }
-  nameEl.textContent=erSelectedEngineer;
+// ===== ENGINEER MONTH WISE TABLE (below the main Engineer Report table) =====
+// Default: shows every engineer's task count broken down by month.
+// Click an engineer's name: expands an inline date-wise breakdown for that
+// engineer, restricted to the current month, from the 1st up to today.
+let erMonthOpenEngineer = null;
 
-  // Show ALL data for this engineer in the modal — no date range restriction
-  const ranged = misRows.filter(r=>r.engineerName===erSelectedEngineer);
+function erSafeId(name){
+  return String(name).replace(/[^a-zA-Z0-9]/g,'_');
+}
+
+function erMonthKeys(){
+  const keys = new Set();
+  misRows.forEach(r=>{
+    const iso = misParseDateISO(r.entryDate);
+    if(iso) keys.add(iso.substring(0,7));
+  });
+  return [...keys].sort();
+}
+
+function erMonthLabel(ym){
+  const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const parts = ym.split('-');
+  return MON[parseInt(parts[1],10)-1] + ' ' + parts[0];
+}
+
+function toggleEngMonthDetail(eng){
+  erMonthOpenEngineer = (erMonthOpenEngineer===eng) ? null : eng;
+  renderEngMonthTable();
+}
+
+function renderEngMonthTable(){
+  const thead=document.getElementById('er-month-thead');
+  const tbody=document.getElementById('er-month-tbody');
+  if(!thead || !tbody) return;
+
+  if(!misRows.length){
+    thead.innerHTML='';
+    tbody.innerHTML=`<tr><td><div class="empty-box"><span class="ei">📅</span><p>No MIS Excel data has been uploaded yet.</p></div></td></tr>`;
+    return;
+  }
+
+  // Use same date range as the top summary table
+  const df = document.getElementById('er-df') ? document.getElementById('er-df').value : '';
+  const dt = document.getElementById('er-dt') ? document.getElementById('er-dt').value : '';
+  const filteredRows = misRows.filter(r=>{
+    const iso = misParseDateISO(r.entryDate);
+    if(df && iso && iso<df) return false;
+    if(dt && iso && iso>dt) return false;
+    return true;
+  });
+
+  // Build task status columns (same as image header: ASSIGN ENGINEER, CLOSE, COLOR UPDATE, etc.)
+  const MERGE_STATUS_MW={'ASSIGN ASSIGN ENGINEER':'ASSIGN ENGINEER','FORWARD':'FORWARD TO OTHER DEPARTMENT','LAN SURVEY':'LAN SURVEY UPDATE'};
+  const _rawStatuses=[...new Map(misRows.map(r=>{const v=(r.taskStatus||'—').trim();return[v.toUpperCase(),v];})).values()].sort();
+  // Filter out the blank-dash bucket and any alias keys (keep only canonical values)
+  const statuses=_rawStatuses.filter(s=>s.trim()!=='—' && !MERGE_STATUS_MW[s.trim().toUpperCase()]);
+
+  const extraNames = [...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n) && !EXCLUDED_ENGINEER_NAMES.includes(n)).sort();
+  const engList = [...ENGINEERS, ...extraNames];
+
+  // Column width = longest single word * px-per-char so no word ever needs to break mid-letter
+  const colWidth = t => {
+    const words = t.trim().split(/\s+/);
+    const maxW = Math.max(...words.map(w => w.length));
+    // 0.46rem Montserrat 800 ≈ 5.4px/char + 8px padding — generous enough to keep each word intact
+    return Math.max(Math.ceil(maxW * 5.4 + 8), 26) + 'px';
+  };
+
+  thead.innerHTML=`<tr style="background:linear-gradient(90deg,#0f766e,#14b8a6)">
+    <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);width:200px;min-width:200px;text-align:center;padding:4px 8px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:900;letter-spacing:.3px;white-space:nowrap;vertical-align:middle;text-shadow:0 1px 3px rgba(0,0,0,.4)">Engineer Name</th>
+    ${statuses.map((t,i)=>`<th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);width:${colWidth(t)};min-width:${colWidth(t)};text-align:center;padding:2px 3px;font-family:'Montserrat',sans-serif;font-size:.46rem;font-weight:800;line-height:1.3;vertical-align:middle;white-space:normal;word-break:normal;overflow-wrap:normal;text-shadow:0 1px 2px rgba(0,0,0,.35);background:rgba(255,255,255,${i%2===0?'.06':'.02'})">${t}</th>`).join('')}
+    <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);width:36px;min-width:36px;text-align:center;padding:2px 2px;font-family:'Montserrat',sans-serif;font-size:.5rem;font-weight:900;white-space:nowrap;vertical-align:middle;text-shadow:0 1px 3px rgba(0,0,0,.4)">Total</th>
+  </tr>`;
+
+  let colTotals = statuses.map(()=>0);
+  let grand = 0;
+
+  const rowsHtml = engList.map(eng=>{
+    const engRows = filteredRows.filter(r=>r.engineerName===eng);
+    const counts = statuses.map(s=>{
+      const su = s.trim().toUpperCase();
+      const aliases = Object.entries(MERGE_STATUS_MW).filter(([k,v])=>v===su).map(([k])=>k);
+      return engRows.filter(r=>{
+        const rs=(r.taskStatus||'—').trim().toUpperCase();
+        return rs===su || aliases.includes(rs);
+      }).length;
+    });
+    const tw = counts.reduce((a,b)=>a+b,0);
+    counts.forEach((c,i)=>colTotals[i]+=c);
+    grand+=tw;
+    const safeName = eng.replace(/'/g,"\\'");
+    const cell=(v,ci)=>`<td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 3px;border-right:1px solid #e8f0f8;background:${ci%2===0?'rgba(236,253,245,.5)':'rgba(240,253,244,.3)'}"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;border-radius:5px;font-size:.72rem;font-weight:800;padding:0 4px;background:${v>0?'linear-gradient(135deg,#ccfbf1,#99f6e4)':'transparent'};color:${v>0?'#0f766e':'#c0cce0'};border:${v>0?'1.5px solid #5eead4':'none'};">${v>0?v:'—'}</span></td>`;
+    return `<tr onclick="selectEngReportEngineer('${safeName}')" style="cursor:pointer;border-bottom:1px solid #e8f0f8;transition:background .15s" onmouseover="this.style.background='rgba(20,184,166,.09)'" onmouseout="this.style.background=''" title="Click to view day-wise detail">
+      <td style="font-weight:700;font-family:'Outfit',sans-serif;color:var(--navy);font-size:.78rem;padding:5px 10px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;border-right:2px solid #cde3fb"><i class="fas fa-user-circle" style="font-size:.68rem;color:#14b8a6;margin-right:5px"></i>${eng}</td>
+      ${counts.map((v,ci)=>cell(v,ci)).join('')}
+      <td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 3px;"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;border-radius:5px;font-size:.72rem;font-weight:900;padding:0 4px;background:${tw>0?'linear-gradient(135deg,#fed7aa,#fdba74)':'#f1f5f9'};color:${tw>0?'#c2410c':'#90a4ae'};border:${tw>0?'2px solid #fb923c':'none'};">${tw>0?tw:'—'}</span></td>
+    </tr>`;
+  }).join('');
+
+  tbody.innerHTML = rowsHtml + `<tr style="background:linear-gradient(90deg,#f0fdfa,#ccfbf1);border-top:2px solid #14b8a6">
+    <td style="font-weight:900;font-family:'Montserrat',sans-serif;color:#134e4a;font-size:.62rem;letter-spacing:.5px;padding:5px 10px;white-space:nowrap;border-right:2px solid #5eead4">TOTAL</td>
+    ${colTotals.map((v,ci)=>`<td style="text-align:center;padding:2px 3px;border-right:1px solid #99f6e4;background:${ci%2===0?'rgba(204,251,241,.6)':'rgba(240,253,250,.6)'}"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:5px;font-size:.7rem;font-weight:900;color:#0f766e;padding:0 3px;background:rgba(15,118,110,.12);border:1.5px solid #5eead4">${v>0?v:'—'}</span></td>`).join('')}
+    <td style="text-align:center;padding:2px 3px;background:rgba(15,118,110,.2)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:20px;border-radius:5px;font-size:.76rem;font-weight:900;color:#134e4a;padding:0 4px;background:rgba(15,118,110,.25);border:2px solid #5eead4">${grand}</span></td>
+  </tr>`;
+}
+
+function renderEngMonthDetailBody(eng){
+  const body = document.getElementById('er-month-detail-body-'+erSafeId(eng));
+  if(!body) return;
+
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const monthStart = `${y}-${String(m+1).padStart(2,'0')}-01`;
+  const todayIso = `${y}-${String(m+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const rows = misRows.filter(r=>{
+    if(r.engineerName!==eng) return false;
+    const iso = misParseDateISO(r.entryDate);
+    if(!iso) return false;
+    return iso>=monthStart && iso<=todayIso;
+  });
+
+  const total = rows.length;
+  const built = buildEngGroupedTable(rows, 'day');
+
+  body.innerHTML = `
+    <div style="font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:800;color:#0f766e;margin-bottom:8px;letter-spacing:.3px">
+      <i class="fas fa-calendar-week"></i> ${MON[m]} ${y} — Date Wise Report (1 ${MON[m].slice(0,3)} → Today) &nbsp;•&nbsp; <span style="color:#c2410c">${total} task${total!==1?'s':''}</span>
+    </div>
+    <div style="overflow:auto;max-height:440px;border-radius:9px;border:1.5px solid #99f6e4">
+      <table style="width:100%;table-layout:fixed;border-collapse:collapse">
+        <thead>${built.theadHTML}</thead>
+        <tbody>${built.tbodyHTML}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+// Builds the rich "support type x status" grouped table (thead+tbody HTML) used
+// both by the Engineer Detail modal (Day Wise / Month Wise tabs) and by the
+// inline month-wise date detail panel. `rows` = already-filtered misRows subset,
+// `groupBy` = 'day' | 'month'.
+function buildEngGroupedTable(rows, groupBy){
   const supportTypes = [...new Map(misRows.map(r=>{const v=(r.supportType||'—').trim();return[v.toUpperCase(),v];})).values()].sort();
   const _rawStatuses=[...new Map(misRows.map(r=>{const v=(r.taskStatus||'—').trim();return[v.toUpperCase(),v];})).values()].sort();
   const MERGE_STATUS={'ASSIGN ASSIGN ENGINEER':'ASSIGN ENGINEER','FORWARD':'FORWARD TO OTHER DEPARTMENT','LAN SURVEY':'LAN SURVEY UPDATE'};
   // Exclude the blank-status "—" bucket — those rows are redistributed into
   // matching taskStatus columns by supportType name (see count logic below).
   const statuses=_rawStatuses.filter(s=>!MERGE_STATUS[s.trim().toUpperCase()] && s.trim()!=='—');
-  const grpBorder='border-right:2px solid rgba(255,255,255,.45);';
 
   // Colour palette — one entry per support type row
   const stPalette = [
@@ -4469,33 +4664,31 @@ function renderEngDetail(){
     {bg:'rgba(207,250,254,.55)',color:'#0891b2',border:'#67e8f9'},
   ];
 
-  // Single header row: Date | Support Type | status cols... | Tot.
-  thead.innerHTML=`<tr style="background:linear-gradient(90deg,#15318c,#1560ba)">
-    <th style="position:sticky;top:0;z-index:3;width:72px;color:#fff;background:linear-gradient(90deg,#15318c,#1560ba);border-bottom:2px solid rgba(255,255,255,.25);border-right:2px solid rgba(255,255,255,.3);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;vertical-align:middle;padding:5px 6px;white-space:nowrap">${erView==='day'?'Date':'Month'}</th>
+  const theadHTML=`<tr style="background:linear-gradient(90deg,#15318c,#1560ba)">
+    <th style="position:sticky;top:0;z-index:3;width:72px;color:#fff;background:linear-gradient(90deg,#15318c,#1560ba);border-bottom:2px solid rgba(255,255,255,.25);border-right:2px solid rgba(255,255,255,.3);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;vertical-align:middle;padding:5px 6px;white-space:nowrap">${groupBy==='day'?'Date':'Month'}</th>
     <th style="position:sticky;top:0;z-index:3;width:120px;color:#fff;background:linear-gradient(90deg,#15318c,#1560ba);border-bottom:2px solid rgba(255,255,255,.25);border-right:2px solid rgba(255,255,255,.4);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:800;vertical-align:middle;padding:5px 6px;white-space:nowrap">Support Type</th>
     ${statuses.map(s=>{const ws=s.trim().split(/\s+/);const ml=Math.max(...ws.map(w=>w.length));const dw=Math.max(Math.ceil(ml*6+8),20)+'px';return`<th style="position:sticky;top:0;z-index:3;width:${dw};min-width:${dw};color:#ffe9b3;background:linear-gradient(90deg,#15318c,#1560ba);border-bottom:2px solid rgba(255,255,255,.25);border-right:1px solid rgba(255,255,255,.15);text-align:center;font-family:'Montserrat',sans-serif;font-size:.58rem;font-weight:700;padding:3px 2px;vertical-align:middle"><div style="white-space:normal;word-break:normal;overflow-wrap:normal;line-height:1.25;text-align:center">${s}</div></th>`;}).join('')}
     <th style="position:sticky;top:0;z-index:3;width:44px;color:#ffd54f;background:linear-gradient(90deg,#15318c,#1560ba);border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:900;vertical-align:middle;padding:5px 4px;white-space:nowrap">Total</th>
   </tr>`;
 
-  if(!ranged.length){
-    tbody.innerHTML=`<tr><td colspan="${statuses.length+3}"><div class="empty-box"><span class="ei">📭</span><p>No records found for ${erSelectedEngineer} in this date range.</p></div></td></tr>`;
-    return;
+  if(!rows.length){
+    return {theadHTML, tbodyHTML:`<tr><td colspan="${statuses.length+3}"><div class="empty-box"><span class="ei">📭</span><p>No records found in this date range.</p></div></td></tr>`};
   }
 
   // Group by day or by month
   const groups = {};
-  ranged.forEach(r=>{
+  rows.forEach(r=>{
     const iso = misParseDateISO(r.entryDate);
-    const key = erView==='day' ? (iso||r.entryDate||'Unknown') : (iso?iso.slice(0,7):'Unknown');
+    const key = groupBy==='day' ? (iso||r.entryDate||'Unknown') : (iso?iso.slice(0,7):'Unknown');
     if(!groups[key]) groups[key]=[];
     groups[key].push(r);
   });
   const keys = Object.keys(groups).sort();
 
-  tbody.innerHTML = keys.map(k=>{
-    const rows = groups[k];
+  const tbodyHTML = keys.map(k=>{
+    const grpRows = groups[k];
     let label = k;
-    if(erView==='day'){
+    if(groupBy==='day'){
       label = /^\d{4}-\d{2}-\d{2}$/.test(k) ? fmtDateDisp(k) : k;
     } else if(/^\d{4}-\d{2}$/.test(k)){
       const [yy,mm]=k.split('-'); label=`${MONTHS_FULL[parseInt(mm)-1]} ${yy}`;
@@ -4508,7 +4701,7 @@ function renderEngDetail(){
       const counts=statuses.map(s=>{
         const su=s.trim().toUpperCase();
         const aliases=Object.entries(MERGE_STATUS).filter(([k,v])=>v===su).map(([k])=>k);
-        return rows.filter(r=>{
+        return grpRows.filter(r=>{
           const rs=(r.taskStatus||'\u2014').trim().toUpperCase();
           const rt=(r.supportType||'\u2014').trim().toUpperCase();
           const normalMatch = rt===t.trim().toUpperCase()&&(rs===su||aliases.includes(rs));
@@ -4541,7 +4734,7 @@ function renderEngDetail(){
     // Subtotal row pinned below each day / month group
     const dayTotal = dayColTotals.reduce((a,b)=>a+b,0);
     const subtotalRow=`<tr style="background:linear-gradient(90deg,rgba(21,49,140,.09),rgba(47,155,255,.06));border-top:1px solid #93c5fd;border-bottom:3px solid #2452e8">
-      <td colspan="2" style="font-weight:900;font-family:'Montserrat',sans-serif;font-size:.6rem;color:#1e3a8a;letter-spacing:.5px;padding:3px 10px;border-right:2px solid #93c5fd;white-space:nowrap;text-align:right;text-transform:uppercase">${erView==='day'?'Day':'Month'} Total</td>
+      <td colspan="2" style="font-weight:900;font-family:'Montserrat',sans-serif;font-size:.6rem;color:#1e3a8a;letter-spacing:.5px;padding:3px 10px;border-right:2px solid #93c5fd;white-space:nowrap;text-align:right;text-transform:uppercase">${groupBy==='day'?'Day':'Month'} Total</td>
       ${dayColTotals.map(v=>`<td style="text-align:center;padding:3px 3px;border-right:1px solid #bfdbfe">
   <span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;border-radius:5px;font-size:.72rem;font-weight:900;padding:0 4px;font-family:'Outfit',sans-serif;
   background:${v>0?'rgba(219,234,254,.9)':'transparent'};
@@ -4555,6 +4748,22 @@ function renderEngDetail(){
     </tr>`;
     return supportRows + subtotalRow;
   }).join('');
+
+  return {theadHTML, tbodyHTML};
+}
+
+function renderEngDetail(){
+  const nameEl=document.getElementById('er-detail-name');
+  const thead=document.getElementById('er-day-thead');
+  const tbody=document.getElementById('er-day-tbody');
+  if(!erSelectedEngineer){ thead.innerHTML=''; tbody.innerHTML=''; return; }
+  nameEl.textContent=erSelectedEngineer;
+
+  // Show ALL data for this engineer in the modal — no date range restriction
+  const ranged = misRows.filter(r=>r.engineerName===erSelectedEngineer);
+  const built = buildEngGroupedTable(ranged, erView);
+  thead.innerHTML = built.theadHTML;
+  tbody.innerHTML = built.tbodyHTML;
 }
 
 let atPage = 1;
@@ -5432,6 +5641,22 @@ function onWdMonthChange(){
   renderWorkDash();
 }
 
+let wdActiveEngineer='';
+function onWdEngChange(){
+  wdActiveEngineer = document.getElementById('wd-eng').value;
+  renderWorkDash();
+}
+function wdBuildEngineerOptions(){
+  const sel = document.getElementById('wd-eng');
+  if(!sel) return;
+  const extraNames = [...new Set(misRows.map(r=>r.engineerName).filter(Boolean))].filter(n=>!ENGINEERS.includes(n) && !EXCLUDED_ENGINEER_NAMES.includes(n)).sort();
+  const engList = [...ENGINEERS, ...extraNames];
+  const current = wdActiveEngineer;
+  sel.innerHTML = `<option value="">All Engineers</option>` + engList.map(name=>
+    `<option value="${name.replace(/"/g,'&quot;')}" ${name===current?'selected':''}>${name}</option>`
+  ).join('');
+}
+
 function getWorkDashFiltered(){
   const month = document.getElementById('wd-month').value;
   const df    = document.getElementById('wd-df').value;
@@ -5443,6 +5668,7 @@ function getWorkDashFiltered(){
     if(month && iso.substring(5,7)!==month) return false;
     if(df && iso < df) return false;
     if(dt && iso > dt) return false;
+    if(wdActiveEngineer && r.engineerName!==wdActiveEngineer) return false;
     return true;
   });
 }
@@ -5451,6 +5677,8 @@ function clearWorkDashFilters(){
   document.getElementById('wd-month').value='';
   document.getElementById('wd-df').value='';
   document.getElementById('wd-dt').value='';
+  wdActiveEngineer='';
+  document.getElementById('wd-eng').value='';
   renderWorkDash();
 }
 
@@ -5460,6 +5688,7 @@ function destroyWorkDashCharts(){
 }
 
 function renderWorkDash(){
+  wdBuildEngineerOptions();
   if(!misRows.length){
     document.getElementById('wd-total-badge').textContent='0 tasks';
     document.getElementById('wd-stat-row').innerHTML=`<div class="tbl-card" style="grid-column:1/-1;padding:18px;text-align:center;font-family:'Outfit',sans-serif;font-size:.78rem;color:var(--muted)"><i class="fas fa-chart-column" style="font-size:1.1rem;opacity:.4;display:block;margin-bottom:6px"></i>No MIS Excel data has been uploaded yet (this dashboard is built from Engineer Report data — please upload an Excel file from MIS Data Update).</div>`;

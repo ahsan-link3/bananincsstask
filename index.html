@@ -1379,35 +1379,8 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
               <option>Syed Ash Shams</option>
             </select>
           </div>
-          <div class="fg" style="position:relative">
-            <label><i class="fas fa-headset"></i>BNOC/Backend Support Engineer</label>
-            <div class="cdd-wrap" id="cdd-bnoc-wrap">
-              <div class="cdd-btn" id="cdd-bnoc-btn" onclick="toggleBnocDd()">
-                <span id="cdd-bnoc-label">Select Engineer(s) (optional)</span>
-                <span class="cdd-arrow" id="cdd-bnoc-arrow">▼</span>
-              </div>
-              <div class="cdd-list" id="cdd-bnoc-list" style="display:none">
-                
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Md. Mostafizur Rahman" onchange="pickBnoc()"><div class="cdd-check"></div><span>Md. Mostafizur Rahman</span></label>
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Nabiul Ahsan Bakshi" onchange="pickBnoc()"><div class="cdd-check"></div><span>Nabiul Ahsan Bakshi</span></label>
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Md. Asad" onchange="pickBnoc()"><div class="cdd-check"></div><span>Md. Asad</span></label>
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Taibul Hoque Zehad" onchange="pickBnoc()"><div class="cdd-check"></div><span>Taibul Hoque Zehad</span></label>
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Subroto Saha" onchange="pickBnoc()"><div class="cdd-check"></div><span>Subroto Saha</span></label>
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Abu Hasnat" onchange="pickBnoc()"><div class="cdd-check"></div><span>Abu Hasnat</span></label>
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Muhammed Rabiul Islam" onchange="pickBnoc()"><div class="cdd-check"></div><span>Muhammed Rabiul Islam</span></label>
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Md. Azizul Haque Sojol" onchange="pickBnoc()"><div class="cdd-check"></div><span>Md. Azizul Haque Sojol</span></label>
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Ainul Hoque Rubel" onchange="pickBnoc()"><div class="cdd-check"></div><span>Ainul Hoque Rubel</span></label>
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Md Juel Hossain" onchange="pickBnoc()"><div class="cdd-check"></div><span>Md Juel Hossain</span></label>
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Mrithunjoy Das" onchange="pickBnoc()"><div class="cdd-check"></div><span>Mrithunjoy Das</span></label>
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Mohammad Badrul Islam" onchange="pickBnoc()"><div class="cdd-check"></div><span>Mohammad Badrul Islam</span></label>
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Abir Roy" onchange="pickBnoc()"><div class="cdd-check"></div><span>Abir Roy</span></label>
-                <label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="Syed Ash Shams" onchange="pickBnoc()"><div class="cdd-check"></div><span>Syed Ash Shams</span></label>
-              </div>
-            </div>
-            <input type="hidden" id="f-bnoc" value="">
-          </div>
           <div class="fg"><label><i class="fas fa-network-wired"></i>ONU MAC-Address</label>
-            <input type="text" id="f-mac" placeholder="Enter ONU MAC if used">
+            <input type="text" id="f-mac" placeholder="Enter ONU MAC if used" oninput="sanitizeMacInput(this)">
           </div>
           <div class="fg"><label><i class="fas fa-wifi"></i>WiFi Scoring</label>
             <button type="button" class="toggle-single is-no" id="btn-wifi" onclick="toggleSingle('wifi')">
@@ -1500,7 +1473,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   <th>Task Type</th>
   <th>Team</th>
   <th>Engineer</th>
-  <th>Backend Support</th>
+  <th>Technician</th>
   <th>MAC</th>
   <th>WiFi</th>
   <th>Remarks</th>
@@ -1562,7 +1535,6 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
                   <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Installation</th>
                   <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">CR</th>
                   <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Survey</th>
-                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Backend Support</th>
                   <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Non Ticket</th>
                   <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Total Work</th>
                   <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Phone Support</th>
@@ -1646,7 +1618,6 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   <th>Team</th>
   <th>Engineer</th>
   <th>Technician</th>
-  <th>Backend Support</th>
   <th>MAC</th>
   <th>WiFi</th>
   <th>Remarks</th>
@@ -1721,7 +1692,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <ol style="font-family:'Outfit',sans-serif;font-size:.8rem;color:var(--text);padding-left:18px;line-height:2">
         <li><b>Copy</b> data from Google Sheet (without header, data rows only)</li>
         <li><b>Paste</b> into the box below (Ctrl+V)</li>
-        <li>Column order: <b>Date | Ticket ID | Category | Task Type | Team Type | Engineer | BNOC (Engineer name, comma separated if multiple) | MAC | WiFi | Remarks</b></li>
+        <li>Column order: <b>Date | Ticket ID | Category | Task Type | Team Type | Engineer | MAC | WiFi | Remarks</b></li>
         <li>Click the <b>Import</b> button</li>
       </ol>
     </div>
@@ -1757,7 +1728,6 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   <th>Task Type</th>
   <th>Team</th>
   <th>Engineer</th>
-  <th>Backend Support</th>
   <th>MAC</th>
   <th>WiFi</th>
   <th>Remarks</th>
@@ -2406,10 +2376,9 @@ async function parseAndImport() {
       tt:      cols[3] ? cols[3].trim() : '',
       tm:      cols[4] ? cols[4].trim() : '',
       eng:     cols[5] ? cols[5].trim() : '',
-      bnoc:    cols[6] ? cols[6].trim() : '',
-      mac:     cols[7] ? cols[7].trim() : '',
-      wifi:    cols[8] && cols[8].trim().toUpperCase() === 'YES' ? 'YES' : 'NO',
-      remarks: cols[9] ? cols[9].trim() : '',
+      mac:     cols[6] ? cols[6].trim() : '',
+      wifi:    cols[7] && cols[7].trim().toUpperCase() === 'YES' ? 'YES' : 'NO',
+      remarks: cols[8] ? cols[8].trim() : '',
       submittedBy: 'imported'
     });
   }
@@ -2430,7 +2399,6 @@ async function parseAndImport() {
     <td style="color:var(--muted)">${r.tt}</td>
     <td style="color:var(--muted)">${r.tm}</td>
     <td style="font-weight:600;color:var(--blue)">${r.eng}</td>
-    <td><span class="chip ${r.bnoc?'chip-yes':'chip-no'}">${r.bnoc||'—'}</span></td>
     <td style="font-family:'JetBrains Mono',monospace;font-size:.7rem">${r.mac||'—'}</td>
     <td><span class="chip ${r.wifi==='YES'?'chip-yes':'chip-no'}">${r.wifi}</span></td>
     <td style="color:var(--muted)">${r.remarks||'—'}</td>
@@ -2748,8 +2716,8 @@ async function doDeleteUser(uname, displayName) {
 
   // ENGINEERS only ever grows on its own (syncEngineersFromUsers adds, never removes),
   // so explicitly drop this person from the live Engineer list here — this instantly
-  // removes them from Ticket Entry, Dashboard/All Completed Tasks filters, and the
-  // BNOC/Backend Support picker, without needing a page reload.
+  // removes them from Ticket Entry, Dashboard/All Completed Tasks filters,
+  // without needing a page reload.
   if(deletedUser && deletedUser.name){
     const idx = ENGINEERS.indexOf(deletedUser.name);
     if(idx !== -1) ENGINEERS.splice(idx,1);
@@ -2998,7 +2966,7 @@ function toggleCdd(key){
   const list=document.getElementById('cdd-'+key+'-list');
   const btn=document.getElementById('cdd-'+key+'-btn');
   const open=list.style.display==='none';
-  ['cat','tt','tm','bnoc'].forEach(k=>{
+  ['cat','tt','tm'].forEach(k=>{
     document.getElementById('cdd-'+k+'-list').style.display='none';
     document.getElementById('cdd-'+k+'-btn').classList.remove('open');
   });
@@ -3027,39 +2995,8 @@ function resetCdd(key,placeholder){
   lbl.textContent=placeholder; lbl.style.color='';
 }
 
-// ===== BNOC/BACKEND SUPPORT — MULTI-SELECT ENGINEER DROPDOWN =====
-function toggleBnocDd(){
-  const list=document.getElementById('cdd-bnoc-list');
-  const btn=document.getElementById('cdd-bnoc-btn');
-  const open=list.style.display==='none';
-  ['cat','tt','tm'].forEach(k=>{
-    document.getElementById('cdd-'+k+'-list').style.display='none';
-    document.getElementById('cdd-'+k+'-btn').classList.remove('open');
-  });
-  if(open){list.style.display='block';btn.classList.add('open');}
-  else{list.style.display='none';btn.classList.remove('open');}
-}
-function pickBnoc(){
-  const checked=Array.from(document.querySelectorAll('input[name="f-bnoc-eng"]:checked')).map(c=>c.value);
-  document.getElementById('f-bnoc').value=checked.join(', ');
-  const lbl=document.getElementById('cdd-bnoc-label');
-  if(checked.length===0){
-    lbl.textContent='Select Engineer(s) (optional)';
-    lbl.style.color=''; lbl.style.fontWeight=''; lbl.style.fontSize=''; lbl.style.fontFamily='';
-  } else {
-    lbl.textContent=checked.length===1?checked[0]:checked.length+' Engineers Selected';
-    lbl.style.color='var(--navy)'; lbl.style.fontWeight='900'; lbl.style.fontSize='.85rem'; lbl.style.fontFamily='\'Outfit\',sans-serif';
-  }
-}
-function resetBnocDd(){
-  document.querySelectorAll('input[name="f-bnoc-eng"]').forEach(c=>c.checked=false);
-  document.getElementById('f-bnoc').value='';
-  const lbl=document.getElementById('cdd-bnoc-label');
-  lbl.textContent='Select Engineer(s) (optional)'; lbl.style.color='';
-}
-
 document.addEventListener('click',function(e){
-  ['cat','tt','tm','bnoc'].forEach(k=>{
+  ['cat','tt','tm'].forEach(k=>{
     const wrap=document.getElementById('cdd-'+k+'-wrap');
     if(wrap&&!wrap.contains(e.target)){
       document.getElementById('cdd-'+k+'-list').style.display='none';
@@ -3067,6 +3004,20 @@ document.addEventListener('click',function(e){
     }
   });
 });
+
+// Strip separators (colons, dashes, spaces) from MAC address input and uppercase it,
+// so "HW:TC:20:B4:34:29" is stored/entered everywhere as "HWTC20B43429".
+function sanitizeMacInput(el){
+  const pos = el.selectionStart;
+  const before = el.value;
+  const cleaned = before.replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+  if(cleaned !== before){
+    el.value = cleaned;
+    const diff = before.length - cleaned.length;
+    const newPos = Math.max(0, (pos||cleaned.length) - diff);
+    el.setSelectionRange(newPos,newPos);
+  }
+}
 
 async function submitTicket(){
   const d=document.getElementById('f-date').value;
@@ -3111,12 +3062,8 @@ async function submitTicket(){
   btn.disabled=true;
   btn.innerHTML=`<i class="fas fa-spinner fa-spin"></i> Saving ${ticketList.length} ticket(s)...`;
 
-  const bnocVal = document.getElementById('f-bnoc').value.trim();
-  const bnocEngineers = bnocVal ? bnocVal.split(',').map(s=>s.trim()).filter(s=>s.length>0) : [];
-
   let successCount=0;
   let failCount=0;
-  let bnocCount=0;
 
   for(let idx=0; idx<ticketList.length; idx++){
   const ti=ticketList[idx];
@@ -3124,9 +3071,8 @@ async function submitTicket(){
     const ticketData={
       id:Date.now()+Math.random(),
       date:d,ticket:ti,cat,tt,tm,eng,
-      bnoc:bnocVal,
       technician:document.getElementById('f-technician')?document.getElementById('f-technician').value:'',
-      mac:document.getElementById('f-mac').value.trim(),
+      mac:document.getElementById('f-mac').value.trim().replace(/[^a-zA-Z0-9]/g,'').toUpperCase(),
       wifi:document.getElementById('f-wifi').value,
       remarks:document.getElementById('f-remarks').value.trim(),
       submittedBy: currentUser ? currentUser.username : 'unknown'
@@ -3134,25 +3080,6 @@ async function submitTicket(){
     const ok=await window._fbPush(ticketData);
     if(ok) successCount++;
     else failCount++;
-
-    // BNOC/Backend Support: also raise this same ticket under each selected engineer's name
-    if(ok && bnocEngineers.length>0){
-      for(const bEng of bnocEngineers){
-        const bnocRemarks = (ticketData.remarks ? ticketData.remarks+' ' : '') + '[BNOC/Backend Support]';
-        const bnocTicketData={
-          id:Date.now()+Math.random(),
-          date:d,ticket:ti,cat,tt,tm,
-          eng:bEng,
-          bnoc:'',
-          mac:ticketData.mac,
-          wifi:ticketData.wifi,
-          remarks:bnocRemarks,
-          submittedBy: currentUser ? currentUser.username : 'unknown'
-        };
-        const bOk=await window._fbPush(bnocTicketData);
-        if(bOk) bnocCount++;
-      }
-    }
   }
 
   btn.disabled=false;
@@ -3160,12 +3087,12 @@ async function submitTicket(){
 
  if(successCount>0){
     // Only Ticket ID, MAC, Remarks are reset
-    // Category, Task Type, Team Type, Engineer, BNOC, WiFi remain the same
+    // Category, Task Type, Team Type, Engineer, WiFi remain the same
     ['f-ticket','f-mac','f-remarks'].forEach(i=>document.getElementById(i).value='');
   }
 
   if(failCount===0){
-    toast(`✅ ${successCount} ticket(s) saved successfully!${bnocCount>0?` +${bnocCount} BNOC support ticket(s) raised!`:''}`);
+    toast(`✅ ${successCount} ticket(s) saved successfully!`);
   } else if(successCount===0){
     toast(`❌ All ${failCount} ticket(s) failed! Check connection.`);
   } else {
@@ -3203,51 +3130,6 @@ function firstNamePart(fullName) {
   const norm = words[0].toLowerCase().replace(/\.$/, '');
   if (words.length > 1 && norm === 'md') idx = 1; // skip "Md." / "Md" prefix, take the next part
   return words[idx] || fullName;
-}
-function shortenBnocNames(raw) {
-  if (!raw) return raw;
-  return raw.split(',').map(n => firstNamePart(n.trim())).filter(Boolean).join(', ');
-}
-function renderBnocCell(t) {
-  const key = t.firebaseKey || t.id;
-  const canEdit = currentUser && currentUser.role === 'admin';
-  const raw = (t.bnoc || '').trim();
-  const isLegacyYes = raw === 'YES';
-  const hasNames = raw && raw !== 'YES' && raw !== 'NO';
-  const display = hasNames ? shortenBnocNames(raw) : (isLegacyYes ? 'YES' : '—');
-  const active = hasNames || isLegacyYes;
-  if (!canEdit) {
-    return `<span class="chip ${active?'chip-yes':'chip-no'}" title="${hasNames?raw:''}">${display}</span>`;
-  }
-  return `
-    <div style="position:relative;display:inline-block">
-      <button onclick="openBnocEdit('${key}')" style="background:${active?'linear-gradient(135deg,#d1fae5,#a7f3d0)':'#f1f5f9'};border:1.5px solid ${active?'#6ee7b7':'#e2e8f0'};border-radius:20px;padding:2px 10px;font-size:.65rem;font-weight:700;font-family:'Montserrat',sans-serif;color:${active?'#065f46':'#5d7ba8'};cursor:pointer;display:flex;align-items:center;gap:5px;max-width:170px;white-space:normal;text-align:left;transition:all .2s" title="${hasNames?raw+' — click to edit':'Click to edit BNOC engineer(s)'}">
-        ${display}
-        <i class="fas fa-pencil-alt" style="font-size:.5rem;opacity:.7;flex-shrink:0"></i>
-      </button>
-    </div>`;
-}
-
-async function openBnocEdit(firebaseKey) {
-  const canEdit = currentUser && currentUser.role === 'admin';
-  if (!canEdit) return;
-
-  const ticket = tickets.find(t => (t.firebaseKey || t.id) == firebaseKey);
-  if (!ticket) return;
-
-  const currentVal = (ticket.bnoc && ticket.bnoc !== 'NO') ? ticket.bnoc : '';
-  const newVal = prompt(`Edit BNOC/Backend Support Engineer(s) (separate multiple names with commas):\n\nTicket: ${ticket.ticket}`, currentVal === 'YES' ? '' : currentVal);
-  if (newVal === null) return;
-
-  try {
-    const { getDatabase, ref, update } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
-    const db = getDatabase();
-    await update(ref(db, 'tickets/' + ticket.firebaseKey), { bnoc: newVal.trim() });
-    toast(`✅ BNOC updated: ${ticket.ticket}`);
-  } catch(e) {
-    console.error(e);
-    toast('❌ BNOC update failed!');
-  }
 }
 function renderRemarksCell(t) {
   const key = t.firebaseKey || t.id;
@@ -3307,9 +3189,6 @@ function buildRows(arr,tbodyId,withDel,isMyTask,startIdx=0){
     <td>${t.tm}</td>
     <td style="color:var(--blue);font-weight:700">${t.eng}</td>
     <td style="font-size:.75rem;color:#7c3aed;font-weight:600;white-space:nowrap">${techName?`<i class="fas fa-hard-hat" style="font-size:.6rem;margin-right:3px;color:#a855f7"></i>${techName}`:'<span style="color:#b0bec5">—</span>'}</td>
-    <td id="bnoc-cell-${t.firebaseKey||t.id}">
-      ${renderBnocCell(t)}
-    </td>
     <td style="font-family:'JetBrains Mono',monospace;padding:5px 4px">${t.mac||'—'}</td>
     <td><span class="chip ${t.wifi==='YES'?'chip-yes':'chip-no'}">${t.wifi}</span></td>
     <td style="max-width:150px;white-space:normal">${t.remarks||'—'}</td>
@@ -3334,19 +3213,9 @@ async function delTicket(fk, fromMyTask){
 function getMyTickets(){
   if(!currentUser) return [];
   if(currentUser.role==='admin'){
-    // Admin overview: hide synthetic BNOC/Backend Support duplicate rows,
-    // show only the original (closing engineer's) ticket.
-    return tickets.filter(t=>!(t.remarks && t.remarks.includes('[BNOC/Backend Support]')));
+    return tickets;
   }
-  return tickets.filter(t=>{
-    const isBnocSynthetic = t.remarks && t.remarks.includes('[BNOC/Backend Support]');
-    if(isBnocSynthetic){
-      // This record only appears in the My Task of the engineer the Backend Support was raised for,
-      // and will not appear in the submitter's (closing engineer's) My Task.
-      return t.eng===currentUser.name;
-    }
-    return t.eng===currentUser.name || t.submittedBy===currentUser.username;
-  });
+  return tickets.filter(t=>t.eng===currentUser.name || t.submittedBy===currentUser.username);
 }
 
 let mtPage = 1;
@@ -3368,9 +3237,7 @@ function renderMyTask(){
     (!df||t.date===df)&&
     (!s||(t.ticket.toLowerCase().includes(s)||t.eng.toLowerCase().includes(s)))
   ).filter(t=>{
-    const isBnocSynthetic = t.remarks && t.remarks.includes('[BNOC/Backend Support]');
-    if(currentUser.role==='admin') return !isBnocSynthetic;
-    if(isBnocSynthetic) return t.eng===currentUser.name;
+    if(currentUser.role==='admin') return true;
     return t.eng===currentUser.name || t.submittedBy===currentUser.username;
   });
   buildStats(statBase,'Installation,Troubleshoot,CR,Survey'.split(','),'mt-stats');
@@ -3456,8 +3323,8 @@ Object.keys(ID_NAME_MAP).forEach(k=>{
 
 // Keep ENGINEERS in sync with any user accounts created via User Management —
 // so a brand-new engineer immediately shows up everywhere an "Engineer" list is
-// used (Ticket Entry, filters, Task Report, Engineer Report, Work Dashboard, MIS,
-// BNOC/Backend Support picker, etc.), even before a Link3 ID or any MIS Excel data
+// used (Ticket Entry, filters, Task Report, Engineer Report, Work Dashboard, MIS),
+// even before a Link3 ID or any MIS Excel data
 // has been added for them. Generic admin-only accounts (e.g. "Admin"/"Test1") are
 // kept out unless they've been explicitly linked to a Link3 ID. ENGINEERS is const
 // but its array contents can still be mutated (push), which is what we do here.
@@ -3475,8 +3342,8 @@ function syncEngineersFromUsers(){
 syncEngineersFromUsers();
 
 // Refresh every static Engineer dropdown / checkbox-list in the User Panel (Dashboard
-// filter, Ticket Entry's Engineer Name select, All Completed Tasks filter, and the
-// BNOC/Backend Support Engineer picker) so they always mirror the live ENGINEERS list —
+// filter, Ticket Entry's Engineer Name select, and the All Completed Tasks filter)
+// so they always mirror the live ENGINEERS list —
 // called on load and every time syncEngineersFromUsers() runs (new user, Link3 ID set,
 // Firebase sync, etc.).
 function populateEngineerDropdowns(){
@@ -3502,14 +3369,6 @@ function populateEngineerDropdowns(){
     const cur = fEng.value;
     fEng.innerHTML = `<option value="">Select Engineer</option>${optionsHtml}`;
     fEng.value = cur;
-  }
-
-  const bnocList = document.getElementById('cdd-bnoc-list');
-  if(bnocList){
-    const checked = new Set(Array.from(bnocList.querySelectorAll('input[name="f-bnoc-eng"]:checked')).map(cb=>cb.value));
-    bnocList.innerHTML = names.map(name=>
-      `<label class="cdd-item"><input type="checkbox" name="f-bnoc-eng" value="${name.replace(/"/g,'&quot;')}" onchange="pickBnoc()" ${checked.has(name)?'checked':''}><div class="cdd-check"></div><span>${name}</span></label>`
-    ).join('');
   }
 }
 
@@ -3597,31 +3456,19 @@ function renderReport(){
   // Build engineer summary — always show all engineers
   const sb=document.getElementById('tr-summary-tbody');
   const engList = ENGINEERS.filter(n=>!EXCLUDED_ENGINEER_NAMES.includes(n));
-  let totalTS=0,totalIN=0,totalCR=0,totalSV=0,totalBN=0,totalNT=0,totalTW=0,totalPS=0;
+  let totalTS=0,totalIN=0,totalCR=0,totalSV=0,totalNT=0,totalTW=0,totalPS=0;
 
   sb.innerHTML=engList.map(eng=>{
     const et=ranged.filter(t=>t.eng===eng);
-    // Synthetic tickets raised under a Backend Support engineer's name should ONLY
-    // count in the Backend Support column, not in Troubleshoot/Installation/CR/Survey/Non Ticket/Phone Support.
-    const etMain=et.filter(t=>!(t.remarks && t.remarks.includes('[BNOC/Backend Support]')));
-    const ts=etMain.filter(t=>t.cat==='Troubleshoot').length;
-    const ins=etMain.filter(t=>t.cat==='Installation').length;
-    const cr=etMain.filter(t=>t.cat==='CR').length;
-    const sv=etMain.filter(t=>t.cat==='Survey').length;
-    const nt=etMain.filter(t=>t.cat==='Non Ticket').length;
-    const ps=etMain.filter(t=>t.tt==='Phone support').length;
-
-    // Backend Support count: only count in the row of the engineer the support was raised for
-    // (identified by synthetic tag), not in the closing engineer's own row —
-    // only legacy 'YES' (no specific name, did backend support themselves) stays in closer's row.
-    const bn = et.filter(t=>{
-      const isSynthetic = t.remarks && t.remarks.includes('[BNOC/Backend Support]');
-      if(isSynthetic) return true;
-      return t.bnoc === 'YES';
-    }).length;
+    const ts=et.filter(t=>t.cat==='Troubleshoot').length;
+    const ins=et.filter(t=>t.cat==='Installation').length;
+    const cr=et.filter(t=>t.cat==='CR').length;
+    const sv=et.filter(t=>t.cat==='Survey').length;
+    const nt=et.filter(t=>t.cat==='Non Ticket').length;
+    const ps=et.filter(t=>t.tt==='Phone support').length;
     const tw = ts+ins+cr+sv+nt;
 
-    totalTS+=ts;totalIN+=ins;totalCR+=cr;totalSV+=sv;totalBN+=bn;totalNT+=nt;totalTW+=tw;totalPS+=ps;
+    totalTS+=ts;totalIN+=ins;totalCR+=cr;totalSV+=sv;totalNT+=nt;totalTW+=tw;totalPS+=ps;
     const cell=(v)=>`<td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 4px;">
   <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.7rem;font-weight:800;
   background:${v>0?'linear-gradient(135deg,#dbeafe,#bfdbfe)':'#f1f5f9'};
@@ -3629,7 +3476,7 @@ function renderReport(){
   border:1.5px solid ${v>0?'#93c5fd':'#e2e8f0'};">${v}</span></td>`;
     return `<tr>
       <td style="font-weight:800;font-family:'Outfit',sans-serif;color:var(--navy);font-size:.8rem;padding:3px 8px;">${eng}</td>
-      ${cell(ts)}${cell(ins)}${cell(cr)}${cell(sv)}${cell(bn)}${cell(nt)}
+      ${cell(ts)}${cell(ins)}${cell(cr)}${cell(sv)}${cell(nt)}
       <td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 4px;">
   <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.74rem;font-weight:900;
   background:${tw>0?'linear-gradient(135deg,#fed7aa,#fdba74)':'#f1f5f9'};
@@ -3646,7 +3493,6 @@ function renderReport(){
     <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalIN}</td>
     <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalCR}</td>
     <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalSV}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalBN}</td>
     <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalNT}</td>
     <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem;background:rgba(22,163,74,.15)">${totalTW}</td>
     <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalPS}</td>
@@ -3677,7 +3523,7 @@ function renderTechnicianReport(){
   const df=(document.getElementById('tr-tech-df')||{}).value||'';
   const dt=(document.getElementById('tr-tech-dt')||{}).value||'';
   const filterName=(document.getElementById('tr-tech-name')||{}).value||'';
-  const ranged = tickets.filter(t=>(!df||t.date>=df)&&(!dt||t.date<=dt)&&!(t.remarks&&t.remarks.includes('[BNOC/Backend Support]')));
+  const ranged = tickets.filter(t=>(!df||t.date>=df)&&(!dt||t.date<=dt));
 
   // Update period badge
   const badge=document.getElementById('tr-tech-period-badge');
@@ -3796,7 +3642,7 @@ function renderTechDetail(){
   if(!techModalName) return;
   const df=document.getElementById('tmod-df').value;
   const dt=document.getElementById('tmod-dt').value;
-  let arr = tickets.filter(t=>(t.technician||'')===techModalName && !(t.remarks && t.remarks.includes('[BNOC/Backend Support]')));
+  let arr = tickets.filter(t=>(t.technician||'')===techModalName);
   if(df) arr = arr.filter(t=>t.date>=df);
   if(dt) arr = arr.filter(t=>t.date<=dt);
   arr.sort((a,b)=>b.date.localeCompare(a.date)||(b.id||0)-(a.id||0));
@@ -5139,8 +4985,7 @@ function renderAll(){
     (!cat||t.cat===cat)&&
     (!df||t.date>=df)&&
     (!dt||t.date<=dt)&&
-    (!s||(t.ticket.toLowerCase().includes(s)||t.eng.toLowerCase().includes(s)||(t.remarks||'').toLowerCase().includes(s)||(t.technician||'').toLowerCase().includes(s)))&&
-    !(t.remarks && t.remarks.includes('[BNOC/Backend Support]'))
+    (!s||(t.ticket.toLowerCase().includes(s)||t.eng.toLowerCase().includes(s)||(t.remarks||'').toLowerCase().includes(s)||(t.technician||'').toLowerCase().includes(s)))
   );
   arr.sort((a,b)=>b.date.localeCompare(a.date)||(b.id||0)-(a.id||0));
   buildStats(arr,'Installation,Troubleshoot,CR,Survey'.split(','),'at-stats');
@@ -5200,7 +5045,7 @@ function exportAtExcel(){
 
   rows.sort((a,b)=>{ if(a.date<b.date)return -1; if(a.date>b.date)return 1; return 0; });
 
-  const header=['#','Date','Ticket ID','Category','Task Type','Team','Engineer','BNOC','MAC Address','WiFi','Remarks'];
+  const header=['#','Date','Ticket ID','Category','Task Type','Team','Engineer','MAC Address','WiFi','Remarks'];
   const csvRows=[header];
   rows.forEach((t,i)=>{
     csvRows.push([
@@ -5211,7 +5056,6 @@ function exportAtExcel(){
       t.tt,
       t.tm,
       t.eng,
-      t.bnoc,
       t.mac||'',
       t.wifi,
       t.remarks||''
@@ -5261,7 +5105,7 @@ const DV_PER_PAGE = 30;
 
 function renderDevices(){
   const s=document.getElementById('dv-search').value.toLowerCase();
-  let arr=tickets.filter(t=>t.mac&&(!s||t.mac.toLowerCase().includes(s)||t.ticket.toLowerCase().includes(s))&&!(t.remarks && t.remarks.includes('[BNOC/Backend Support]')));
+  let arr=tickets.filter(t=>t.mac&&(!s||t.mac.toLowerCase().includes(s)||t.ticket.toLowerCase().includes(s)));
   arr.sort((a,b)=>b.date.localeCompare(a.date)||(b.id||0)-(a.id||0));
   const dvTotal=document.getElementById('dv-total-badge');
 if(dvTotal) dvTotal.textContent=arr.length;
@@ -5331,7 +5175,7 @@ const WF_PER_PAGE = 30;
 
 function renderWifi(){
   const s=document.getElementById('wf-search').value.toLowerCase();
-  let arr=tickets.filter(t=>t.wifi==='YES'&&(!s||(t.ticket.toLowerCase().includes(s)||t.eng.toLowerCase().includes(s)))&&!(t.remarks && t.remarks.includes('[BNOC/Backend Support]')));
+  let arr=tickets.filter(t=>t.wifi==='YES'&&(!s||(t.ticket.toLowerCase().includes(s)||t.eng.toLowerCase().includes(s))));
   arr.sort((a,b)=>b.date.localeCompare(a.date)||(b.id||0)-(a.id||0));
   
 // update total badge in tbl-top

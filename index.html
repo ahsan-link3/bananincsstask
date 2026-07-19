@@ -2327,7 +2327,12 @@ function renderUserTable() {
   const isAdminUser = currentUser.role === 'admin';
   const users = getUsers();
   const tb = document.getElementById('usr-tbody');
-  tb.innerHTML = Object.entries(users).map(([uname, u], i) => {
+  const sortedEntries = Object.entries(users).sort(([,a],[,b])=>{
+    if(a.role==='admin' && b.role!=='admin') return -1;
+    if(a.role!=='admin' && b.role==='admin') return 1;
+    return a.name.localeCompare(b.name);
+  });
+  tb.innerHTML = sortedEntries.map(([uname, u], i) => {
     const isMe = uname === currentUser.username;
     const isMainAdmin = uname === 'admin';
     const canDelete = isAdminUser && !isMe && !isMainAdmin;
@@ -2344,7 +2349,7 @@ function renderUserTable() {
       <td><span class="chip chip-yes"><i class="fas fa-circle" style="font-size:.4rem;vertical-align:middle"></i> Active</span></td>
       <td>
         ${isAdminUser ? `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <button onclick="openLink3Modal('${uname}','${u.name}','${u.link3Id||''}')" style="background:linear-gradient(135deg,#0a1642,#2f9bff);color:#fff;border:none;padding:5px 12px;border-radius:7px;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px;transition:filter .2s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-id-card"></i> ${u.link3Id?'Edit':'Set'} ID</button>
+          
           <button onclick="openResetModal('${uname}','${u.name}')" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;padding:5px 12px;border-radius:7px;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px;transition:filter .2s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-key"></i> Reset PW</button>
           ${canDelete ? `<button onclick="doDeleteUser('${uname}','${u.name}')" style="background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;padding:5px 12px;border-radius:7px;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px;transition:filter .2s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-trash"></i> Delete</button>` : ''}
         </div>` : `<span style="color:var(--muted);font-size:.7rem;font-family:'Outfit',sans-serif;font-style:italic"><i class="fas fa-eye"></i> View only</span>`}

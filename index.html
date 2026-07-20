@@ -738,7 +738,11 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 .msg-bubble.own{align-self:flex-end;background:linear-gradient(135deg,#15318c,#2f9bff);color:#fff;border-bottom-right-radius:4px}
 .msg-bubble.other{align-self:flex-start;background:#fff;color:var(--navy);border:1px solid var(--border);border-bottom-left-radius:4px}
 .msg-bubble.mentioned{box-shadow:0 0 0 2px #f59e0b,0 2px 6px rgba(0,0,0,.06)}
-.msg-meta{font-size:.65rem;font-weight:800;opacity:.65;margin-bottom:3px;font-family:'Montserrat',sans-serif;display:flex;gap:6px;align-items:center}
+.msg-meta{font-size:.65rem;font-weight:800;opacity:.65;margin-bottom:3px;font-family:'Montserrat',sans-serif;display:flex;gap:6px;align-items:center;justify-content:space-between}
+.msg-bubble .msg-actions{display:inline-flex;gap:4px;flex-shrink:0}
+.msg-actions button{border:none;background:rgba(0,0,0,.06);color:var(--muted);width:20px;height:20px;border-radius:6px;cursor:pointer;font-size:.62rem;flex-shrink:0}
+.msg-bubble.own .msg-actions button{background:rgba(255,255,255,.22);color:#fff}
+.msg-actions button:hover,.msg-actions button:active{opacity:.75}
 .msg-tag{background:rgba(47,155,255,.18);color:#15318c;font-weight:800;padding:1px 6px;border-radius:6px;font-size:.78rem;white-space:nowrap}
 .msg-bubble.own .msg-tag{background:rgba(255,255,255,.25);color:#fff}
 .msg-empty{margin:auto;text-align:center;color:var(--muted);font-family:'Outfit',sans-serif;font-size:.85rem}
@@ -765,11 +769,6 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 .msg-sidebar-item.active .msg-side-badge{background:rgba(255,255,255,.35)}
 .msg-sidebar-divider{font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:10px 8px 4px}
 .msg-main{flex:1;display:flex;flex-direction:column;min-height:0;gap:10px}
-.msg-bubble .msg-actions{position:absolute;top:4px;right:-2px;display:none;gap:4px;transform:translateX(100%)}
-.msg-bubble.own:hover .msg-actions{display:flex}
-.msg-actions button{border:none;background:rgba(0,0,0,.06);color:var(--muted);width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:.68rem}
-.msg-bubble.own .msg-actions button{background:rgba(255,255,255,.22);color:#fff}
-.msg-actions button:hover{opacity:.8}
 .msg-edited-tag{font-size:.62rem;opacity:.65;font-style:italic;margin-left:4px}
 .msg-edit-box{width:100%}
 .msg-edit-box textarea{width:100%;min-height:50px;border-radius:8px;border:1.5px solid rgba(255,255,255,.5);padding:6px 8px;font-family:'Outfit',sans-serif;font-size:.83rem;resize:vertical;color:inherit;background:rgba(255,255,255,.12)}
@@ -1901,7 +1900,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
     </div>
 
     <!-- MESSAGES (Team Chat + Private DMs, with @tag mentions) -->
-    <div class="page" id="page-messages" style="display:flex;flex-direction:column">
+    <div class="page" id="page-messages">
       <div class="form-card" style="padding:12px 18px;margin-bottom:8px;flex-shrink:0">
         <div class="page-header" style="margin-bottom:0">
           <div class="page-ttl">
@@ -3987,10 +3986,10 @@ function renderMessages(){
          </div>`
       : `<div>${renderMsgTextWithTags(m.text||'')}${m.edited?'<span class="msg-edited-tag">(edited)</span>':''}</div>`;
     const actionsHtml = (canManage && !isEditing)
-      ? `<div class="msg-actions">
+      ? `<span class="msg-actions">
            ${isOwn?`<button type="button" title="Edit" onclick="startEditMessage('${m.firebaseKey}')"><i class="fas fa-pen"></i></button>`:''}
            <button type="button" title="Delete" onclick="deleteMessageConfirm('${m.firebaseKey}')"><i class="fas fa-trash"></i></button>
-         </div>`
+         </span>`
       : '';
     let seenHtml = '';
     if(isOwn){
@@ -4008,10 +4007,12 @@ function renderMessages(){
       }
     }
     return `<div class="msg-bubble ${isOwn?'own':'other'}${mentionsMe && !isOwn?' mentioned':''}">
-      <div class="msg-meta">${isOwn?'You':escapeHtml(m.fromName||m.from)} <span style="opacity:.7">· ${timeAgoShort(m.ts)}</span></div>
+      <div class="msg-meta">
+        <span>${isOwn?'You':escapeHtml(m.fromName||m.from)} <span style="opacity:.7">· ${timeAgoShort(m.ts)}</span></span>
+        ${actionsHtml}
+      </div>
       <div class="msg-body-row">${bodyHtml}</div>
       ${seenHtml}
-      ${actionsHtml}
     </div>`;
   }).join('');
   list.scrollTop = list.scrollHeight;

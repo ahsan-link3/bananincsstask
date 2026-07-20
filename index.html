@@ -9,7 +9,7 @@
 <!-- FIREBASE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, push, onValue, remove, set, get, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getDatabase, ref, push, onValue, remove, set, get, update, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyA2Sh4DHvRowyaf0ZvplxQWRZiGexi_tYA",
@@ -28,6 +28,10 @@
 const usersRef = ref(db, 'users');
 const misDataRef = ref(db, 'misdata');
 const userStatusRef = ref(db, 'userStatus');
+const messagesRef = ref(db, 'messages');
+const dmMessagesRef = ref(db, 'dmMessages');
+const groupSeenRef = ref(db, 'groupSeen');
+const dmSeenRef = ref(db, 'dmSeen');
 
 // ===== ONLINE PRESENCE (who is currently logged in) =====
 // Marks a username as online, and automatically flips them to offline the moment
@@ -150,6 +154,18 @@ onValue(ticketsRef, (snapshot) => {
     }
   }
 
+  // Overwrite an existing ticket's full data by its firebase key — used by the
+  // row Edit feature on My Task / All Completed Tasks.
+  window._fbSetTicket = async function(firebaseKey, ticketData) {
+    try {
+      await set(ref(db, 'tickets/' + firebaseKey), ticketData);
+      return true;
+    } catch(e) {
+      console.error(e);
+      return false;
+    }
+  }
+
   // ===== MIS DATA (shared across all users, tracks who uploaded each row) =====
   window._fbPushMisRows = async function(rowsArray) {
     try {
@@ -202,6 +218,132 @@ onValue(ticketsRef, (snapshot) => {
   window._fbDeleteAllMis = async function() {
     await set(misDataRef, null);
   };
+
+  // ===== TEAM MESSAGES (chat with @tag mentions, visible to all users) =====
+  window._fbPushMessage = async function(msgData) {
+    try {
+      await push(messagesRef, msgData);
+      return true;
+    } catch(e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  window._fbDeleteMessage = async function(firebaseKey) {
+    try {
+      await remove(ref(db, 'messages/' + firebaseKey));
+      return true;
+    } catch(e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  // Edit an existing group-chat message's text in place, flagging it as edited.
+  window._fbEditMessage = async function(firebaseKey, newText) {
+    try {
+      await update(ref(db, 'messages/' + firebaseKey), { text: newText, edited: true, editedTs: serverTimestamp() });
+      return true;
+    } catch(e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  onValue(messagesRef, (snapshot) => {
+    const data = snapshot.val();
+    const list = [];
+    if (data) {
+      Object.entries(data).forEach(([key, val]) => {
+        list.push({ ...val, firebaseKey: key });
+      });
+      list.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    }
+    if (typeof window.__applyMessages === 'function') window.__applyMessages(list);
+  }, (error) => {
+    console.error("Firebase Messages error:", error);
+  });
+
+  // ===== DIRECT / PRIVATE MESSAGES (1-to-1 chat between two users) =====
+  // Each conversation is stored under dmMessages/<convId>, where convId is the two
+  // usernames sorted alphabetically and joined with "__" so both sides read/write
+  // the exact same node regardless of who started the chat.
+  window._fbPushDM = async function(convId, msgData) {
+    try {
+      await push(ref(db, 'dmMessages/' + convId), msgData);
+      return true;
+    } catch(e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  window._fbDeleteDM = async function(convId, firebaseKey) {
+    try {
+      await remove(ref(db, 'dmMessages/' + convId + '/' + firebaseKey));
+      return true;
+    } catch(e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  window._fbEditDM = async function(convId, firebaseKey, newText) {
+    try {
+      await update(ref(db, 'dmMessages/' + convId + '/' + firebaseKey), { text: newText, edited: true, editedTs: serverTimestamp() });
+      return true;
+    } catch(e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  // Single listener over the whole dmMessages tree (mirrors the pattern already used
+  // for tickets/misdata above). Fine for a small team; the app filters client-side to
+  // whichever conversations involve the logged-in user.
+  onValue(dmMessagesRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    if (typeof window.__applyDMMessages === 'function') window.__applyDMMessages(data);
+  }, (error) => {
+    console.error("Firebase DM error:", error);
+  });
+
+  // ===== READ RECEIPTS ("seen") =====
+  // groupSeen/<username> = last time that user viewed the Team Chat (shared, so every
+  // other user can see who has read a given group message and who hasn't yet).
+  window._fbSetGroupSeen = async function(username, ts) {
+    try {
+      await set(ref(db, 'groupSeen/' + username), ts);
+      return true;
+    } catch(e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  // dmSeen/<convId>/<username> = last time that user viewed that specific DM thread.
+  window._fbSetDmSeen = async function(convId, username, ts) {
+    try {
+      await set(ref(db, 'dmSeen/' + convId + '/' + username), ts);
+      return true;
+    } catch(e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  onValue(groupSeenRef, (snapshot) => {
+    if (typeof window.__applyGroupSeen === 'function') window.__applyGroupSeen(snapshot.val() || {});
+  }, (error) => {
+    console.error("Firebase GroupSeen error:", error);
+  });
+
+  onValue(dmSeenRef, (snapshot) => {
+    if (typeof window.__applyDmSeen === 'function') window.__applyDmSeen(snapshot.val() || {});
+  }, (error) => {
+    console.error("Firebase DmSeen error:", error);
+  });
 
   // Realtime users listener — mirrors the tickets/misdata listeners above, so a user
   // created, edited, or deleted by one admin instantly propagates to every other
@@ -586,6 +728,60 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 .empty-box p{font-size:.78rem;font-family:'Montserrat',sans-serif;font-weight:600;color:#b0c8e0}
 .btn-row-del{background:none;border:none;color:#e53935;cursor:pointer;font-size:.8rem;padding:4px 8px;border-radius:5px;transition:background .2s}
 .btn-row-del:hover{background:#fff0f0}
+.btn-row-edit{background:none;border:none;color:#2563eb;cursor:pointer;font-size:.8rem;padding:4px 8px;border-radius:5px;transition:background .2s}
+.btn-row-edit:hover{background:#eaf2ff}
+
+/* ===== TEAM MESSAGES / CHAT ===== */
+.msg-page-wrap{display:flex;flex-direction:column;height:100%;gap:10px}
+.msg-list{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#f5f9ff;border-radius:12px;min-height:0}
+.msg-bubble{max-width:72%;padding:9px 13px;border-radius:14px;font-family:'Outfit',sans-serif;font-size:.84rem;line-height:1.45;position:relative;box-shadow:0 2px 6px rgba(0,0,0,.06);word-wrap:break-word}
+.msg-bubble.own{align-self:flex-end;background:linear-gradient(135deg,#15318c,#2f9bff);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble.other{align-self:flex-start;background:#fff;color:var(--navy);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg-bubble.mentioned{box-shadow:0 0 0 2px #f59e0b,0 2px 6px rgba(0,0,0,.06)}
+.msg-meta{font-size:.65rem;font-weight:800;opacity:.65;margin-bottom:3px;font-family:'Montserrat',sans-serif;display:flex;gap:6px;align-items:center}
+.msg-tag{background:rgba(47,155,255,.18);color:#15318c;font-weight:800;padding:1px 6px;border-radius:6px;font-size:.78rem;white-space:nowrap}
+.msg-bubble.own .msg-tag{background:rgba(255,255,255,.25);color:#fff}
+.msg-empty{margin:auto;text-align:center;color:var(--muted);font-family:'Outfit',sans-serif;font-size:.85rem}
+.msg-input-row{display:flex;gap:8px;align-items:flex-end;position:relative;flex-shrink:0}
+.msg-input-row textarea{flex:1;resize:none;min-height:40px;max-height:100px;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Outfit',sans-serif;font-size:.85rem;outline:none}
+.msg-send-btn{background:linear-gradient(135deg,#0a1642,#2f9bff);color:#fff;border:none;border-radius:10px;padding:0 18px;height:40px;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.78rem;flex-shrink:0}
+.msg-mention-list{position:absolute;bottom:48px;left:0;width:260px;max-height:180px;overflow-y:auto;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.18);z-index:200;display:none}
+.msg-mention-item{padding:8px 12px;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:700;color:var(--navy);cursor:pointer;display:flex;align-items:center;gap:8px}
+.msg-mention-item:hover,.msg-mention-item.active{background:#eaf3ff}
+.msg-body-row{display:flex;flex-direction:column;gap:2px}
+.msg-container{display:flex;flex:1;min-height:0;gap:10px}
+.msg-sidebar{width:210px;flex-shrink:0;background:#fff;border:1px solid var(--border);border-radius:12px;overflow-y:auto;padding:6px}
+.msg-sidebar-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:700;color:var(--navy);margin-bottom:2px;position:relative}
+.msg-sidebar-item:hover{background:#f2f7ff}
+.msg-sidebar-item.active{background:linear-gradient(135deg,#15318c,#2f9bff);color:#fff}
+.msg-sidebar-item .msg-side-dot{width:8px;height:8px;border-radius:50%;background:#c7d2e0;flex-shrink:0}
+.msg-sidebar-item .msg-side-dot.online{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.22)}
+.msg-sidebar-item.online-user .msg-sidebar-label{color:#16a34a;font-weight:800}
+.msg-sidebar-item.online-user.active .msg-sidebar-label{color:#fff}
+.msg-online-tag{font-size:.6rem;font-weight:800;color:#16a34a;opacity:.9}
+.msg-sidebar-item.active .msg-online-tag{color:#d1fae5}
+.msg-sidebar-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg-side-badge{background:#ef4444;color:#fff;font-size:.62rem;font-weight:800;border-radius:9px;padding:1px 6px;min-width:16px;text-align:center;font-family:'Montserrat',sans-serif}
+.msg-sidebar-item.active .msg-side-badge{background:rgba(255,255,255,.35)}
+.msg-sidebar-divider{font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:10px 8px 4px}
+.msg-main{flex:1;display:flex;flex-direction:column;min-height:0;gap:10px}
+.msg-bubble .msg-actions{position:absolute;top:4px;right:-2px;display:none;gap:4px;transform:translateX(100%)}
+.msg-bubble.own:hover .msg-actions{display:flex}
+.msg-actions button{border:none;background:rgba(0,0,0,.06);color:var(--muted);width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:.68rem}
+.msg-bubble.own .msg-actions button{background:rgba(255,255,255,.22);color:#fff}
+.msg-actions button:hover{opacity:.8}
+.msg-edited-tag{font-size:.62rem;opacity:.65;font-style:italic;margin-left:4px}
+.msg-edit-box{width:100%}
+.msg-edit-box textarea{width:100%;min-height:50px;border-radius:8px;border:1.5px solid rgba(255,255,255,.5);padding:6px 8px;font-family:'Outfit',sans-serif;font-size:.83rem;resize:vertical;color:inherit;background:rgba(255,255,255,.12)}
+.msg-bubble.other .msg-edit-box textarea{background:#fff;border-color:var(--border);color:var(--navy)}
+.msg-edit-box .msg-edit-actions{display:flex;gap:6px;margin-top:5px}
+.msg-edit-box .msg-edit-actions button{border:none;border-radius:6px;padding:3px 10px;font-size:.68rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif}
+.msg-edit-save{background:#22c55e;color:#fff}
+.msg-edit-cancel{background:rgba(0,0,0,.12);color:inherit}
+.msg-seen-status{font-size:.62rem;font-weight:700;opacity:.75;margin-top:3px;text-align:right;font-family:'Montserrat',sans-serif;display:flex;justify-content:flex-end;gap:4px;align-items:center;color:rgba(255,255,255,.85)}
+.msg-seen-status.seen{opacity:1;color:#facc15}
+.msg-bubble.other .msg-seen-status{display:none}
+.nav-badge-count{background:#e53935;color:#fff;font-size:.62rem;font-weight:900;border-radius:9px;padding:1px 6px;margin-left:auto;font-family:'Montserrat',sans-serif}
 
 /* TOAST */
 .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(30px);background:linear-gradient(135deg,rgba(21,49,140,.94),rgba(47,155,255,.94));color:#fff;padding:12px 20px;border-radius:12px;font-size:.78rem;font-weight:700;opacity:0;pointer-events:none;transition:opacity .35s ease,transform .35s ease;z-index:9999;box-shadow:0 12px 36px rgba(21,49,140,.35);display:flex;align-items:center;gap:10px;font-family:'Montserrat',sans-serif;border:1px solid rgba(255,255,255,.22);min-width:240px;max-width:320px;}
@@ -936,6 +1132,15 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   .wd-cat-donut-wrap{width:200px;height:200px}
   .wd-cat-legend{width:100%}
   .wd-cat-legend-more{grid-template-columns:1fr}
+
+  /* Team Messages — collapsible conversation sidebar on mobile */
+  .msg-conv-toggle{display:inline-flex !important}
+  .msg-sidebar{
+    position:absolute;top:0;left:0;height:100%;z-index:50;width:min(240px,80vw);
+    transform:translateX(-105%);transition:transform .25s ease;box-shadow:0 8px 30px rgba(0,0,0,.25);
+  }
+  .msg-sidebar.open{transform:translateX(0)}
+  .msg-container{position:relative}
 }
 
 @media (max-width:480px){
@@ -1068,6 +1273,9 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <div class="nav-item eng-visible" id="nav-engreport" style="background:rgba(34,197,94,0.30);border-left:3px solid rgba(34,197,94,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('engreport',this)"><div class="nav-icon-wrap"><i class="fas fa-user-clock" style="color:#2dd4bf"></i></div><span class="nav-label">Engineer Report</span></div>
       <div class="nav-item admin-only" id="nav-users" style="background:rgba(34,197,94,0.30);border-left:3px solid rgba(34,197,94,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('users',this)"><div class="nav-icon-wrap"><i class="fas fa-users-cog" style="color:#c084fc"></i></div><span class="nav-label">User Management</span></div>
     </div>
+
+    <div class="nav-item eng-visible" id="nav-messages" style="background:linear-gradient(135deg,rgba(250,204,21,.30),rgba(217,119,6,.24));border-radius:9px;margin-bottom:2px;border:1.5px solid #e8830f;display:flex;align-items:center" onclick="showPage('messages',this)"><div class="nav-icon-wrap"><i class="fas fa-comments" style="color:#facc15"></i></div><span class="nav-label">Messages</span><span class="nav-badge-count" id="msg-nav-badge" style="display:none">0</span></div>
+
     <div class="nav-sep"></div>
   </nav>
   <div class="sb-bottom">
@@ -1692,6 +1900,39 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       </div>
     </div>
 
+    <!-- MESSAGES (Team Chat + Private DMs, with @tag mentions) -->
+    <div class="page" id="page-messages" style="display:flex;flex-direction:column">
+      <div class="form-card" style="padding:12px 18px;margin-bottom:8px;flex-shrink:0">
+        <div class="page-header" style="margin-bottom:0">
+          <div class="page-ttl">
+            <button type="button" class="msg-conv-toggle" onclick="toggleMsgSidebar()" style="display:none;border:none;background:rgba(47,155,255,.12);color:var(--blue);width:30px;height:30px;border-radius:8px;margin-right:6px;cursor:pointer"><i class="fas fa-bars"></i></button>
+            <i class="fas fa-comments"></i><span id="msg-conv-title">Team Messages</span>
+          </div>
+          <span style="font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:700;color:var(--muted)">Type <b>@</b> to tag a teammate</span>
+        </div>
+      </div>
+      <div class="msg-page-wrap" style="flex:1;min-height:0">
+        <div class="msg-container">
+          <div class="msg-sidebar" id="msg-sidebar">
+            <div class="msg-sidebar-item active" data-conv="group" onclick="switchConversation('group')">
+              <i class="fas fa-users"></i><span class="msg-sidebar-label">Team Chat</span>
+              <span class="msg-side-badge" id="side-badge-group" style="display:none">0</span>
+            </div>
+            <div class="msg-sidebar-divider">Direct Messages</div>
+            <div id="msg-contact-list"></div>
+          </div>
+          <div class="msg-main">
+            <div class="msg-list" id="msg-list"></div>
+            <div class="msg-input-row">
+              <div class="msg-mention-list" id="msg-mention-list"></div>
+              <textarea id="msg-input" placeholder="Write a message... use @ to tag someone" oninput="onMsgInput(this)" onkeydown="onMsgKeydown(event)"></textarea>
+              <button class="msg-send-btn" onclick="sendTeamMessage()"><i class="fas fa-paper-plane"></i> Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- USER MANAGEMENT (Admin only) -->
 <!-- IMPORT DATA (Admin only) -->
 <div class="page" id="page-import">
@@ -2115,6 +2356,113 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 </div>
 </div>
 
+<!-- Edit Ticket Modal (shared by My Task + All Completed Tasks row edit icons) -->
+<div id="et-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:18px;padding:28px 30px;width:100%;max-width:460px;max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+    <div style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:18px;display:flex;align-items:center;gap:8px"><i class="fas fa-pen-to-square" style="color:var(--accent)"></i> Edit Ticket</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="fg"><label><i class="fas fa-calendar-alt"></i>Work Date</label><input type="date" id="et-date"></div>
+      <div class="fg"><label><i class="fas fa-ticket-alt"></i>Ticket ID</label><input type="text" id="et-ticket"></div>
+      <div class="fg"><label><i class="fas fa-tags"></i>Task Category</label>
+        <select id="et-cat" style="height:34px;font-size:.8rem;padding:7px 11px;border:1.5px solid var(--border);border-radius:9px;background:rgba(235,245,255,.75);font-family:'Outfit',sans-serif;outline:none;width:100%">
+          <option value="Troubleshoot">Troubleshoot</option>
+          <option value="Installation">Installation</option>
+          <option value="Survey">Survey</option>
+          <option value="CR">CR</option>
+          <option value="Non Ticket">Non Ticket</option>
+        </select>
+      </div>
+      <div class="fg"><label><i class="fas fa-toolbox"></i>Task Type</label>
+        <select id="et-tt" style="height:34px;font-size:.8rem;padding:7px 11px;border:1.5px solid var(--border);border-radius:9px;background:rgba(235,245,255,.75);font-family:'Outfit',sans-serif;outline:none;width:100%">
+          <option value="Phone support">Phone support</option>
+          <option value="Physical support">Physical support</option>
+          <option value="Back office support for Tech">Back office support for Tech</option>
+        </select>
+      </div>
+      <div class="fg"><label><i class="fas fa-users"></i>Team Type</label>
+        <select id="et-tm" style="height:34px;font-size:.8rem;padding:7px 11px;border:1.5px solid var(--border);border-radius:9px;background:rgba(235,245,255,.75);font-family:'Outfit',sans-serif;outline:none;width:100%">
+          <option value="Engineer">Engineer</option>
+          <option value="Single Tech & Engineer">Single Tech &amp; Engineer</option>
+          <option value="FI Team">FI Team</option>
+        </select>
+      </div>
+      <div class="fg"><label><i class="fas fa-user-cog"></i>Engineer Name</label>
+        <select id="et-eng" style="height:34px;font-size:.8rem;padding:7px 11px;border:1.5px solid var(--border);border-radius:9px;background:rgba(235,245,255,.75);font-family:'Outfit',sans-serif;outline:none;width:100%">
+          <option value="">Select Engineer</option>
+          <option>Md. Mostafizur Rahman</option>
+          <option>Nabiul Ahsan Bakshi</option>
+          <option>Md. Asad</option>
+          <option>Taibul Hoque Zehad</option>
+          <option>Subroto Saha</option>
+          <option>Abu Hasnat</option>
+          <option>Muhammed Rabiul Islam</option>
+          <option>Md. Azizul Haque Sojol</option>
+          <option>Ainul Hoque Rubel</option>
+          <option>Md Juel Hossain</option>
+          <option>Mrithunjoy Das</option>
+          <option>Mohammad Badrul Islam</option>
+          <option>Abir Roy</option>
+          <option>Syed Ash Shams</option>
+        </select>
+      </div>
+      <div class="fg"><label><i class="fas fa-network-wired"></i>ONU MAC-Address</label><input type="text" id="et-mac" oninput="sanitizeMacInput(this)"></div>
+      <div class="fg"><label><i class="fas fa-wifi"></i>WiFi Scoring</label>
+        <select id="et-wifi" style="height:34px;font-size:.8rem;padding:7px 11px;border:1.5px solid var(--border);border-radius:9px;background:rgba(235,245,255,.75);font-family:'Outfit',sans-serif;outline:none;width:100%">
+          <option value="NO">NO</option>
+          <option value="YES">YES</option>
+        </select>
+      </div>
+      <div class="fg"><label><i class="fas fa-user-hard-hat"></i>Assigned Technician</label>
+        <select id="et-technician" style="height:34px;font-size:.8rem;padding:7px 11px;border:1.5px solid var(--border);border-radius:9px;background:rgba(235,245,255,.75);font-family:'Outfit',sans-serif;outline:none;width:100%">
+          <option value="">— None selected —</option>
+          <option>Sohel Rana</option>
+          <option>Rafiqul Islam</option>
+          <option>Mahidur Rahman</option>
+          <option>Imam Hossain</option>
+          <option>Rabbi Ahmed</option>
+          <option>Shafayatullah</option>
+          <option>Mmahmudul Hasan</option>
+          <option>Masud Rana</option>
+          <option>Shahidul Islam</option>
+          <option>Mijanur Rahman</option>
+          <option>Al Mamun</option>
+          <option>Md. Emon</option>
+          <option>Amir Hossain</option>
+          <option>Hanifur Rahman</option>
+          <option>Didarul Islam</option>
+          <option>Abul Hasan</option>
+          <option>Md. Foysal</option>
+          <option>Md. Sumon</option>
+          <option>Md. Nayon</option>
+          <option>Zakir Hossen</option>
+          <option>Rahmat Miah</option>
+          <option>Sayeem Khan</option>
+          <option>Al-Amin (Robin)</option>
+          <option>Bijoy Nokrek</option>
+          <option>Abir Hasan</option>
+          <option>Mohidul Islam</option>
+          <option>Rayhan Howlader</option>
+          <option>Bacchu Gazi</option>
+          <option>Md Imram</option>
+          <option>Md. Akash</option>
+          <option>Alam Shikder</option>
+          <option>Md. Raju</option>
+          <option>Ratan Mia</option>
+          <option>Abdul Mannan</option>
+          <option>Asad Ullah</option>
+          <option>Ashikur Rahman Asif</option>
+        </select>
+      </div>
+      <div class="fg"><label><i class="fas fa-comment-dots"></i>Remarks</label><textarea id="et-remarks" maxlength="500"></textarea></div>
+    </div>
+    <div id="et-err" style="display:none;background:#fff1f2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:.72rem;font-weight:700;color:#991b1b;font-family:'Montserrat',sans-serif;margin-top:12px"></div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button onclick="closeEditTicket()" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:9px;background:#f5f9ff;color:var(--blue);font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif">Cancel</button>
+      <button onclick="saveEditTicket()" style="flex:2;padding:10px;background:linear-gradient(135deg,#0a1642,#2f9bff);color:#fff;border:none;border-radius:9px;font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif;letter-spacing:.3px"><i class="fas fa-save"></i> Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast">
   <i class="fas fa-check-circle" style="font-size:1rem;flex-shrink:0"></i>
   <span id="toast-msg"></span>
@@ -2219,6 +2567,8 @@ window.__applyUserStatus = function(statusData){
   onlineUsers = statusData || {};
   const usersPage = document.getElementById('page-users');
   if (usersPage && usersPage.classList.contains('active') && typeof renderUserTable === 'function') renderUserTable();
+  const msgPage = document.getElementById('page-messages');
+  if (msgPage && msgPage.classList.contains('active') && typeof renderContactList === 'function') renderContactList();
 };
 function isUserOnline(uname){
   return !!(onlineUsers[uname] && onlineUsers[uname].online);
@@ -2286,8 +2636,24 @@ function canDeleteMyTask(ticket) {
   return true;
 }
 
+// Edit permissions: All Completed Tasks edit is admin-only. My Task edit is
+// allowed on rows because that tab's data is already scoped to the current
+// user (or to everything, for admin) by getMyTickets() — same model as delete.
+function canEditAllTask(ticket) {
+  if (!currentUser) return false;
+  return currentUser.role === 'admin';
+}
+
+function canEditMyTask(ticket) {
+  if (!currentUser) return false;
+  return true;
+}
+
 function setupUserUI() {
   const u = currentUser;
+  msgNotifyBaseline = Date.now();
+  msgNotifiedKeys = new Set();
+  requestChatNotificationPermission();
   document.getElementById('sb-uname').textContent = u.name;
   document.getElementById('sb-urole').textContent  = u.role === 'admin' ? 'Administrator' : 'Engineer';
   document.getElementById('sb-avatar').textContent = u.name.substring(0,2).toUpperCase();
@@ -2315,6 +2681,8 @@ function setupUserUI() {
   document.querySelectorAll('.eng-visible').forEach(el => {
     el.style.display = 'flex';
   });
+
+  if(typeof updateMsgBadge === 'function') updateMsgBadge();
 
   // Excel download button: only admin
   const excelBtn = document.getElementById('btn-excel-export');
@@ -2794,7 +3162,7 @@ let tickets = [];
 
 const titles = {
   maindash:'Dashboard', workdash:'Dashboard', dashboard:'Ticket Entry', mytask:'My Task', taskreport:'Task Report',
-  alltask:'All Completed Tasks', devices:'Used Devices', wifi:'WiFi Scoring',
+  alltask:'All Completed Tasks', devices:'Used Devices', wifi:'WiFi Scoring', messages:'Team Messages',
   users:'User Management', import:'Import Data', mis:'MIS Data Update', misreport:'MIS Task Report', engreport:'Engineer Report'
 };
 
@@ -2974,6 +3342,7 @@ function showPage(pg,el){
   if(pg==='alltask')renderAll();
   if(pg==='devices')renderDevices();
   if(pg==='wifi')renderWifi();
+  if(pg==='messages'){ renderContactList(); renderMessages(); markCurrentConvSeen(); updateMsgBadge(); }
   if(pg==='users')renderUserTable();
   if(pg==='mis')renderMis();
   if(pg==='misreport')renderMis();
@@ -3238,10 +3607,10 @@ function buildRows(arr,tbodyId,withDel,isMyTask,startIdx=0){
     return;
   }
   tb.innerHTML=arr.map((t,i)=>{
-    let showDel=false;
+    let showDel=false, showEdit=false;
     if(withDel){
-      if(isMyTask) showDel=canDeleteMyTask(t);
-      else showDel=canDeleteAllTask(t);
+      if(isMyTask){ showDel=canDeleteMyTask(t); showEdit=canEditMyTask(t); }
+      else { showDel=canDeleteAllTask(t); showEdit=canEditAllTask(t); }
     }
     const chkCell=(selMode && isAt)
       ?`<td style="text-align:center;padding:4px 2px"><input type="checkbox" class="at-row-chk" data-key="${t.firebaseKey||t.id}" ${selectedKeys.has(t.firebaseKey||t.id)?'checked':''} onchange="onRowCheck(this)" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer"></td>`
@@ -3260,7 +3629,7 @@ function buildRows(arr,tbodyId,withDel,isMyTask,startIdx=0){
     <td style="font-family:'Outfit',sans-serif;padding:5px 4px">${t.mac||'—'}</td>
     <td><span class="chip ${t.wifi==='YES'?'chip-yes':'chip-no'}" style="font-family:'Outfit',sans-serif">${t.wifi}</span></td>
     <td style="max-width:150px;white-space:normal;font-family:'Outfit',sans-serif">${t.remarks||'—'}</td>
-    ${showDel?`<td><button class="btn-row-del" onclick="delTicket('${t.firebaseKey||t.id}',${isMyTask?'true':'false'})"><i class="fas fa-times"></i></button></td>`:'<td></td>'}
+    ${(showEdit||showDel)?`<td style="white-space:nowrap">${showEdit?`<button class="btn-row-edit" onclick="openEditTicket('${t.firebaseKey||t.id}',${isMyTask?'true':'false'})"><i class="fas fa-pen"></i></button>`:''}${showDel?`<button class="btn-row-del" onclick="delTicket('${t.firebaseKey||t.id}',${isMyTask?'true':'false'})"><i class="fas fa-times"></i></button>`:''}</td>`:'<td></td>'}
     </tr>`;
   }).join('');
 }
@@ -3276,6 +3645,592 @@ async function delTicket(fk, fromMyTask){
   const ok=await window._fbDelete(fk);
   if(ok) toast('🗑 Ticket deleted successfully');
   else toast('❌ Delete failed!');
+}
+
+let etFirebaseKey = null;
+let etIsMyTask = false;
+
+function openEditTicket(fk, fromMyTask){
+  const t = tickets.find(x => (x.firebaseKey||x.id) == fk);
+  if(!t){ toast('❌ Ticket not found!'); return; }
+  const allowed = fromMyTask ? canEditMyTask(t) : canEditAllTask(t);
+  if(!allowed){ toast('❌ Permission denied!' + (fromMyTask?'':' Only Admin can edit here.')); return; }
+  etFirebaseKey = t.firebaseKey || t.id;
+  etIsMyTask = fromMyTask;
+  document.getElementById('et-date').value = t.date || '';
+  document.getElementById('et-ticket').value = t.ticket || '';
+  document.getElementById('et-cat').value = t.cat || 'Troubleshoot';
+  document.getElementById('et-tt').value = t.tt || 'Phone support';
+  document.getElementById('et-tm').value = t.tm || 'Engineer';
+  document.getElementById('et-eng').value = t.eng || '';
+  document.getElementById('et-mac').value = t.mac || '';
+  document.getElementById('et-wifi').value = t.wifi || 'NO';
+  document.getElementById('et-technician').value = t.technician || '';
+  document.getElementById('et-remarks').value = t.remarks || '';
+  document.getElementById('et-err').style.display = 'none';
+  document.getElementById('et-modal').style.display = 'flex';
+}
+
+function closeEditTicket(){
+  document.getElementById('et-modal').style.display = 'none';
+  etFirebaseKey = null;
+}
+
+async function saveEditTicket(){
+  const t = tickets.find(x => (x.firebaseKey||x.id) == etFirebaseKey);
+  const errEl = document.getElementById('et-err');
+  if(!t){ errEl.textContent='❌ Ticket not found!'; errEl.style.display='block'; return; }
+  const allowed = etIsMyTask ? canEditMyTask(t) : canEditAllTask(t);
+  if(!allowed){ errEl.textContent='❌ Permission denied!'; errEl.style.display='block'; return; }
+
+  const d = document.getElementById('et-date').value;
+  const ticketId = document.getElementById('et-ticket').value.trim();
+  const cat = document.getElementById('et-cat').value;
+  const tt = document.getElementById('et-tt').value;
+  const tm = document.getElementById('et-tm').value;
+  const eng = document.getElementById('et-eng').value;
+  if(!d || !ticketId || !cat || !tt || !tm || !eng){
+    errEl.textContent = '⚠ Please fill all required fields!';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.querySelector('#et-modal button[onclick="saveEditTicket()"]');
+  const origTxt = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+  const updated = {
+    ...t,
+    date: d,
+    ticket: ticketId,
+    cat, tt, tm, eng,
+    technician: document.getElementById('et-technician').value,
+    mac: document.getElementById('et-mac').value.trim().replace(/[^a-zA-Z0-9]/g,'').toUpperCase(),
+    wifi: document.getElementById('et-wifi').value,
+    remarks: document.getElementById('et-remarks').value.trim()
+  };
+  delete updated.firebaseKey;
+
+  const ok = await window._fbSetTicket(t.firebaseKey || t.id, updated);
+
+  btn.disabled = false;
+  btn.innerHTML = origTxt;
+
+  if(ok){
+    toast('✅ Ticket updated successfully!');
+    closeEditTicket();
+  } else {
+    errEl.textContent = '❌ Update failed! Please check connection.';
+    errEl.style.display = 'block';
+  }
+}
+
+// ===== TEAM MESSAGES (group chat + private 1-to-1 DMs, with @tag mentions) =====
+let teamMessages = [];
+let dmMessagesAll = {};             // convId -> array of messages, for every conversation involving me
+let groupSeenData = {};             // username -> last time they viewed Team Chat (ms)
+let dmSeenData = {};                // convId -> { username: last-viewed-ms }
+let currentConv = 'group';          // 'group' or a username (DM partner)
+let msgMentionSet = new Set();      // usernames tagged in the current draft
+let msgActiveMentionIdx = -1;       // keyboard-selected index in the open dropdown
+let msgNotifyBaseline = Date.now(); // messages older than this never trigger a notification (avoids spam on load)
+let msgNotifiedKeys = new Set();    // already-notified message keys, this session
+let msgEditingKey = null;           // firebaseKey of the bubble currently being edited, if any
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function getDmConvId(u1, u2){
+  return [u1, u2].sort().join('__');
+}
+
+function msgLastSeenKey(){
+  return currentUser ? 'l3_msg_lastseen_' + currentUser.username : null;
+}
+function getMsgLastSeen(){
+  const k = msgLastSeenKey();
+  if(!k) return 0;
+  return Number(localStorage.getItem(k) || 0);
+}
+function setMsgLastSeen(ts){
+  const k = msgLastSeenKey();
+  if(!k) return;
+  localStorage.setItem(k, String(ts));
+}
+function dmLastSeenKey(convId){
+  return currentUser ? 'l3_dm_lastseen_' + currentUser.username + '_' + convId : null;
+}
+function getDmLastSeen(convId){
+  const k = dmLastSeenKey(convId);
+  if(!k) return 0;
+  return Number(localStorage.getItem(k) || 0);
+}
+function setDmLastSeen(convId, ts){
+  const k = dmLastSeenKey(convId);
+  if(!k) return;
+  localStorage.setItem(k, String(ts));
+}
+// Marks a conversation ('group' or a username) as read: updates the local unread
+// tracker AND writes a shared "seen" timestamp to Firebase so the other side can see
+// their message has been read.
+function pushSeenToFirebase(target){
+  if(!currentUser) return;
+  const ts = Date.now();
+  if(target === 'group'){
+    setMsgLastSeen(ts);
+    if(typeof window._fbSetGroupSeen === 'function') window._fbSetGroupSeen(currentUser.username, ts);
+  } else {
+    const convId = getDmConvId(currentUser.username, target);
+    setDmLastSeen(convId, ts);
+    if(typeof window._fbSetDmSeen === 'function') window._fbSetDmSeen(convId, currentUser.username, ts);
+  }
+}
+// Marks whichever conversation is currently open (group or the active DM) as read.
+function markCurrentConvSeen(){
+  pushSeenToFirebase(currentConv);
+}
+
+// Realtime listeners for read receipts.
+window.__applyGroupSeen = function(data){
+  groupSeenData = data || {};
+  const pg = document.getElementById('page-messages');
+  if(pg && pg.classList.contains('active') && currentConv === 'group') renderMessages();
+};
+window.__applyDmSeen = function(data){
+  dmSeenData = data || {};
+  const pg = document.getElementById('page-messages');
+  if(pg && pg.classList.contains('active') && currentConv !== 'group') renderMessages();
+};
+
+// For a group message I sent, returns the display names of everyone (other than me)
+// who has viewed Team Chat since that message was posted.
+function getGroupSeenByNames(m){
+  if(!currentUser) return [];
+  const users = getUsers();
+  return Object.entries(groupSeenData)
+    .filter(([uname,ts]) => uname !== currentUser.username && (ts||0) >= (m.ts||0))
+    .map(([uname]) => (users[uname] && users[uname].name) || uname);
+}
+// For a DM message I sent, whether the recipient has viewed the thread since I sent it.
+function isDmSeenByPartner(convId, m){
+  const seenMap = dmSeenData[convId] || {};
+  const theirTs = seenMap[currentConv] || 0;
+  return theirTs >= (m.ts||0);
+}
+
+// Called by the realtime Firebase listener whenever the group messages node changes.
+window.__applyMessages = function(list){
+  teamMessages = list || [];
+  checkForNewMentionNotifications(teamMessages, null);
+  const pg = document.getElementById('page-messages');
+  if(pg && pg.classList.contains('active') && currentConv === 'group'){
+    renderMessages();
+    pushSeenToFirebase('group');
+  }
+  updateMsgBadge();
+  renderContactList();
+};
+
+// Called by the realtime Firebase listener whenever any DM conversation changes.
+// `data` is the whole dmMessages tree: { convId: { key: {...} } }
+window.__applyDMMessages = function(data){
+  dmMessagesAll = {};
+  Object.entries(data || {}).forEach(([convId, msgs])=>{
+    const list = [];
+    Object.entries(msgs || {}).forEach(([key,val])=>{ list.push({...val, firebaseKey:key}); });
+    list.sort((a,b)=>(a.ts||0)-(b.ts||0));
+    dmMessagesAll[convId] = list;
+    if(currentUser && convId.split('__').includes(currentUser.username)){
+      checkForNewMentionNotifications(list, convId);
+    }
+  });
+  const pg = document.getElementById('page-messages');
+  if(pg && pg.classList.contains('active') && currentConv !== 'group' && currentUser){
+    const convId = getDmConvId(currentUser.username, currentConv);
+    if(dmMessagesAll[convId]){ renderMessages(); pushSeenToFirebase(currentConv); }
+  }
+  updateMsgBadge();
+  renderContactList();
+};
+
+function updateMsgBadge(){
+  const badge = document.getElementById('msg-nav-badge');
+  if(!currentUser) return;
+  const groupLastSeen = getMsgLastSeen();
+  const groupUnread = teamMessages.filter(m => m.from !== currentUser.username && (m.ts||0) > groupLastSeen).length;
+  let dmUnreadTotal = 0;
+  Object.keys(dmMessagesAll).forEach(convId=>{
+    if(!convId.split('__').includes(currentUser.username)) return;
+    const lastSeen = getDmLastSeen(convId);
+    dmUnreadTotal += dmMessagesAll[convId].filter(m => m.from !== currentUser.username && (m.ts||0) > lastSeen).length;
+  });
+  const total = groupUnread + dmUnreadTotal;
+  if(badge){
+    if(total > 0){ badge.textContent = total > 99 ? '99+' : String(total); badge.style.display = 'inline-block'; }
+    else { badge.style.display = 'none'; }
+  }
+  const groupSideBadge = document.getElementById('side-badge-group');
+  if(groupSideBadge){
+    if(groupUnread > 0){ groupSideBadge.textContent = groupUnread > 99 ? '99+' : String(groupUnread); groupSideBadge.style.display='inline-block'; }
+    else { groupSideBadge.style.display = 'none'; }
+  }
+}
+
+// Renders the "Direct Messages" contact list in the chat sidebar: every other user,
+// with an online dot and a per-conversation unread badge.
+function renderContactList(){
+  const box = document.getElementById('msg-contact-list');
+  if(!box || !currentUser) return;
+  const users = getUsers();
+  const entries = Object.entries(users).filter(([uname])=>uname !== currentUser.username);
+  // Online teammates first, so it's obvious at a glance who's available right now.
+  entries.sort((a,b)=>{
+    const onlineDiff = (isUserOnline(b[0])?1:0) - (isUserOnline(a[0])?1:0);
+    if(onlineDiff !== 0) return onlineDiff;
+    return (a[1].name||a[0]).localeCompare(b[1].name||b[0]);
+  });
+  box.innerHTML = entries.map(([uname,u])=>{
+    const convId = getDmConvId(currentUser.username, uname);
+    const lastSeen = getDmLastSeen(convId);
+    const unread = (dmMessagesAll[convId]||[]).filter(m=>m.from!==currentUser.username && (m.ts||0)>lastSeen).length;
+    const online = isUserOnline(uname);
+    const active = currentConv === uname;
+    return `<div class="msg-sidebar-item${active?' active':''}${online?' online-user':''}" data-conv="${uname}" onclick="switchConversation('${uname}')">
+      <span class="msg-side-dot${online?' online':''}"></span>
+      <span class="msg-sidebar-label">${escapeHtml(u.name||uname)}${online?' <span class="msg-online-tag">• Online</span>':''}</span>
+      ${unread>0?`<span class="msg-side-badge">${unread>99?'99+':unread}</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+// Switches the open conversation between the group chat and a private DM.
+function switchConversation(target){
+  currentConv = target;
+  msgEditingKey = null;
+  document.querySelectorAll('.msg-sidebar-item').forEach(el=>{
+    el.classList.toggle('active', el.dataset.conv === target);
+  });
+  const titleEl = document.getElementById('msg-conv-title');
+  if(titleEl){
+    if(target === 'group'){ titleEl.textContent = 'Team Messages'; }
+    else {
+      const u = getUsers()[target];
+      titleEl.textContent = (u && u.name) ? u.name : target;
+    }
+  }
+  renderMessages();
+  markCurrentConvSeen();
+  updateMsgBadge();
+  const sidebar = document.getElementById('msg-sidebar');
+  if(sidebar) sidebar.classList.remove('open'); // auto-close on mobile after picking a conversation
+}
+
+function toggleMsgSidebar(){
+  const sidebar = document.getElementById('msg-sidebar');
+  if(sidebar) sidebar.classList.toggle('open');
+}
+
+// Wraps any "@Full Name" occurrence (for a known user) in a styled tag span.
+function renderMsgTextWithTags(text){
+  let html = escapeHtml(text);
+  const users = getUsers();
+  const names = Object.values(users).map(u=>u.name).filter(Boolean);
+  names.sort((a,b)=>b.length-a.length); // longest names first to avoid partial overlaps
+  names.forEach(name=>{
+    const safeName = escapeHtml(name);
+    const re = new RegExp('@' + safeName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
+    html = html.replace(re, `<span class="msg-tag">@${safeName}</span>`);
+  });
+  return html.replace(/\n/g,'<br>');
+}
+
+function timeAgoShort(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) + ' · ' + d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+
+// Returns the message list for whichever conversation is currently open.
+function getActiveMessageList(){
+  if(currentConv === 'group') return teamMessages;
+  if(!currentUser) return [];
+  const convId = getDmConvId(currentUser.username, currentConv);
+  return dmMessagesAll[convId] || [];
+}
+
+function renderMessages(){
+  const list = document.getElementById('msg-list');
+  if(!list) return;
+  const activeList = getActiveMessageList();
+  if(!activeList.length){
+    list.innerHTML = currentConv === 'group'
+      ? '<div class="msg-empty"><i class="fas fa-comments" style="font-size:1.6rem;opacity:.3;display:block;margin-bottom:8px"></i>No messages yet. Say hello to the team!</div>'
+      : '<div class="msg-empty"><i class="fas fa-lock" style="font-size:1.6rem;opacity:.3;display:block;margin-bottom:8px"></i>No messages yet. This conversation is private.</div>';
+    return;
+  }
+  const meUsername = currentUser ? currentUser.username : '';
+  const meName = currentUser ? currentUser.name : '';
+  list.innerHTML = activeList.map(m=>{
+    const isOwn = m.from === meUsername;
+    const mentionsMe = currentConv === 'group' && Array.isArray(m.mentions) && (m.mentions.includes(meUsername) || (m.mentions.length && m.text && m.text.includes('@'+meName)));
+    const canManage = isOwn || (currentUser && currentUser.role === 'admin' && currentConv === 'group');
+    const isEditing = msgEditingKey === m.firebaseKey;
+    const bodyHtml = isEditing
+      ? `<div class="msg-edit-box">
+           <textarea id="edit-ta-${m.firebaseKey}">${escapeHtml(m.text||'')}</textarea>
+           <div class="msg-edit-actions">
+             <button type="button" class="msg-edit-save" onclick="saveEditMessage('${m.firebaseKey}')"><i class="fas fa-check"></i> Save</button>
+             <button type="button" class="msg-edit-cancel" onclick="cancelEditMessage()">Cancel</button>
+           </div>
+         </div>`
+      : `<div>${renderMsgTextWithTags(m.text||'')}${m.edited?'<span class="msg-edited-tag">(edited)</span>':''}</div>`;
+    const actionsHtml = (canManage && !isEditing)
+      ? `<div class="msg-actions">
+           ${isOwn?`<button type="button" title="Edit" onclick="startEditMessage('${m.firebaseKey}')"><i class="fas fa-pen"></i></button>`:''}
+           <button type="button" title="Delete" onclick="deleteMessageConfirm('${m.firebaseKey}')"><i class="fas fa-trash"></i></button>
+         </div>`
+      : '';
+    let seenHtml = '';
+    if(isOwn){
+      if(currentConv === 'group'){
+        const seenNames = getGroupSeenByNames(m);
+        seenHtml = seenNames.length
+          ? `<div class="msg-seen-status seen" title="${escapeHtml(seenNames.join(', '))}"><i class="fas fa-check-double"></i> Seen by ${escapeHtml(seenNames.slice(0,2).join(', '))}${seenNames.length>2?' +'+(seenNames.length-2):''}</div>`
+          : `<div class="msg-seen-status"><i class="fas fa-check"></i> Sent</div>`;
+      } else {
+        const convId = getDmConvId(meUsername, currentConv);
+        const seen = isDmSeenByPartner(convId, m);
+        seenHtml = seen
+          ? `<div class="msg-seen-status seen"><i class="fas fa-check-double"></i> Seen</div>`
+          : `<div class="msg-seen-status"><i class="fas fa-check"></i> Sent</div>`;
+      }
+    }
+    return `<div class="msg-bubble ${isOwn?'own':'other'}${mentionsMe && !isOwn?' mentioned':''}">
+      <div class="msg-meta">${isOwn?'You':escapeHtml(m.fromName||m.from)} <span style="opacity:.7">· ${timeAgoShort(m.ts)}</span></div>
+      <div class="msg-body-row">${bodyHtml}</div>
+      ${seenHtml}
+      ${actionsHtml}
+    </div>`;
+  }).join('');
+  list.scrollTop = list.scrollHeight;
+  if(msgEditingKey){
+    const ta = document.getElementById('edit-ta-' + msgEditingKey);
+    if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+  }
+}
+
+function startEditMessage(firebaseKey){
+  msgEditingKey = firebaseKey;
+  renderMessages();
+}
+function cancelEditMessage(){
+  msgEditingKey = null;
+  renderMessages();
+}
+async function saveEditMessage(firebaseKey){
+  const ta = document.getElementById('edit-ta-' + firebaseKey);
+  if(!ta) return;
+  const newText = ta.value.trim();
+  if(!newText){ toast('❌ Message cannot be empty.'); return; }
+  const ok = currentConv === 'group'
+    ? await window._fbEditMessage(firebaseKey, newText)
+    : await window._fbEditDM(getDmConvId(currentUser.username, currentConv), firebaseKey, newText);
+  if(ok){ msgEditingKey = null; }
+  else { toast('❌ Could not save the edit. Check connection.'); }
+  renderMessages();
+}
+async function deleteMessageConfirm(firebaseKey){
+  if(!confirm('Delete this message? This cannot be undone.')) return;
+  const ok = currentConv === 'group'
+    ? await window._fbDeleteMessage(firebaseKey)
+    : await window._fbDeleteDM(getDmConvId(currentUser.username, currentConv), firebaseKey);
+  if(!ok) toast('❌ Could not delete the message. Check connection.');
+}
+
+// ----- Desktop + sound notifications when someone tags me (group chat) or DMs me -----
+function requestChatNotificationPermission(){
+  if('Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission().catch(()=>{});
+  }
+}
+// Short two-tone beep synthesized with the Web Audio API, no external file needed.
+function playChatNotifySound(){
+  try{
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return;
+    const ctx = new Ctx();
+    [880, 1175].forEach((freq, i)=>{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + i*0.14 + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.14 + 0.16);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime + i*0.14);
+      osc.stop(ctx.currentTime + i*0.14 + 0.18);
+    });
+  } catch(e){ /* audio not available, ignore */ }
+}
+function fireChatNotification(title, body, convTarget){
+  playChatNotifySound();
+  if('Notification' in window && Notification.permission === 'granted'){
+    try{
+      const n = new Notification(title, { body, icon: undefined, tag: 'l3-chat-' + convTarget });
+      n.onclick = () => {
+        window.focus();
+        showPage('messages', document.getElementById('nav-messages'));
+        switchConversation(convTarget);
+        n.close();
+      };
+    } catch(e){ /* ignore */ }
+  }
+  if(typeof toast === 'function') toast('🔔 ' + title + ': ' + body);
+}
+// Scans a freshly-updated message list for anything new that mentions me (group chat)
+// or was sent to me directly (DM), and fires a notification exactly once per message.
+function checkForNewMentionNotifications(list, convId){
+  if(!currentUser || !Array.isArray(list)) return;
+  const meUsername = currentUser.username;
+  const meName = currentUser.name;
+  list.forEach(m=>{
+    if(!m.firebaseKey || m.from === meUsername) return;
+    if((m.ts||0) <= msgNotifyBaseline) return;
+    const notifyId = (convId||'group') + ':' + m.firebaseKey;
+    if(msgNotifiedKeys.has(notifyId)) return;
+    const isGroup = !convId;
+    const mentionsMe = isGroup && Array.isArray(m.mentions) && (m.mentions.includes(meUsername) || (m.mentions.length && m.text && m.text.includes('@'+meName)));
+    const isDirectDM = !isGroup;
+    if(mentionsMe || isDirectDM){
+      msgNotifiedKeys.add(notifyId);
+      const senderName = m.fromName || m.from;
+      const target = isGroup ? 'group' : m.from;
+      fireChatNotification(isGroup ? `${senderName} tagged you` : `${senderName} sent you a message`, m.text||'', target);
+    }
+  });
+}
+
+// ----- @mention autocomplete -----
+function getMentionQuery(el){
+  const val = el.value;
+  const pos = el.selectionStart;
+  const uptoCursor = val.slice(0, pos);
+  const at = uptoCursor.lastIndexOf('@');
+  if(at === -1) return null;
+  const between = uptoCursor.slice(at+1);
+  if(/\s/.test(between)) return null; // typed a space after @, no longer tagging
+  return { at, query: between };
+}
+
+function onMsgInput(el){
+  const dd = document.getElementById('msg-mention-list');
+  const m = getMentionQuery(el);
+  if(!m){ dd.style.display='none'; msgActiveMentionIdx=-1; return; }
+  const users = getUsers();
+  const entries = Object.entries(users)
+    .filter(([uname,u]) => u.name && u.name.toLowerCase().includes(m.query.toLowerCase()))
+    .slice(0,8);
+  if(!entries.length){ dd.style.display='none'; msgActiveMentionIdx=-1; return; }
+  msgActiveMentionIdx = 0;
+  dd.innerHTML = entries.map(([uname,u],i)=>
+    `<div class="msg-mention-item${i===0?' active':''}" data-uname="${uname}" data-name="${escapeHtml(u.name)}" onclick="pickMention('${uname}','${u.name.replace(/'/g,"\\'")}')"><i class="fas fa-user-circle" style="color:#2f9bff"></i>${escapeHtml(u.name)}</div>`
+  ).join('');
+  dd.style.display='block';
+}
+
+function onMsgKeydown(e){
+  const dd = document.getElementById('msg-mention-list');
+  const isOpen = dd && dd.style.display === 'block';
+  if(isOpen){
+    const items = Array.from(dd.querySelectorAll('.msg-mention-item'));
+    if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      msgActiveMentionIdx = Math.min(items.length-1, msgActiveMentionIdx+1);
+      items.forEach((it,i)=>it.classList.toggle('active', i===msgActiveMentionIdx));
+      return;
+    }
+    if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      msgActiveMentionIdx = Math.max(0, msgActiveMentionIdx-1);
+      items.forEach((it,i)=>it.classList.toggle('active', i===msgActiveMentionIdx));
+      return;
+    }
+    if(e.key === 'Enter' || e.key === 'Tab'){
+      if(items[msgActiveMentionIdx]){
+        e.preventDefault();
+        const it = items[msgActiveMentionIdx];
+        pickMention(it.dataset.uname, it.dataset.name);
+        return;
+      }
+    }
+    if(e.key === 'Escape'){ dd.style.display='none'; msgActiveMentionIdx=-1; return; }
+  }
+  if(e.key === 'Enter' && !e.shiftKey && !isOpen){
+    e.preventDefault();
+    sendTeamMessage();
+  }
+}
+
+function pickMention(username, displayName){
+  const el = document.getElementById('msg-input');
+  const m = getMentionQuery(el);
+  if(m){
+    const val = el.value;
+    const pos = el.selectionStart;
+    const before = val.slice(0, m.at);
+    const after = val.slice(pos);
+    const inserted = '@' + displayName + ' ';
+    el.value = before + inserted + after;
+    const newPos = (before + inserted).length;
+    el.focus();
+    el.setSelectionRange(newPos, newPos);
+  }
+  msgMentionSet.add(username);
+  document.getElementById('msg-mention-list').style.display = 'none';
+  msgActiveMentionIdx = -1;
+}
+
+document.addEventListener('click', function(e){
+  const dd = document.getElementById('msg-mention-list');
+  const input = document.getElementById('msg-input');
+  if(dd && input && !dd.contains(e.target) && e.target !== input){
+    dd.style.display = 'none';
+  }
+});
+
+async function sendTeamMessage(){
+  const el = document.getElementById('msg-input');
+  const text = el.value.trim();
+  if(!text || !currentUser) return;
+  const btn = document.querySelector('.msg-send-btn');
+  const origTxt = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+  const msgData = {
+    from: currentUser.username,
+    fromName: currentUser.name,
+    text: text,
+    mentions: Array.from(msgMentionSet),
+    ts: Date.now()
+  };
+  const ok = currentConv === 'group'
+    ? await window._fbPushMessage(msgData)
+    : await window._fbPushDM(getDmConvId(currentUser.username, currentConv), { ...msgData, to: currentConv });
+
+  btn.disabled = false;
+  btn.innerHTML = origTxt;
+
+  if(ok){
+    el.value = '';
+    msgMentionSet = new Set();
+    markCurrentConvSeen();
+  } else {
+    toast('❌ Message failed to send! Check connection.');
+  }
 }
 
 function getMyTickets(){

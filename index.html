@@ -815,6 +815,13 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 .msg-seen-status{font-size:.62rem;font-weight:700;opacity:.75;margin-top:3px;text-align:right;font-family:'Montserrat',sans-serif;display:flex;justify-content:flex-end;gap:4px;align-items:center;color:rgba(255,255,255,.85)}
 .msg-seen-status.seen{opacity:1;color:#facc15}
 .msg-bubble.other .msg-seen-status{display:none}
+.msg-seen-hover{position:relative;cursor:default;justify-content:flex-end}
+.msg-seen-popup{display:none;position:absolute;bottom:100%;right:0;margin-bottom:8px;background:#fff;border-radius:10px;padding:9px 13px;box-shadow:0 10px 28px rgba(10,22,66,.32);white-space:nowrap;z-index:60;text-align:left}
+.msg-seen-hover:hover .msg-seen-popup{display:block}
+.msg-seen-popup::after{content:'';position:absolute;top:100%;right:14px;border:6px solid transparent;border-top-color:#fff}
+.msg-seen-popup-title{font-size:.62rem;font-weight:900;color:#16a34a;display:flex;align-items:center;gap:5px;margin-bottom:5px;letter-spacing:.3px}
+.msg-seen-popup .msg-seen-names{display:flex;flex-direction:column;gap:4px}
+.msg-seen-popup .msg-seen-names span{font-size:.7rem;font-weight:500;color:#0a1642;line-height:1.3}
 .nav-badge-count{background:#e53935;color:#fff;font-size:.62rem;font-weight:900;border-radius:9px;padding:1px 6px;margin-left:auto;font-family:'Montserrat',sans-serif}
 
 /* ===== WHATSAPP-STYLE: sidebar last-message preview ===== */
@@ -2140,7 +2147,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
         <div style="background:#f5f9ff;border:1.5px dashed #8cc7f7;border-radius:10px;padding:10px 14px;margin-bottom:10px">
           <span style="font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--text)"><i class="fas fa-info-circle" style="color:var(--accent)"></i> প্রথম row অবশ্যই header হতে হবে (Entry Date, ID, Ticket ID, Support Type, Task Status ইত্যাদি কলাম নাম)। MIS থেকে Header সহ পুরো data select করে Ctrl+C, তারপর নিচের বক্সে Ctrl+V করুন।</span>
         </div>
-        <textarea id="mis-paste-data" rows="10" placeholder="এখানে MIS থেকে header row + data rows paste করুন..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text);background:#f8faff;resize:vertical;outline:none;line-height:1.6;margin-bottom:10px"></textarea>
+        <textarea id="mis-paste-data" rows="10" placeholder="এখানে Excel থেকে header row + data rows paste করুন..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text);background:#f8faff;resize:vertical;outline:none;line-height:1.6;margin-bottom:10px"></textarea>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <button id="btn-mis-paste-process" onclick="handleMisPaste()" style="background:linear-gradient(135deg,#0a1642,#2452e8,#2f9bff);color:#fff;border:none;padding:10px 24px;border-radius:9px;font-size:.78rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:'Montserrat',sans-serif;box-shadow:0 5px 14px rgba(21,49,140,.28);transition:all .22s" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">
             <i class="fas fa-upload"></i> Process Pasted Data
@@ -2663,6 +2670,21 @@ async function syncUsersFromFirebase() {
 }
 let currentUser = null;
 
+// The Firebase presence functions (window._fbSetOnline / _fbSetOffline, etc.) are
+// defined inside the <script type="module"> block in <head>. Module scripts are
+// deferred and only run AFTER this inline script has already executed once during
+// initial page parsing — so on page load/refresh, calling those functions directly
+// here (via a simple typeof check) silently no-ops because they don't exist yet.
+// This was the reason "who's online" never updated for a user whose session was
+// auto-restored on refresh: their online flag was simply never set. This helper
+// waits (briefly, via polling) until the function is actually available, then runs it.
+function waitForFirebaseReady(fnName, cb, tries){
+  tries = tries || 0;
+  if (typeof window[fnName] === 'function') { cb(); return; }
+  if (tries > 100) return; // give up after ~5s
+  setTimeout(()=>waitForFirebaseReady(fnName, cb, tries+1), 50);
+}
+
 // ===== ONLINE PRESENCE STATE =====
 let onlineUsers = {}; // { username: {online:true/false, lastSeen:...} }
 window.__applyUserStatus = function(statusData){
@@ -2672,8 +2694,47 @@ window.__applyUserStatus = function(statusData){
   const msgPage = document.getElementById('page-messages');
   if (msgPage && msgPage.classList.contains('active') && typeof renderContactList === 'function') renderContactList();
 };
+// Re-renders whichever presence-aware view (User Management / Message sidebar) is
+// currently open, without needing a fresh Firebase write. The staleness check inside
+// isUserOnline() is time-based (Date.now() vs lastSeen), so without this, a user who
+// went stale would keep showing "online" until some unrelated DB write happened to
+// trigger a re-render.
+setInterval(()=>{
+  const usersPage = document.getElementById('page-users');
+  if (usersPage && usersPage.classList.contains('active') && typeof renderUserTable === 'function') renderUserTable();
+  const msgPage = document.getElementById('page-messages');
+  if (msgPage && msgPage.classList.contains('active') && typeof renderContactList === 'function') renderContactList();
+}, 10000);
+
 function isUserOnline(uname){
-  return !!(onlineUsers[uname] && onlineUsers[uname].online);
+  const u = onlineUsers[uname];
+  if(!u || !u.online) return false;
+  // Safety net: the "online" flag only flips to false via onDisconnect (fires when the
+  // socket actually drops) or beforeunload (which browsers often abort mid-flight on
+  // tab close, especially on mobile). Neither is 100% reliable on its own, which is why
+  // a user could look "stuck online" forever after really leaving. The heartbeat below
+  // rewrites lastSeen every ~5s while a session is genuinely open, so if we haven't
+  // heard from a user in a while we stop trusting the stored "online" flag and treat
+  // them as offline, regardless of what the flag says.
+  const STALE_MS = 20 * 1000;
+  if(u.lastSeen && (Date.now() - u.lastSeen) > STALE_MS) return false;
+  return true;
+}
+
+// Keeps presence alive (and re-registers onDisconnect, in case a brief network drop
+// silently cleared it) for as long as this tab stays logged in. Without this, a single
+// missed/failed disconnect write is enough for a user to appear online indefinitely,
+// and a user whose initial login write raced against a slow connection could end up
+// never appearing online to anyone else at all.
+let presenceHeartbeatId = null;
+function startPresenceHeartbeat(uname){
+  if(presenceHeartbeatId) clearInterval(presenceHeartbeatId);
+  presenceHeartbeatId = setInterval(()=>{
+    if(currentUser && typeof window._fbSetOnline === 'function') window._fbSetOnline(uname);
+  }, 5000);
+}
+function stopPresenceHeartbeat(){
+  if(presenceHeartbeatId){ clearInterval(presenceHeartbeatId); presenceHeartbeatId = null; }
 }
 
 async function doLogin() {
@@ -2704,7 +2765,7 @@ async function doLogin() {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app-screen').style.display = 'block';
       setupUserUI();
-      if(typeof window._fbSetOnline === 'function') window._fbSetOnline(uname);
+      waitForFirebaseReady('_fbSetOnline', ()=>{ window._fbSetOnline(uname); startPresenceHeartbeat(uname); });
       if(typeof backfillLink3IdsForKnownEngineers==='function') await backfillLink3IdsForKnownEngineers();
       renderUserTable();
       setDateDefaults();
@@ -2840,6 +2901,7 @@ if (zoneBadge) {
 
 
 function doLogout() {
+  stopPresenceHeartbeat();
   if(currentUser && typeof window._fbSetOffline === 'function') window._fbSetOffline(currentUser.username);
   currentUser = null;
   localStorage.removeItem('l3_session');
@@ -4075,6 +4137,12 @@ function updateMsgBadge(){
 // Builds a short, WhatsApp-style one-line preview of a message (used in the
 // sidebar contact list): "You: " prefix for own messages, a reply/forward icon
 // tag if relevant, and truncated text.
+// Shortens a full display name to its first two words (e.g. "Muhammed Rabiul Islam"
+// -> "Muhammed Rabiul") — used for compact spots like the seen-by popup list.
+function firstTwoNameParts(name){
+  const parts = (name||'').trim().split(/\s+/);
+  return parts.slice(0,2).join(' ');
+}
 function buildMsgPreviewText(m){
   if(!m) return '';
   const meUsername = currentUser ? currentUser.username : '';
@@ -4262,7 +4330,13 @@ function renderMessages(){
       if(currentConv === 'group'){
         const seenNames = getGroupSeenByNames(m);
         seenHtml = seenNames.length
-          ? `<div class="msg-seen-status seen" title="${escapeHtml(seenNames.join(', '))}"><i class="fas fa-check-double"></i> Seen by ${escapeHtml(seenNames.slice(0,2).join(', '))}${seenNames.length>2?' +'+(seenNames.length-2):''}</div>`
+          ? `<div class="msg-seen-status seen msg-seen-hover">
+              <span><i class="fas fa-check-double"></i> Seen by</span>
+              <div class="msg-seen-popup">
+                <div class="msg-seen-popup-title"><i class="fas fa-check-double"></i> Seen by</div>
+                <div class="msg-seen-names">${seenNames.map(n=>`<span>${escapeHtml(firstTwoNameParts(n))}</span>`).join('')}</div>
+              </div>
+            </div>`
           : `<div class="msg-seen-status"><i class="fas fa-check"></i> Sent</div>`;
       } else {
         const convId = getDmConvId(meUsername, currentConv);
@@ -6962,7 +7036,7 @@ document.getElementById('l-user').addEventListener('keydown', e => { if(e.key===
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'block';
     setupUserUI();
-    if(typeof window._fbSetOnline === 'function') window._fbSetOnline(user.username);
+    waitForFirebaseReady('_fbSetOnline', ()=>{ window._fbSetOnline(user.username); startPresenceHeartbeat(user.username); });
     if(typeof backfillLink3IdsForKnownEngineers==='function') backfillLink3IdsForKnownEngineers();
     renderUserTable();
     setDateDefaults();

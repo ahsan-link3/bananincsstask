@@ -1334,7 +1334,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <div class="nav-icon-wrap"><i class="fas fa-user" style="color:#4fc3f7"></i></div><span class="nav-label">Engineer Panel</span><i class="fas fa-chevron-down nav-chevron"></i>
     </div>
     <div class="nav-submenu" id="submenu-userpanel">
-      <div class="nav-item eng-visible" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('maindash',this)"><div class="nav-icon-wrap"><i class="fas fa-tachometer-alt" style="color:#4fc3f7"></i></div><span class="nav-label">Dashboard</span></div>
+      <div class="nav-item eng-visible" id="nav-maindash" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('maindash',this)"><div class="nav-icon-wrap"><i class="fas fa-tachometer-alt" style="color:#4fc3f7"></i></div><span class="nav-label">Dashboard</span></div>
       <div class="nav-item eng-visible active" id="nav-ticketentry" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('dashboard',this)"><div class="nav-icon-wrap"><i class="fas fa-ticket-alt" style="color:#f472b6"></i></div><span class="nav-label">Ticket Entry</span></div>
       <div class="nav-item eng-visible" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('mytask',this)"><div class="nav-icon-wrap"><i class="fas fa-calendar-check" style="color:#4ade80"></i></div><span class="nav-label">My Task</span></div>
       <div class="nav-item eng-visible" style="background:rgba(168,85,247,0.30);border-left:3px solid rgba(168,85,247,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('taskreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-bar" style="color:#fb923c"></i></div><span class="nav-label">Task Report</span></div>
@@ -2140,7 +2140,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
         <div style="background:#f5f9ff;border:1.5px dashed #8cc7f7;border-radius:10px;padding:10px 14px;margin-bottom:10px">
           <span style="font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--text)"><i class="fas fa-info-circle" style="color:var(--accent)"></i> প্রথম row অবশ্যই header হতে হবে (Entry Date, ID, Ticket ID, Support Type, Task Status ইত্যাদি কলাম নাম)। MIS থেকে Header সহ পুরো data select করে Ctrl+C, তারপর নিচের বক্সে Ctrl+V করুন।</span>
         </div>
-        <textarea id="mis-paste-data" rows="10" placeholder="এখানে MIS থেকে header row + data rows paste করুন..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text);background:#f8faff;resize:vertical;outline:none;line-height:1.6;margin-bottom:10px"></textarea>
+        <textarea id="mis-paste-data" rows="10" placeholder="এখানে Excel থেকে header row + data rows paste করুন..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text);background:#f8faff;resize:vertical;outline:none;line-height:1.6;margin-bottom:10px"></textarea>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <button id="btn-mis-paste-process" onclick="handleMisPaste()" style="background:linear-gradient(135deg,#0a1642,#2452e8,#2f9bff);color:#fff;border:none;padding:10px 24px;border-radius:9px;font-size:.78rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:'Montserrat',sans-serif;box-shadow:0 5px 14px rgba(21,49,140,.28);transition:all .22s" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">
             <i class="fas fa-upload"></i> Process Pasted Data
@@ -3375,27 +3375,19 @@ document.getElementById('db-month').value = String(new Date().getMonth() + 1).pa
 
 function applyDefaultRoleView(){
   if(!currentUser) return;
-  const isAdmin = currentUser.role === 'admin';
 
   // Reset any open nav groups first
   document.querySelectorAll('.nav-submenu.open').forEach(m=>m.classList.remove('open'));
   document.querySelectorAll('.nav-parent.open').forEach(p=>p.classList.remove('open'));
 
-  if(isAdmin){
-    // Admin -> Admin Panel group open, Task Dashboard shown by default
-    const menu = document.getElementById('submenu-adminpanel');
-    const parent = document.getElementById('nav-adminpanel');
-    if(menu) menu.classList.add('open');
-    if(parent) parent.classList.add('open');
-    showPage('workdash', document.getElementById('nav-workdash'));
-  } else {
-    // Engineer -> User Panel group open, Ticket Entry shown by default
-    const menu = document.getElementById('submenu-userpanel');
-    const parent = document.getElementById('nav-userpanel');
-    if(menu) menu.classList.add('open');
-    if(parent) parent.classList.add('open');
-    showPage('dashboard', document.getElementById('nav-ticketentry'));
-  }
+  // Both Admin and Engineer now default to the Engineer Panel's Dashboard on
+  // login and on every page refresh — the User Panel group is opened and its
+  // "Dashboard" nav item is highlighted/active regardless of role.
+  const menu = document.getElementById('submenu-userpanel');
+  const parent = document.getElementById('nav-userpanel');
+  if(menu) menu.classList.add('open');
+  if(parent) parent.classList.add('open');
+  showPage('maindash', document.getElementById('nav-maindash'));
 }
 
 function toggleNavGroup(id, el){

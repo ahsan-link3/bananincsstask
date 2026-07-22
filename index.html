@@ -1444,9 +1444,6 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
     </div>
   </div>
 
-  <!-- Summary Stat Cards -->
-  <div class="stat-row" style="grid-template-columns:repeat(6,1fr);margin-bottom:8px;height:44px" id="db-stat-row"></div>
-
   <!-- Charts — all together in compact grid -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0">
 
@@ -1942,7 +1939,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       </div>
       <div class="tbl-card">
         <div class="tbl-wrap"><table>
-          <thead><tr><th>#</th><th>Date</th><th>Ticket ID</th><th>ONU MAC Address</th><th>Engineer</th><th>Technician</th><th>Team</th><th>Remarks</th></tr></thead>
+          <thead><tr><th>#</th><th>Date</th><th>Ticket ID</th><th>ONU MAC Address</th><th>Engineer</th><th>Technician</th><th>Team</th></tr></thead>
           <tbody id="dv-tbody"></tbody>
         </table></div>
       </div>
@@ -1974,7 +1971,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   </div>
 </div>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>#</th><th>Date</th><th>Ticket ID</th><th>Category</th><th>Engineer</th><th>Technician</th><th>Team</th><th>WiFi</th><th>Remarks</th></tr></thead>
+          <thead><tr><th>#</th><th>Date</th><th>Ticket ID</th><th>Category</th><th>Engineer</th><th>Technician</th><th>Team</th><th>WiFi</th></tr></thead>
           <tbody id="wf-tbody"></tbody>
         </table></div>
       </div>
@@ -3350,6 +3347,19 @@ function fmtDateDisp(iso){
   // dd/mm/yyyy — day first, then month, then year (no leading zeros)
   return day+'/'+mon+'/'+year;
 }
+// Date + a small time stamp underneath, for table cells. Time is derived from
+// the ticket's `id` (Date.now() at the moment it was submitted).
+function fmtDateTimeCell(t){
+  const dateStr = fmtDateDisp(t && t.date);
+  let timeStr = '';
+  if(t && t.id){
+    const d = new Date(Math.floor(t.id));
+    if(!isNaN(d.getTime())) timeStr = d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+  }
+  return timeStr
+    ? `${dateStr}<br><span style="font-size:.64em;font-weight:800;color:#ff6a00;letter-spacing:.2px">${timeStr}</span>`
+    : dateStr;
+}
 function setDateDefaults(){
   const today = new Date().toLocaleDateString('en-CA');
   const fd = document.getElementById('f-date');
@@ -3787,16 +3797,16 @@ function buildRows(arr,tbodyId,withDel,isMyTask,startIdx=0){
     return `<tr>
     ${chkCell}
     <td>${startIdx+i+1}</td>
-    <td style="padding:5px 4px">${fmtDateDisp(t.date)}</td>
+    <td style="padding:5px 4px">${fmtDateTimeCell(t)}</td>
     <td style="white-space:nowrap">${t.ticket}</td>
     <td><span class="chip chip-cat" style="font-family:'Outfit',sans-serif">${t.cat}</span></td>
-    <td>${t.tt}</td>
-    <td>${t.tm}</td>
-    <td style="color:var(--blue);font-weight:700">${t.eng}</td>
+    <td style="font-size:.72rem;white-space:nowrap">${t.tt}</td>
+    <td style="font-size:.72rem;white-space:nowrap">${t.tm}</td>
+    <td style="color:var(--blue);font-weight:700;font-size:.73rem;white-space:nowrap;padding:5px 6px">${engDisplayName(t.eng)}</td>
     <td style="font-size:.75rem;color:#7c3aed;font-weight:600;white-space:nowrap;font-family:'Outfit',sans-serif">${techName?`<i class="fas fa-hard-hat" style="font-size:.6rem;margin-right:3px;color:#a855f7"></i>${techName}`:'<span style="color:#b0bec5">—</span>'}</td>
-    <td style="font-family:'Outfit',sans-serif;padding:5px 4px">${t.mac||'—'}</td>
+    <td style="font-family:'Outfit',sans-serif;padding:5px 4px;font-size:.72rem;white-space:nowrap">${t.mac||'—'}</td>
     <td><span class="chip ${t.wifi==='YES'?'chip-yes':'chip-no'}" style="font-family:'Outfit',sans-serif">${t.wifi}</span></td>
-    <td style="max-width:150px;white-space:normal;font-family:'Outfit',sans-serif">${t.remarks||'—'}</td>
+    <td class="remarks-col" style="max-width:190px;white-space:normal;font-family:'Outfit',sans-serif;font-size:.63rem;font-weight:400">${t.remarks||'—'}</td>
     ${(showEdit||showDel)?`<td style="white-space:nowrap">${showEdit?`<button class="btn-row-edit" onclick="openEditTicket('${t.firebaseKey||t.id}',${isMyTask?'true':'false'})"><i class="fas fa-pen"></i></button>`:''}${showDel?`<button class="btn-row-del" onclick="delTicket('${t.firebaseKey||t.id}',${isMyTask?'true':'false'})"><i class="fas fa-times"></i></button>`:''}</td>`:'<td></td>'}
     </tr>`;
   }).join('');
@@ -4771,6 +4781,7 @@ function mtGoPage(p){
 
 const ENGINEERS = ['Md. Mostafizur Rahman','Nabiul Ahsan Bakshi','Md. Asad','Taibul Hoque Zehad','Subroto Saha','Abu Hasnat','Muhammed Rabiul Islam','Md. Azizul Haque Sojol','Ainul Hoque Rubel','Md Juel Hossain','Mrithunjoy Das','Mohammad Badrul Islam','Abir Roy','Syed Ash Shams'];
 
+
 // Short display names used ONLY in the Engineer Report tables (so the Engineer column
 // can be narrow and fit the text). All other logic (filtering, matching MIS rows, etc.)
 // still uses the full name from ENGINEERS — this map is purely cosmetic/display.
@@ -5009,7 +5020,7 @@ function renderReport(){
   color:${v>0?'#2452e8':'#b0bec5'};
   border:1.5px solid ${v>0?'#93c5fd':'#e2e8f0'};">${v}</span></td>`;
     return `<tr>
-      <td style="font-weight:800;font-family:'Outfit',sans-serif;color:var(--navy);font-size:.8rem;padding:3px 8px;">${eng}</td>
+      <td style="font-weight:800;font-family:'Outfit',sans-serif;color:var(--navy);font-size:.8rem;padding:3px 8px;">${engDisplayName(eng)}</td>
       ${cell(ts)}${cell(ins)}${cell(cr)}${cell(sv)}${cell(nt)}
       <td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 4px;">
   <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.74rem;font-weight:900;
@@ -5207,11 +5218,11 @@ function renderTechDetail(){
   }
   tb.innerHTML = arr.map((t,i)=>`<tr style="border-bottom:1px solid #ede9fe">
     <td style="text-align:center;padding:6px 4px;font-family:'Outfit',sans-serif;font-size:.76rem;color:var(--muted)">${i+1}</td>
-    <td style="text-align:center;padding:6px 4px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.76rem;color:var(--navy)">${fmtDateDisp(t.date)}</td>
+    <td style="text-align:center;padding:6px 4px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.76rem;color:var(--navy)">${fmtDateTimeCell(t)}</td>
     <td style="text-align:center;padding:6px 4px;font-family:'Outfit',sans-serif;font-weight:700;font-size:.78rem;white-space:nowrap">${t.ticket}</td>
     <td style="text-align:center;padding:6px 4px"><span class="chip chip-cat">${t.cat}</span></td>
-    <td style="text-align:center;padding:6px 4px;font-family:'Outfit',sans-serif;font-weight:700;font-size:.76rem;color:var(--blue)">${t.eng}</td>
-    <td style="text-align:left;padding:6px 8px;font-family:'Outfit',sans-serif;font-size:.74rem;color:var(--text);max-width:220px;white-space:normal">${t.remarks||'—'}</td>
+    <td style="text-align:center;padding:6px 4px;font-family:'Outfit',sans-serif;font-weight:700;font-size:.76rem;color:var(--blue)">${engDisplayName(t.eng)}</td>
+    <td class="remarks-col" style="text-align:left;padding:6px 8px;font-family:'Outfit',sans-serif;font-size:.74rem;color:var(--text);max-width:220px;white-space:normal">${t.remarks||'—'}</td>
   </tr>`).join('');
 }
 
@@ -6792,19 +6803,18 @@ if(dvTotal) dvTotal.textContent=arr.length;
   const pageArr=arr.slice(start,start+DV_PER_PAGE);
   const tb=document.getElementById('dv-tbody');
   if(!arr.length){
-    tb.innerHTML=`<tr><td colspan="8"><div class="empty-box"><span class="ei">📡</span><p>No devices found.</p></div></td></tr>`;
+    tb.innerHTML=`<tr><td colspan="7"><div class="empty-box"><span class="ei">📡</span><p>No devices found.</p></div></td></tr>`;
     renderDvPagination(0,1);
     return;
   }
   tb.innerHTML=pageArr.map((t,i)=>`<tr>
     <td>${start+i+1}</td>
-    <td>${fmtDateDisp(t.date)}</td>
+    <td>${fmtDateTimeCell(t)}</td>
     <td>${t.ticket}</td>
     <td style="font-family:'Outfit',sans-serif">${t.mac}</td>
-    <td>${t.eng}</td>
+    <td>${engDisplayName(t.eng)}</td>
     <td style="font-size:.75rem;color:#7c3aed;font-weight:600;white-space:nowrap;font-family:'Outfit',sans-serif">${t.technician?`<i class="fas fa-hard-hat" style="font-size:.6rem;margin-right:3px;color:#a855f7"></i>${t.technician}`:'<span style="color:#b0bec5">—</span>'}</td>
     <td>${t.tm}</td>
-    <td>${renderRemarksCell(t)}</td>
   </tr>`).join('');
   renderDvPagination(arr.length,totalPages);
 }
@@ -6864,20 +6874,19 @@ if(wfTotal) wfTotal.textContent = arr.length;
   const pageArr=arr.slice(start,start+WF_PER_PAGE);
   const tb=document.getElementById('wf-tbody');
   if(!arr.length){
-    tb.innerHTML=`<tr><td colspan="9"><div class="empty-box"><span class="ei">📶</span><p>No WiFi scored tickets.</p></div></td></tr>`;
+    tb.innerHTML=`<tr><td colspan="8"><div class="empty-box"><span class="ei">📶</span><p>No WiFi scored tickets.</p></div></td></tr>`;
     renderWfPagination(0,1);
     return;
   }
   tb.innerHTML=pageArr.map((t,i)=>`<tr>
     <td>${start+i+1}</td>
-    <td>${fmtDateDisp(t.date)}</td>
+    <td>${fmtDateTimeCell(t)}</td>
     <td>${t.ticket}</td>
     <td><span class="chip chip-cat">${t.cat}</span></td>
-    <td>${t.eng}</td>
+    <td>${engDisplayName(t.eng)}</td>
     <td style="font-size:.75rem;color:#7c3aed;font-weight:600;white-space:nowrap">${t.technician?`<i class="fas fa-hard-hat" style="font-size:.6rem;margin-right:3px;color:#a855f7"></i>${t.technician}`:'<span style="color:#b0bec5">—</span>'}</td>
     <td>${t.tm}</td>
     <td><span class="chip chip-yes"><i class="fas fa-circle" style="font-size:.4rem;vertical-align:middle"></i> YES</span></td>
-    <td>${t.remarks||'—'}</td>
   </tr>`).join('');
   renderWfPagination(arr.length,totalPages);
 }
@@ -7047,14 +7056,7 @@ function renderDash(){
   const arr = getDashFiltered();
   document.getElementById('db-total-badge').textContent = arr.length+' tickets';
 
-  // Stat cards
   const cats=['Installation','Troubleshoot','CR','Survey','Non Ticket'];
-  const catIcons={'Installation':'fa-toolbox','Troubleshoot':'fa-triangle-exclamation','CR':'fa-file-signature','Survey':'fa-magnifying-glass-chart','Non Ticket':'fa-ticket'};
-  const statRow = document.getElementById('db-stat-row');
-  statRow.innerHTML = `
-    <div class="stat-card" style="height:40px"><i class="fas fa-list-check stat-icon" style="color:#2452e8"></i><div><div class="stat-num" style="font-size:.95rem">${arr.length}</div><div class="stat-lbl" style="font-size:.55rem">TOTAL</div></div></div>
-    ${cats.map(c=>`<div class="stat-card" style="height:40px"><i class="fas ${catIcons[c]} stat-icon" style="color:${CAT_COLORS[c]||'#5d7ba8'}"></i><div><div class="stat-num" style="font-size:.95rem">${arr.filter(t=>t.cat===c).length}</div><div class="stat-lbl" style="font-size:.55rem">${c.toUpperCase()}</div></div></div>`).join('')}
-  `;
 
   destroyCharts();
 
@@ -7209,6 +7211,28 @@ chartEng = new Chart(engCtx2,{
       ctx.fillText('TOTAL', cx, cy+9);
       ctx.restore();
     }
+  },{
+    id:'catSliceValueLabelMain',
+    afterDatasetsDraw(chart){
+      const {ctx} = chart;
+      const meta = chart.getDatasetMeta(0);
+      meta.data.forEach((arc, idx)=>{
+        const value = chart.data.datasets[0].data[idx];
+        if(!value) return;
+        const {x,y} = arc.getCenterPoint();
+        ctx.save();
+        ctx.font = "800 11px 'Montserrat', sans-serif";
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0,0,0,.9)';
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 1;
+        ctx.fillText(value, x, y);
+        ctx.restore();
+      });
+    }
   }],
   options:{
     responsive:true,
@@ -7301,6 +7325,7 @@ chartEng = new Chart(engCtx2,{
     responsive:true,
     maintainAspectRatio:false,
     animation:{ duration:700, easing:'easeOutQuart' },
+    layout:{ padding:{ top:18 } },
     plugins:{
       legend:{display:false},
       tooltip:{

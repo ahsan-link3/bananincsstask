@@ -2712,6 +2712,7 @@ async function doLogin() {
       renderUserTable();
       setDateDefaults();
       setTimeout(()=>applyDefaultRoleView(), 80);
+      if(typeof showWelcomePopup === 'function') showWelcomePopup(currentUser.name || currentUser.username);
     } else {
       const known = users[uname] || DEFAULT_USERS[uname];
       errMsg.textContent = known ? 'Incorrect password!' : 'Username not found!';
@@ -3480,6 +3481,68 @@ function toast(msg){
   setTimeout(()=>t.classList.remove('show'),5000);
 }
 
+// ===== WELCOME LOGIN POPUP (rises up & vanishes in 2s) =====
+function showWelcomePopup(fullName){
+  let modal = document.getElementById('welcome-popup-modal');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'welcome-popup-modal';
+    modal.style.cssText = 'display:none;position:fixed;left:0;right:0;top:50%;transform:translateY(-50%);z-index:10000;align-items:center;justify-content:center;pointer-events:none';
+    modal.innerHTML = `
+      <div id="welcome-popup-card" style="background:linear-gradient(135deg,#000000,#0a1642,#15318c,#2f9bff);background-size:300% 300%;border-radius:18px;box-shadow:0 0 0 3px #0a1642,0 0 35px 8px rgba(10,22,66,.75),0 15px 40px rgba(0,0,0,.5);padding:14px 30px;text-align:center;min-width:250px;max-width:90vw;position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:radial-gradient(circle at 25% 15%,rgba(47,155,255,.25),transparent 55%)"></div>
+        <div id="welcome-popup-shine" style="position:absolute;top:0;left:-60%;width:50%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,.5),transparent);transform:skewX(-20deg)"></div>
+        <div style="position:relative;text-align:center">
+          <div style="font-family:'Roboto Serif',serif;font-size:1.1rem;font-weight:900;color:#fff;letter-spacing:.5px;text-shadow:0 1px 5px rgba(0,0,0,.5)">👋 Welcome</div>
+          <div id="welcome-popup-name" style="margin-top:3px;font-family:'Roboto Serif',serif;font-size:.9rem;font-weight:700;color:#9fd4ff;text-shadow:0 1px 5px rgba(0,0,0,.45)"></div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('welcome-popup-name').textContent = fullName || '';
+  const card = document.getElementById('welcome-popup-card');
+  const shine = document.getElementById('welcome-popup-shine');
+  modal.style.display = 'flex';
+  card.style.animation = 'none';
+  shine.style.animation = 'none';
+  void card.offsetWidth; // restart animation
+  card.style.animation = 'welcomeRiseVanish 3s ease forwards, welcomeGlow 3s ease forwards, welcomeGradient 3s ease forwards';
+  shine.style.animation = 'welcomeShine 1.6s ease-in-out .2s';
+  clearTimeout(window.__welcomePopupTimer);
+  window.__welcomePopupTimer = setTimeout(() => { modal.style.display = 'none'; }, 3000);
+}
+function closeWelcomePopup(){
+  const modal = document.getElementById('welcome-popup-modal');
+  if(modal) modal.style.display = 'none';
+  clearTimeout(window.__welcomePopupTimer);
+}
+if(!document.getElementById('welcome-popup-style')){
+  const st = document.createElement('style');
+  st.id = 'welcome-popup-style';
+  st.textContent = `@keyframes welcomeRiseVanish {
+    0%   { transform: translateX(420px) scale(.9); opacity: 0; }
+    20%  { transform: translateX(0) scale(1);    opacity: 1; }
+    80%  { transform: translateX(0) scale(1); opacity: 1; }
+    100% { transform: translateX(-30px) scale(.96); opacity: 0; }
+  }
+  @keyframes welcomeGradient {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+  }
+  @keyframes welcomeGlow {
+    0%, 100% { box-shadow: 0 0 0 3px #0a1642, 0 0 30px 6px rgba(0,0,0,.7), 0 15px 40px rgba(0,0,0,.5); }
+    50% { box-shadow: 0 0 0 3px #0a1642, 0 0 45px 12px rgba(47,155,255,.75), 0 15px 45px rgba(0,0,0,.55); }
+  }
+  #welcome-popup-shine {
+    animation: welcomeShine 1.1s ease-in-out .15s;
+  }
+  @keyframes welcomeShine {
+    0%   { left: -60%; }
+    100% { left: 130%; }
+  }`;
+  document.head.appendChild(st);
+}
+
 // ===== TOGGLE BUTTON =====
 function toggleSingle(field){
   const hidden = document.getElementById('f-'+field);
@@ -3841,6 +3904,7 @@ let msgMentionSet = new Set();      // usernames tagged in the current draft
 let msgActiveMentionIdx = -1;       // keyboard-selected index in the open dropdown
 let msgNotifyBaseline = Date.now(); // messages older than this never trigger a notification (avoids spam on load)
 let msgNotifiedKeys = new Set();    // already-notified message keys, this session
+let marqueeNotifiedKeys = new Set(); // already-shown marquee banner keys, this session
 let msgEditingKey = null;           // firebaseKey of the bubble currently being edited, if any
 let msgReplyTarget = null;          // { key, from, fromName, text } of the message currently being replied to
 let msgReactionPickerFor = null;    // firebaseKey of the bubble whose reaction picker is open
@@ -3948,6 +4012,7 @@ function isDmSeenByPartner(convId, m){
 window.__applyMessages = function(list){
   teamMessages = list || [];
   checkForNewMentionNotifications(teamMessages, null);
+  checkForNewMessageMarquees(teamMessages, null);
   const pg = document.getElementById('page-messages');
   if(pg && pg.classList.contains('active') && currentConv === 'group'){
     renderMessages();
@@ -3968,6 +4033,7 @@ window.__applyDMMessages = function(data){
     dmMessagesAll[convId] = list;
     if(currentUser && convId.split('__').includes(currentUser.username)){
       checkForNewMentionNotifications(list, convId);
+      checkForNewMessageMarquees(list, convId);
     }
   });
   const pg = document.getElementById('page-messages');
@@ -4109,6 +4175,8 @@ function renderMsgTextWithTags(text){
     const re = new RegExp('@' + safeName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
     html = html.replace(re, `<span class="msg-tag">@${safeName}</span>`);
   });
+  // Bold text: **text** typed via Ctrl+B in the message box renders as <strong>
+  html = html.replace(/\*\*([^\n*]+)\*\*/g, '<strong>$1</strong>');
   return html.replace(/\n/g,'<br>');
 }
 
@@ -4384,6 +4452,71 @@ function fireChatNotification(title, body, convTarget){
   }
   if(typeof toast === 'function') toast('🔔 ' + title + ': ' + body);
 }
+
+// ----- Site-wide scrolling message banner -----
+// Shows a continuously-scrolling ticker at the top of every page whenever anyone
+// sends a message (group or DM). Stays on screen — however many pages the person
+// clicks through — until they close it with the × button themselves.
+function ensureMsgMarqueeContainer(){
+  let box = document.getElementById('msg-marquee-container');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'msg-marquee-container';
+    box.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9500;display:flex;flex-direction:column;pointer-events:none';
+    document.body.appendChild(box);
+  }
+  if(!document.getElementById('msg-marquee-style')){
+    const st = document.createElement('style');
+    st.id = 'msg-marquee-style';
+    st.textContent = `
+      @keyframes msgMarqueeScroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+      .msg-marquee-row{pointer-events:auto;display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,#0a1642,#15318c,#2f9bff);border-bottom:2px solid rgba(255,255,255,.25);box-shadow:0 4px 14px rgba(10,22,66,.35);overflow:hidden;position:relative;height:34px;animation:msgMarqueeRowIn .25s ease}
+      @keyframes msgMarqueeRowIn { from{opacity:0;transform:translateY(-100%);} to{opacity:1;transform:translateY(0);} }
+      .msg-marquee-track{flex:1;overflow:hidden;position:relative;height:100%;display:flex;align-items:center}
+      .msg-marquee-text{position:absolute;white-space:nowrap;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.35);animation:msgMarqueeScroll 14s linear infinite}
+      .msg-marquee-close{pointer-events:auto;flex-shrink:0;width:26px;height:26px;margin-right:8px;border:none;border-radius:6px;background:rgba(255,255,255,.18);color:#fff;font-size:.72rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+      .msg-marquee-close:hover{background:rgba(255,255,255,.32)}
+    `;
+    document.head.appendChild(st);
+  }
+  return box;
+}
+function showMessageMarquee(senderName, text, convTarget){
+  const box = ensureMsgMarqueeContainer();
+  const row = document.createElement('div');
+  row.className = 'msg-marquee-row';
+  const rowId = 'mm-' + Date.now() + '-' + Math.random().toString(36).slice(2,7);
+  row.id = rowId;
+  const safeText = escapeHtml(`🔔 ${senderName}: ${(text||'').replace(/\n/g,' ')}`);
+  row.innerHTML = `
+    <div class="msg-marquee-track">
+      <span class="msg-marquee-text">${safeText}</span>
+    </div>
+    <button class="msg-marquee-close" title="Close" onclick="document.getElementById('${rowId}').remove()"><i class="fas fa-times"></i></button>
+  `;
+  row.addEventListener('click', (e)=>{
+    if(e.target.closest('.msg-marquee-close')) return;
+    showPage('messages', document.getElementById('nav-messages'));
+    if(typeof switchConversation === 'function') switchConversation(convTarget);
+  });
+  box.appendChild(row);
+}
+// Scans a freshly-updated message list for anything new sent by someone else
+// (group message or DM), and shows a scrolling banner exactly once per message.
+function checkForNewMessageMarquees(list, convId){
+  if(!currentUser || !Array.isArray(list)) return;
+  const meUsername = currentUser.username;
+  list.forEach(m=>{
+    if(!m.firebaseKey || m.from === meUsername) return;
+    if((m.ts||0) <= msgNotifyBaseline) return;
+    const key = (convId||'group') + ':' + m.firebaseKey;
+    if(marqueeNotifiedKeys.has(key)) return;
+    marqueeNotifiedKeys.add(key);
+    const senderName = m.fromName || m.from;
+    const target = convId ? m.from : 'group';
+    showMessageMarquee(senderName, m.text||'', target);
+  });
+}
 // Scans a freshly-updated message list for anything new that mentions me (group chat)
 // or was sent to me directly (DM), and fires a notification exactly once per message.
 function checkForNewMentionNotifications(list, convId){
@@ -4435,7 +4568,35 @@ function onMsgInput(el){
   dd.style.display='block';
 }
 
+function wrapMsgSelectionBold(el){
+  if(!el || typeof el.selectionStart !== 'number') return;
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const value = el.value;
+  if(start === end){
+    // Nothing selected: insert empty ** ** markers and place cursor between them
+    const newVal = value.slice(0,start) + '****' + value.slice(end);
+    el.value = newVal;
+    el.selectionStart = el.selectionEnd = start + 2;
+  } else {
+    const selected = value.slice(start,end);
+    const newVal = value.slice(0,start) + '**' + selected + '**' + value.slice(end);
+    el.value = newVal;
+    el.selectionStart = start + 2;
+    el.selectionEnd = end + 2;
+  }
+  el.focus();
+  if(typeof onMsgInput === 'function') onMsgInput(el);
+}
+
+
 function onMsgKeydown(e){
+  // Ctrl+B (or Cmd+B on Mac): wrap the selected text in **bold** markdown
+  if((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'b'){
+    e.preventDefault();
+    wrapMsgSelectionBold(e.target);
+    return;
+  }
   const dd = document.getElementById('msg-mention-list');
   const isOpen = dd && dd.style.display === 'block';
   if(isOpen){
@@ -8008,10 +8169,40 @@ document.addEventListener('click',function(e){
   </div>
 </div>
 <script>
-// Auto-refresh every 5 minutes (300000 ms)
+// Auto-refresh every 30 minutes (1800000 ms)
 setInterval(() => {
   window.location.reload();
-}, 300000);
+}, 1800000);
+
+// ===== AUTO-LOGOUT AFTER 1 HOUR OF INACTIVITY =====
+(function(){
+  const INACTIVITY_LIMIT = 60 * 60 * 1000; // 1 hour
+  let inactivityTimer = null;
+
+  function resetInactivityTimer() {
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    // Only run the logout timer if a user is actually logged in
+    if (typeof currentUser !== 'undefined' && currentUser) {
+      inactivityTimer = setTimeout(() => {
+        if (typeof currentUser !== 'undefined' && currentUser && typeof doLogout === 'function') {
+          doLogout();
+          if (typeof toast === 'function') {
+            toast('⏱ You were logged out due to 1 hour of inactivity');
+          }
+        }
+      }, INACTIVITY_LIMIT);
+    }
+  }
+
+  ['mousemove','mousedown','keydown','scroll','touchstart','click'].forEach(evt => {
+    document.addEventListener(evt, resetInactivityTimer, { passive: true });
+  });
+
+  // Re-check every minute in case a login just happened (currentUser was null before)
+  setInterval(resetInactivityTimer, 60000);
+
+  resetInactivityTimer();
+})();
 </script>
 </body>
 </html>

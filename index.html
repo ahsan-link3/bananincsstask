@@ -3861,8 +3861,8 @@ function remarksPreview(remarks){
   const val = (remarks||'').trim();
   if(!val) return '—';
   const words = val.split(/\s+/);
-  if(words.length<=3) return val;
-  return words.slice(0,3).join(' ')+'...';
+  if(words.length<=2) return val;
+  return words.slice(0,2).join(' ')+'...';
 }
 function openRemarksPopup(fullText){
   const text = fullText || '—';
@@ -3901,7 +3901,7 @@ function buildRows(arr,tbodyId,withDel,isMyTask,startIdx=0){
     <td style="font-size:.75rem;color:#7c3aed;font-weight:600;white-space:nowrap;font-family:'Outfit',sans-serif">${techName?`<i class="fas fa-hard-hat" style="font-size:.6rem;margin-right:3px;color:#a855f7"></i>${techName}`:'<span style="color:#b0bec5">—</span>'}</td>
     <td style="font-family:'Outfit',sans-serif;padding:5px 4px;font-size:.72rem;white-space:nowrap">${t.mac||'—'}</td>
     <td><span class="chip ${t.wifi==='YES'?'chip-yes':'chip-no'}" style="font-family:'Outfit',sans-serif">${t.wifi}</span></td>
-    <td class="remarks-col" style="max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Outfit',sans-serif;font-size:.63rem;font-weight:400;cursor:pointer" onclick="openRemarksPopup(this.dataset.full)" data-full="${(t.remarks||'').replace(/"/g,'&quot;')}" title="Click to view full remarks">${remarksPreview(t.remarks)}</td>
+    <td class="remarks-col" style="max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Outfit',sans-serif;font-size:.63rem;font-weight:400;cursor:pointer" onclick="openRemarksPopup(this.dataset.full)" data-full="${(t.remarks||'').replace(/"/g,'&quot;')}" title="Click to view full remarks">${remarksPreview(t.remarks)}</td>
     ${(showEdit||showDel)?`<td style="white-space:nowrap">${showEdit?`<button class="btn-row-edit" onclick="openEditTicket('${t.firebaseKey||t.id}',${isMyTask?'true':'false'})"><i class="fas fa-pen"></i></button>`:''}${showDel?`<button class="btn-row-del" onclick="delTicket('${t.firebaseKey||t.id}',${isMyTask?'true':'false'})"><i class="fas fa-times"></i></button>`:''}</td>`:'<td></td>'}
     </tr>`;
   }).join('');

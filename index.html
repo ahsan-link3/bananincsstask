@@ -2353,6 +2353,13 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 </div>
 
 <!-- Technician Detail Floating Modal -->
+<div id="remarks-popup-overlay" onclick="if(event.target===this)closeRemarksPopup()" style="display:none;position:fixed;inset:0;background:rgba(10,22,66,.55);z-index:5000;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px">
+  <div style="background:#fff;border-radius:14px;max-width:420px;width:100%;padding:20px 22px;box-shadow:0 20px 50px rgba(10,22,66,.35);position:relative">
+    <button onclick="closeRemarksPopup()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.1rem;cursor:pointer;color:#8a94a6;line-height:1" title="Close">&times;</button>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:.85rem;color:var(--navy,#0a1642);margin-bottom:10px;display:flex;align-items:center;gap:6px"><i class="fas fa-comment-dots" style="color:var(--accent,#2f9bff)"></i>Remarks</div>
+    <div id="remarks-popup-text" style="font-family:'Outfit',sans-serif;font-size:.85rem;line-height:1.5;color:#2c3550;white-space:pre-wrap;word-break:break-word"></div>
+  </div>
+</div>
 <div id="tech-modal-overlay" onclick="if(event.target===this)closeTechModal()" style="display:none;position:fixed;inset:0;background:rgba(10,22,66,.55);z-index:4000;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:6px">
   <div style="background:#fff;border-radius:16px;width:96vw;max-width:900px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 28px 70px rgba(10,22,66,.38),0 0 0 1.5px rgba(124,58,237,.18);overflow:hidden">
     <div style="background:linear-gradient(90deg,#4c1d95,#7c3aed,#a855f7);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;flex-shrink:0">
@@ -3847,6 +3854,24 @@ function normTeamType(tm){
 function normTaskType(tt){
   return tt==='Back office support for Tech' ? 'Back Office Support' : tt;
 }
+// Shortens a remarks string to its first 2-3 words followed by "..." so the
+// My Task / All Completed Task table rows stay compact. Full text is shown
+// via openRemarksPopup() on click instead of wrapping the cell.
+function remarksPreview(remarks){
+  const val = (remarks||'').trim();
+  if(!val) return '—';
+  const words = val.split(/\s+/);
+  if(words.length<=3) return val;
+  return words.slice(0,3).join(' ')+'...';
+}
+function openRemarksPopup(fullText){
+  const text = fullText || '—';
+  document.getElementById('remarks-popup-text').textContent = text;
+  document.getElementById('remarks-popup-overlay').style.display='flex';
+}
+function closeRemarksPopup(){
+  document.getElementById('remarks-popup-overlay').style.display='none';
+}
 function buildRows(arr,tbodyId,withDel,isMyTask,startIdx=0){
   const tb=document.getElementById(tbodyId);
   const isAt = tbodyId === 'at-tbody';
@@ -3876,7 +3901,7 @@ function buildRows(arr,tbodyId,withDel,isMyTask,startIdx=0){
     <td style="font-size:.75rem;color:#7c3aed;font-weight:600;white-space:nowrap;font-family:'Outfit',sans-serif">${techName?`<i class="fas fa-hard-hat" style="font-size:.6rem;margin-right:3px;color:#a855f7"></i>${techName}`:'<span style="color:#b0bec5">—</span>'}</td>
     <td style="font-family:'Outfit',sans-serif;padding:5px 4px;font-size:.72rem;white-space:nowrap">${t.mac||'—'}</td>
     <td><span class="chip ${t.wifi==='YES'?'chip-yes':'chip-no'}" style="font-family:'Outfit',sans-serif">${t.wifi}</span></td>
-    <td class="remarks-col" style="max-width:190px;white-space:normal;font-family:'Outfit',sans-serif;font-size:.63rem;font-weight:400">${t.remarks||'—'}</td>
+    <td class="remarks-col" style="max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Outfit',sans-serif;font-size:.63rem;font-weight:400;cursor:pointer" onclick="openRemarksPopup(this.dataset.full)" data-full="${(t.remarks||'').replace(/"/g,'&quot;')}" title="Click to view full remarks">${remarksPreview(t.remarks)}</td>
     ${(showEdit||showDel)?`<td style="white-space:nowrap">${showEdit?`<button class="btn-row-edit" onclick="openEditTicket('${t.firebaseKey||t.id}',${isMyTask?'true':'false'})"><i class="fas fa-pen"></i></button>`:''}${showDel?`<button class="btn-row-del" onclick="delTicket('${t.firebaseKey||t.id}',${isMyTask?'true':'false'})"><i class="fas fa-times"></i></button>`:''}</td>`:'<td></td>'}
     </tr>`;
   }).join('');

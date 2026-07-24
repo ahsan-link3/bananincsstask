@@ -27,6 +27,9 @@
   const ticketsRef = ref(db, 'tickets');
 const usersRef = ref(db, 'users');
 const misDataRef = ref(db, 'misdata');
+const leaveStatusRef = ref(db, 'leaveStatus');
+const technicianListRef = ref(db, 'technicianList');
+const technicianRemovedRef = ref(db, 'technicianRemoved');
 const userStatusRef = ref(db, 'userStatus');
 const messagesRef = ref(db, 'messages');
 const dmMessagesRef = ref(db, 'dmMessages');
@@ -106,6 +109,50 @@ window._fbInitUsers = async function(defaultUsers) {
     console.error(e);
   }
 };
+
+// ===== TECHNICIAN LIST (dynamic, admin-added names shared across all users) =====
+// Stored as technicianList/<safeKey> = "Full Name". Base/preset technicians are
+// hardcoded in TECHNICIANS below; anything added here is merged in on top of that,
+// everywhere the technician list is used (tables, dropdowns, reports).
+window._fbAddTechnician = async function(name) {
+  try {
+    const clean = (name || '').trim();
+    if (!clean) return false;
+    const key = clean.replace(/[.#$\[\]\/]/g, '_');
+    await set(ref(db, 'technicianList/' + key), clean);
+    return true;
+  } catch(e) { console.error(e); return false; }
+};
+
+onValue(technicianListRef, (snapshot) => {
+  window.TECHNICIAN_LIST_DATA = snapshot.val() || {};
+  if (typeof window._syncTechnicianList === 'function') window._syncTechnicianList();
+}, (error) => {
+  console.error("Firebase TechnicianList error:", error);
+});
+
+// Permanently remove a technician everywhere (Leave Status table, Technician
+// Task Report, and every Assigned Technician dropdown). Works for both
+// dynamically-added names (technicianList/) and preset/base names — a removed
+// base name is recorded under technicianRemoved/ so _syncTechnicianList can
+// filter it out of the merged list on every client.
+window._fbRemoveTechnician = async function(name) {
+  try {
+    const clean = (name || '').trim();
+    if (!clean) return false;
+    const key = clean.replace(/[.#$\[\]\/]/g, '_');
+    await remove(ref(db, 'technicianList/' + key));
+    await set(ref(db, 'technicianRemoved/' + key), clean);
+    return true;
+  } catch(e) { console.error(e); return false; }
+};
+
+onValue(technicianRemovedRef, (snapshot) => {
+  window.TECHNICIAN_REMOVED_DATA = snapshot.val() || {};
+  if (typeof window._syncTechnicianList === 'function') window._syncTechnicianList();
+}, (error) => {
+  console.error("Firebase TechnicianRemoved error:", error);
+});
 
 onValue(ticketsRef, (snapshot) => {
     const data = snapshot.val();
@@ -218,6 +265,35 @@ onValue(ticketsRef, (snapshot) => {
   window._fbDeleteAllMis = async function() {
     await set(misDataRef, null);
   };
+
+  // ===== LEAVE STATUS (30 date slots per Engineer / Technician, shared across all users) =====
+  // Stored as leaveStatus/<role>/<safeName>/<slotNumber> = "YYYY-MM-DD" (or removed if cleared)
+  window._fbSetLeaveDate = async function(role, safeName, slot, dateValue) {
+    try {
+      if(dateValue){
+        await set(ref(db, 'leaveStatus/' + role + '/' + safeName + '/' + slot), dateValue);
+      } else {
+        await remove(ref(db, 'leaveStatus/' + role + '/' + safeName + '/' + slot));
+      }
+      return true;
+    } catch(e) { console.error(e); return false; }
+  };
+
+  // Wipe the entire leaveStatus node (Engineer + Technician leave records) at once —
+  // used by the "Reset All" button on the Leave Status page (admin + password only).
+  window._fbClearLeaveData = async function() {
+    try {
+      await set(leaveStatusRef, null);
+      return true;
+    } catch(e) { console.error(e); return false; }
+  };
+
+  onValue(leaveStatusRef, (snapshot) => {
+    window.LEAVE_DATA = snapshot.val() || {};
+    if(document.getElementById('page-leavestatus') && document.getElementById('page-leavestatus').classList.contains('active') && typeof renderLeaveStatus === 'function'){
+      renderLeaveStatus();
+    }
+  });
 
   // ===== TEAM MESSAGES (chat with @tag mentions, visible to all users) =====
   window._fbPushMessage = async function(msgData) {
@@ -577,7 +653,7 @@ onValue(ticketsRef, (snapshot) => {
     repeating-linear-gradient(45deg,transparent 0px,transparent 46px,rgba(255,255,255,.05) 46px,rgba(255,255,255,.05) 48px,transparent 48px,transparent 94px),
     repeating-linear-gradient(135deg,transparent 0px,transparent 46px,rgba(0,0,0,.14) 46px,rgba(0,0,0,.14) 48px,transparent 48px,transparent 94px),
     linear-gradient(100deg,#020a38 0%,#051233 20%,#0a1a6b 40%,#124fce 68%,#1f7dff 100%);
-  padding:0 26px;height:82px;display:flex;align-items:center;
+  padding:0 20px;height:58px;display:flex;align-items:center;
   justify-content:space-between;flex-shrink:0;
   box-shadow:0 8px 32px rgba(10,26,107,.45);
   position:relative;overflow:hidden;
@@ -595,7 +671,7 @@ onValue(ticketsRef, (snapshot) => {
 .top-title-wrap{position:absolute;left:50%;transform:translateX(-50%);text-align:center}
 .top-title-row{display:flex;align-items:center;justify-content:center;gap:10px}
 .top-title{font-size:1.65rem;font-weight:900;color:#fff;letter-spacing:2px;font-family:'Montserrat',sans-serif;text-shadow:0 2px 0 rgba(0,0,0,.35),0 4px 18px rgba(0,0,0,.35),0 0 40px rgba(31,125,255,.6);text-transform:uppercase;line-height:1}
-.top-sub{font-size:.95rem;color:rgba(255,255,255,.92);letter-spacing:2px;margin-top:4px;font-family:'Outfit',sans-serif;font-weight:900;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.45),0 0 20px rgba(255,255,255,.15);-webkit-text-stroke:.6px rgba(255,255,255,.85)}
+.top-sub{font-size:.68rem;color:rgba(255,255,255,.92);letter-spacing:1.5px;margin-top:2px;font-family:'Outfit',sans-serif;font-weight:900;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.45),0 0 20px rgba(255,255,255,.15);-webkit-text-stroke:.5px rgba(255,255,255,.85)}
 .top-right{display:flex;align-items:center;gap:14px;margin-left:auto;position:relative;z-index:1}
 .fb-status{display:flex;align-items:center;gap:6px;padding:3px 12px;border-radius:20px;font-size:.6rem;font-weight:800;font-family:'Montserrat',sans-serif;letter-spacing:.8px;text-transform:uppercase}
 .fb-status.connected{background:rgba(22,163,74,.2);color:#4ade80;border:1px solid rgba(22,163,74,.4)}
@@ -611,7 +687,7 @@ onValue(ticketsRef, (snapshot) => {
 .fb-status.connected .fb-dot{background:#22c55e;animation:pulse 1.5s infinite}
 .fb-status.disconnected .fb-dot{background:#ef4444}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.top-clock{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.3);border-radius:16px;padding:6px 20px 8px;backdrop-filter:blur(4px)}
+.top-clock{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0px;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.3);border-radius:12px;padding:4px 14px 5px;backdrop-filter:blur(4px)}
 .top-day{font-size:.92rem;color:#fff;font-weight:800;letter-spacing:.3px;font-family:'Montserrat',sans-serif;line-height:1.2}
 .top-date{font-size:.68rem;color:rgba(255,255,255,.85);font-weight:600;letter-spacing:.3px;font-family:'Outfit',sans-serif;line-height:1.2}
 
@@ -928,6 +1004,19 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 .um-table th{font-family:'Montserrat',sans-serif;font-size:.66rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.5px;padding:6px 10px;background:linear-gradient(135deg,#0f2778 0%,#1a5dbf 55%,#0a8fd4 100%);border-bottom:3px solid rgba(255,255,255,.18);border-right:1px solid rgba(255,255,255,.15);text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.3)}
 .um-table td{padding:5px 10px;border-bottom:1px solid #deeaf7;font-size:.7rem;color:#1a2340;vertical-align:middle;font-family:'Outfit',sans-serif;transition:background .12s}
 .um-table td,.um-table td *{font-size:.7rem !important}
+.ls-table th{color:#fff;background:linear-gradient(90deg,#15318c,#1560ba);border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.64rem;padding:7px 1px;white-space:nowrap;position:sticky;top:0;width:38px}
+.ls-table th:first-child{min-width:130px;width:130px;text-align:center;padding-left:0}
+.ls-table td{padding:3px 1px;text-align:center;border-bottom:1px solid #deeaf7;vertical-align:middle}
+.ls-table td:first-child{text-align:left;padding-left:12px;font-weight:700;color:#1a2340;font-family:'Outfit',sans-serif;font-size:.74rem;white-space:nowrap}
+.ls-date-wrap{position:relative;width:40px;height:26px;margin:0 auto}
+.ls-date-disp{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--border);border-radius:5px;background:#eaf3ff;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:700;color:var(--navy);pointer-events:none;white-space:nowrap;overflow:hidden;padding:0 1px}
+.ls-date-wrap:hover .ls-date-disp{border-color:var(--blue);background:#dbeeff}
+.ls-date-disp.ls-filled{background:linear-gradient(135deg,#fff5f5,#fee2e2);border-color:#dc2626;color:#b91c1c;font-weight:900}
+.ls-date-wrap input[type="date"]{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;background:transparent;padding:0;pointer-events:none}
+.ls-date-wrap{cursor:pointer}
+.ls-date-del{display:none;position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:#1f2937;color:#fff;font-size:.5rem;align-items:center;justify-content:center;cursor:pointer;z-index:5;box-shadow:0 1px 3px rgba(0,0,0,.4);pointer-events:auto}
+.ls-date-wrap.ls-has-val:hover .ls-date-del{display:flex}
+.ls-date-del:hover{background:#dc2626}
 .um-table td .um-badge-admin,.um-table td .um-badge-eng{font-size:.58rem !important;padding:2px 9px !important}
 .um-table td button{font-size:.6rem !important;padding:4px 10px !important}
 .um-table tr:nth-child(odd) td{background:#ffffff}
@@ -1186,7 +1275,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   }
   .sidebar.sb-open{transform:translateX(0)}
   .main{width:100%}
-  .top-bar{padding:0 12px;height:66px}
+  .top-bar{padding:0 12px;height:50px}
   .top-title{font-size:1.05rem;letter-spacing:1px}
   .top-sub{font-size:.66rem;letter-spacing:1px;margin-top:2px}
   .top-title-wrap{max-width:64vw;left:50%}
@@ -1365,6 +1454,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <div class="nav-item eng-visible" id="nav-mis" style="background:rgba(34,197,94,0.30);border-left:3px solid rgba(34,197,94,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('mis',this)"><div class="nav-icon-wrap"><i class="fas fa-file-upload" style="color:#4ade80"></i></div><span class="nav-label">MIS Data Update</span></div>
       <div class="nav-item eng-visible" id="nav-misreport" style="background:rgba(34,197,94,0.30);border-left:3px solid rgba(34,197,94,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('misreport',this)"><div class="nav-icon-wrap"><i class="fas fa-chart-pie" style="color:#fbbf24"></i></div><span class="nav-label">MIS Task Report</span></div>
       <div class="nav-item eng-visible" id="nav-engreport" style="background:rgba(34,197,94,0.30);border-left:3px solid rgba(34,197,94,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('engreport',this)"><div class="nav-icon-wrap"><i class="fas fa-user-clock" style="color:#2dd4bf"></i></div><span class="nav-label">Engineer Report</span></div>
+      <div class="nav-item eng-visible" id="nav-leavestatus" style="background:rgba(34,197,94,0.30);border-left:3px solid rgba(34,197,94,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('leavestatus',this)"><div class="nav-icon-wrap"><i class="fas fa-calendar-times" style="color:#f472b6"></i></div><span class="nav-label">Leave Status</span></div>
       <div class="nav-item admin-only" id="nav-users" style="background:rgba(34,197,94,0.30);border-left:3px solid rgba(34,197,94,.9);border-radius:8px;margin-bottom:3px;padding-left:9px" onclick="showPage('users',this)"><div class="nav-icon-wrap"><i class="fas fa-users-cog" style="color:#c084fc"></i></div><span class="nav-label">User Management</span></div>
     </div>
 
@@ -1387,7 +1477,6 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <div class="top-title-row">
         <div class="top-title" id="topTitle">Daily Work Dashboard</div>
       </div>
-      <div class="top-sub"><span style="color:rgba(255,255,255,.95);text-shadow:0 2px 10px rgba(0,0,0,.6),0 4px 20px rgba(0,0,0,.4)">BANANI</span> <span style="color:rgba(255,255,255,.95);text-shadow:0 2px 10px rgba(0,0,0,.6),0 4px 20px rgba(0,0,0,.4)">ZONE</span></div>
     </div>
     <div class="top-right" style="position:relative;z-index:1;">
       <div class="fb-status disconnected" id="fb-status">
@@ -1790,7 +1879,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 
     <!-- TASK REPORT -->
     <div class="page" id="page-taskreport">
-      <div class="form-card" style="padding:14px 18px;margin-bottom:12px">
+      <div class="form-card" style="padding:14px 18px;margin-bottom:6px">
         <div class="page-header" style="margin-bottom:0;flex-wrap:wrap;gap:10px">
           <div class="page-ttl"><i class="fas fa-chart-bar"></i>Task Report</div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1818,15 +1907,15 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       </div>
 
       <!-- Tab bar -->
-      <div style="background:linear-gradient(90deg,#06103a,#0d1f5c);padding:8px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-top:1px solid rgba(255,255,255,.1)">
-        <button id="tr-tab-btn-eng" onclick="toggleTrPanel('eng')"
-          style="height:30px;padding:0 16px;border-radius:7px;border:1.5px solid rgba(99,179,255,.35);background:rgba(37,99,235,.18);color:rgba(147,197,253,.85);font-size:.66rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .22s;letter-spacing:.4px;text-transform:uppercase">
-          <i class="fas fa-users" style="font-size:.62rem"></i> Engineer Task Report
-        </button>
-        <button id="tr-tab-btn-tech" onclick="toggleTrPanel('tech')"
-          style="height:30px;padding:0 16px;border-radius:7px;border:1.5px solid rgba(167,139,250,.35);background:rgba(124,58,237,.18);color:rgba(196,181,253,.8);font-size:.66rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .22s;letter-spacing:.4px;text-transform:uppercase">
-          <i class="fas fa-user-hard-hat" style="font-size:.62rem"></i> Technician Task Report
-        </button>
+      <div style="padding:2px 16px 4px;margin-top:-6px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button id="tr-tab-btn-eng" onclick="setTrPanel('eng')"
+  style="height:30px;padding:0 16px;border-radius:7px;border:1.5px solid rgba(99,179,255,.35);background:rgba(37,99,235,.18);color:#eaf3ff;font-size:.66rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .22s;letter-spacing:.4px;text-transform:uppercase">
+  <i class="fas fa-users" style="font-size:.62rem"></i> Engineer Task Report
+</button>
+<button id="tr-tab-btn-tech" onclick="setTrPanel('tech')"
+  style="height:30px;padding:0 16px;border-radius:7px;border:1.5px solid rgba(167,139,250,.35);background:rgba(124,58,237,.18);color:#f5f0ff;font-size:.66rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .22s;letter-spacing:.4px;text-transform:uppercase">
+  <i class="fas fa-user-hard-hat" style="font-size:.62rem"></i> Technician Task Report
+</button>
       </div>
 
       <!-- Panel: Engineer Task Report (hidden by default) -->
@@ -1839,15 +1928,15 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
           <div class="tbl-wrap">
             <table style="min-width:860px">
               <thead>
-                <tr style="background:linear-gradient(90deg,#15318c,#1560ba)">
-                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);min-width:150px;text-align:center;font-family:'Montserrat',sans-serif;font-size:.78rem;letter-spacing:.3px">Engineer Name</th>
-                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Troubleshoot</th>
-                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Installation</th>
-                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">CR</th>
-                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Survey</th>
-                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Non Ticket</th>
-                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Total Work</th>
-                  <th style="color:#fff;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem">Phone Support</th>
+                <tr style="background:linear-gradient(90deg,#0a1642,#15318c,#1d4ed8)">
+                 <th style="color:#ffd54f;border-bottom:2.5px solid rgba(255,213,79,.4);min-width:100px;text-align:center;padding:8px 6px;font-family:'Montserrat',sans-serif;font-size:.63rem;font-weight:900;letter-spacing:.5px;white-space:nowrap;vertical-align:middle;text-shadow:0 1px 4px rgba(0,0,0,.5)"><i class="fas fa-user-tie" style="margin-right:4px;opacity:.85"></i>Engineer</th>
+                  <th style="color:#bfdbfe;border-bottom:2.5px solid rgba(255,213,79,.4);text-align:center;padding:7px 4px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;vertical-align:middle;text-shadow:0 1px 2px rgba(0,0,0,.4);background:rgba(255,255,255,.07)">TROUBLESHOOT</th>
+                  <th style="color:#bfdbfe;border-bottom:2.5px solid rgba(255,213,79,.4);text-align:center;padding:7px 4px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;vertical-align:middle;text-shadow:0 1px 2px rgba(0,0,0,.4)">INSTALLATION</th>
+                  <th style="color:#bfdbfe;border-bottom:2.5px solid rgba(255,213,79,.4);text-align:center;padding:7px 4px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;vertical-align:middle;text-shadow:0 1px 2px rgba(0,0,0,.4);background:rgba(255,255,255,.07)">CR</th>
+                  <th style="color:#bfdbfe;border-bottom:2.5px solid rgba(255,213,79,.4);text-align:center;padding:7px 4px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;vertical-align:middle;text-shadow:0 1px 2px rgba(0,0,0,.4)">SURVEY</th>
+                  <th style="color:#bfdbfe;border-bottom:2.5px solid rgba(255,213,79,.4);text-align:center;padding:7px 4px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;vertical-align:middle;text-shadow:0 1px 2px rgba(0,0,0,.4);background:rgba(255,255,255,.07)">NON TICKET</th>
+                  <th style="color:#ffd54f;border-bottom:2.5px solid rgba(255,213,79,.4);min-width:52px;text-align:center;padding:7px 4px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:900;white-space:nowrap;vertical-align:middle;text-shadow:0 1px 3px rgba(0,0,0,.5);background:rgba(255,255,255,.1)"><i class="fas fa-hashtag" style="font-size:.5rem;margin-right:2px;opacity:.7"></i>TOTAL</th>
+                  <th style="color:#bfdbfe;border-bottom:2.5px solid rgba(255,213,79,.4);text-align:center;padding:7px 4px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;vertical-align:middle;text-shadow:0 1px 2px rgba(0,0,0,.4)">PHONE SUPPORT</th>
                 </tr>
               </thead>
               <tbody id="tr-summary-tbody"></tbody>
@@ -1867,13 +1956,13 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
           <div class="tbl-wrap">
             <table style="min-width:700px">
               <thead>
-                <tr style="background:linear-gradient(90deg,#5b21b6,#7c3aed)">
-                  <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);min-width:180px;text-align:center;font-family:'Montserrat',sans-serif;font-size:.78rem;letter-spacing:.3px;text-shadow:0 1px 3px rgba(0,0,0,.4)">Technician Name</th>
-                  <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem;text-shadow:0 1px 2px rgba(0,0,0,.35)">Troubleshoot</th>
-                  <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem;text-shadow:0 1px 2px rgba(0,0,0,.35)">Installation</th>
-                  <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem;text-shadow:0 1px 2px rgba(0,0,0,.35)">CR</th>
-                  <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem;text-shadow:0 1px 2px rgba(0,0,0,.35)">Survey</th>
-                  <th style="color:#ffd54f;border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:900;text-shadow:0 1px 2px rgba(0,0,0,.35)">Total Work</th>
+                <tr style="background:linear-gradient(90deg,#3b0764,#5b21b6,#7c3aed)">
+                  <th style="color:#ffd54f;border-bottom:2.5px solid rgba(255,213,79,.4);min-width:90px;width:90px;text-align:center;padding:8px 6px;font-family:'Montserrat',sans-serif;font-size:.63rem;font-weight:900;letter-spacing:.5px;white-space:nowrap;vertical-align:middle;text-shadow:0 1px 4px rgba(0,0,0,.5)"><i class="fas fa-hard-hat" style="margin-right:4px;opacity:.85"></i>Technician</th>
+                  <th style="color:#e9d5ff;border-bottom:2.5px solid rgba(255,213,79,.4);text-align:center;padding:7px 4px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;vertical-align:middle;text-shadow:0 1px 2px rgba(0,0,0,.4);background:rgba(255,255,255,.07)">TROUBLESHOOT</th>
+                  <th style="color:#e9d5ff;border-bottom:2.5px solid rgba(255,213,79,.4);text-align:center;padding:7px 4px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;vertical-align:middle;text-shadow:0 1px 2px rgba(0,0,0,.4)">INSTALLATION</th>
+                  <th style="color:#e9d5ff;border-bottom:2.5px solid rgba(255,213,79,.4);text-align:center;padding:7px 4px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;vertical-align:middle;text-shadow:0 1px 2px rgba(0,0,0,.4);background:rgba(255,255,255,.07)">CR</th>
+                  <th style="color:#e9d5ff;border-bottom:2.5px solid rgba(255,213,79,.4);text-align:center;padding:7px 4px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:800;vertical-align:middle;text-shadow:0 1px 2px rgba(0,0,0,.4)">SURVEY</th>
+                  <th style="color:#ffd54f;border-bottom:2.5px solid rgba(255,213,79,.4);min-width:52px;text-align:center;padding:7px 4px;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:900;white-space:nowrap;vertical-align:middle;text-shadow:0 1px 3px rgba(0,0,0,.5);background:rgba(255,255,255,.1)"><i class="fas fa-hashtag" style="font-size:.5rem;margin-right:2px;opacity:.7"></i>TOTAL</th>
                 </tr>
               </thead>
               <tbody id="tr-tech-tbody"></tbody>
@@ -2405,6 +2494,135 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
   </div>
 </div>
 
+    <!-- LEAVE STATUS -->
+    <div class="page" id="page-leavestatus">
+      <div class="form-card" style="padding:14px 18px;margin-bottom:12px">
+        <div class="page-header" style="margin-bottom:0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div class="page-ttl" style="margin-bottom:0"><i class="fas fa-calendar-times"></i>Leave Status</div>
+          <button id="ls-reset-all-btn" class="admin-only" onclick="openLeaveResetModal()" style="display:none;background:linear-gradient(135deg,#b91c1c,#ef4444);color:#fff;border:none;padding:9px 18px;border-radius:9px;font-size:.72rem;font-weight:800;cursor:pointer;align-items:center;gap:8px;letter-spacing:.5px;font-family:'Montserrat',sans-serif;box-shadow:0 4px 14px rgba(185,28,28,.3);transition:all .22s" onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter=''"><i class="fas fa-trash-alt"></i> Reset All</button>
+        </div>
+        <div id="ls-readonly-banner" style="display:none;margin-top:10px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:9px;padding:8px 14px;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:700;color:#1d4ed8;align-items:center;gap:8px"><i class="fas fa-eye"></i>&nbsp;View only — only Admin can edit or reset leave data.</div>
+      </div>
+
+      <!-- Reset All Leave Data Modal (password-gated, admin only) -->
+      <div id="ls-reset-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+        <div style="background:#fff;border-radius:18px;padding:28px 30px;width:100%;max-width:380px;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+          <div style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;gap:8px"><i class="fas fa-exclamation-triangle" style="color:#ef4444"></i> Reset All Leave Data</div>
+          <div style="font-family:'Outfit',sans-serif;font-size:.82rem;color:var(--muted);margin-bottom:18px">This will permanently delete ALL Engineer &amp; Technician leave records. Enter your password to confirm.</div>
+          <div class="fg"><label><i class="fas fa-lock"></i>Your Password</label><input type="password" id="ls-reset-pass" placeholder="Enter your password" onkeydown="if(event.key==='Enter') doLeaveReset()"></div>
+          <div id="ls-reset-err" style="display:none;background:#fff1f2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:.72rem;font-weight:700;color:#991b1b;font-family:'Montserrat',sans-serif;margin-top:12px"></div>
+          <div style="display:flex;gap:10px;margin-top:18px">
+            <button onclick="closeLeaveResetModal()" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:9px;background:#f5f9ff;color:var(--blue);font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif">Cancel</button>
+            <button onclick="doLeaveReset()" style="flex:2;padding:10px;background:linear-gradient(135deg,#b91c1c,#ef4444);color:#fff;border:none;border-radius:9px;font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif;letter-spacing:.3px"><i class="fas fa-trash-alt"></i> Reset All Data</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div style="background:linear-gradient(90deg,#06103a,#0d1f5c);padding:8px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-top:1px solid rgba(255,255,255,.1)">
+        <button id="ls-tab-btn-eng" onclick="setLeavePanel('eng')"
+          style="height:30px;padding:0 16px;border-radius:7px;border:1.5px solid rgba(99,179,255,.35);background:rgba(37,99,235,.18);color:rgba(147,197,253,.85);font-size:.66rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .22s;letter-spacing:.4px;text-transform:uppercase">
+          <i class="fas fa-users" style="font-size:.62rem"></i> Engineer Leave
+        </button>
+        <button id="ls-tab-btn-tech" onclick="setLeavePanel('tech')"
+          style="height:30px;padding:0 16px;border-radius:7px;border:1.5px solid rgba(167,139,250,.35);background:rgba(124,58,237,.18);color:rgba(196,181,253,.8);font-size:.66rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .22s;letter-spacing:.4px;text-transform:uppercase">
+          <i class="fas fa-user-hard-hat" style="font-size:.62rem"></i> Technician Leave
+        </button>
+        <button id="ls-tab-btn-date" onclick="setLeavePanel('date')"
+          style="height:30px;padding:0 16px;border-radius:7px;border:1.5px solid rgba(74,222,128,.35);background:rgba(22,163,74,.18);color:rgba(134,239,172,.85);font-size:.66rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .22s;letter-spacing:.4px;text-transform:uppercase">
+          <i class="fas fa-calendar-day" style="font-size:.62rem"></i> Select Date
+        </button>
+      </div>
+
+      <!-- Add/Remove Technician Modal (admin only) -->
+      <div id="ls-add-tech-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+        <div style="background:#fff;border-radius:18px;padding:28px 30px;width:100%;max-width:380px;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+          <div style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;gap:8px"><i class="fas fa-users-cog" style="color:#7c3aed"></i> Add / Remove Technician</div>
+
+          <!-- Sub-tabs: Add New / Remove Existing -->
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <button id="attm-tab-btn-add" onclick="setAddTechTab('add')" style="flex:1;padding:8px 0;border-radius:8px;border:1.5px solid #c084fc;background:#f5f0ff;color:#7c3aed;font-weight:800;font-size:.72rem;cursor:pointer;font-family:'Montserrat',sans-serif;letter-spacing:.3px"><i class="fas fa-user-plus"></i> Add New</button>
+            <button id="attm-tab-btn-remove" onclick="setAddTechTab('remove')" style="flex:1;padding:8px 0;border-radius:8px;border:1.5px solid var(--border);background:#f5f9ff;color:var(--blue);font-weight:800;font-size:.72rem;cursor:pointer;font-family:'Montserrat',sans-serif;letter-spacing:.3px"><i class="fas fa-user-minus"></i> Remove Existing</button>
+          </div>
+
+          <!-- Panel: Add New -->
+          <div id="attm-panel-add">
+            <div style="font-family:'Outfit',sans-serif;font-size:.82rem;color:var(--muted);margin-bottom:18px">Adding a technician here will list them everywhere the technician list appears — Leave Status table, Technician Task Report, and every Assigned Technician dropdown.</div>
+            <div class="fg"><label><i class="fas fa-user-hard-hat"></i>Technician Name</label><input type="text" id="ls-add-tech-name" placeholder="e.g. Md. Karim Uddin" onkeydown="if(event.key==='Enter') doAddTechnician()"></div>
+            <div id="ls-add-tech-err" style="display:none;background:#fff1f2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:.72rem;font-weight:700;color:#991b1b;font-family:'Montserrat',sans-serif;margin-top:12px"></div>
+            <div style="display:flex;gap:10px;margin-top:18px">
+              <button onclick="closeAddTechnicianModal()" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:9px;background:#f5f9ff;color:var(--blue);font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif">Cancel</button>
+              <button onclick="doAddTechnician()" style="flex:2;padding:10px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:9px;font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif;letter-spacing:.3px"><i class="fas fa-user-plus"></i> Add Technician</button>
+            </div>
+          </div>
+
+          <!-- Panel: Remove Existing -->
+          <div id="attm-panel-remove" style="display:none">
+            <div style="font-family:'Outfit',sans-serif;font-size:.82rem;color:var(--muted);margin-bottom:18px">Removing a technician takes them out everywhere — Leave Status table, Technician Task Report, and every Assigned Technician dropdown. This cannot be undone.</div>
+            <div class="fg"><label><i class="fas fa-user-hard-hat"></i>Select Technician</label>
+              <select id="ls-remove-tech-select" style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:.82rem;color:var(--navy);background:#fff"></select>
+            </div>
+            <div id="ls-remove-tech-err" style="display:none;background:#fff1f2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:.72rem;font-weight:700;color:#991b1b;font-family:'Montserrat',sans-serif;margin-top:12px"></div>
+            <div style="display:flex;gap:10px;margin-top:18px">
+              <button onclick="closeAddTechnicianModal()" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:9px;background:#f5f9ff;color:var(--blue);font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif">Cancel</button>
+              <button onclick="doRemoveTechnician()" style="flex:2;padding:10px;background:linear-gradient(135deg,#b91c1c,#ef4444);color:#fff;border:none;border-radius:9px;font-weight:800;font-size:.76rem;cursor:pointer;font-family:'Montserrat',sans-serif;letter-spacing:.3px"><i class="fas fa-user-minus"></i> Remove Technician</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel: Engineer Leave -->
+      <div id="ls-panel-eng" style="display:none">
+        <div class="tbl-card">
+          <div class="tbl-top" style="background:linear-gradient(90deg,#0a1642,#15318c,#2f9bff)">
+            <span class="tbl-title" style="color:#fff;font-size:.88rem;font-weight:900;letter-spacing:.5px"><i class="fas fa-users"></i>&nbsp;Engineer Leave Status</span>
+          </div>
+          <div class="tbl-wrap">
+            <table class="ls-table" style="min-width:1330px">
+              <thead><tr id="ls-eng-thead"></tr></thead>
+              <tbody id="ls-eng-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel: Technician Leave -->
+      <div id="ls-panel-tech" style="display:none">
+        <div class="tbl-card">
+          <div class="tbl-top" style="background:linear-gradient(90deg,#4c1d95,#7c3aed,#a855f7)">
+            <span class="tbl-title" style="color:#fff;font-size:.88rem;font-weight:900;letter-spacing:.5px"><i class="fas fa-user-hard-hat"></i>&nbsp;Technician Leave Status</span>
+            <button id="ls-add-tech-btn" class="admin-only" onclick="openAddTechnicianModal()" style="display:none;background:rgba(255,255,255,.18);color:#fff;border:1.5px solid rgba(255,255,255,.5);padding:6px 13px;border-radius:8px;font-size:.68rem;font-weight:800;cursor:pointer;align-items:center;gap:6px;letter-spacing:.3px;font-family:'Montserrat',sans-serif;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.3)'" onmouseout="this.style.background='rgba(255,255,255,.18)'"><i class="fas fa-users-cog"></i> Add/Remove Technician</button>
+          </div>
+          <div class="tbl-wrap">
+            <table class="ls-table" style="min-width:1330px">
+              <thead><tr id="ls-tech-thead"></tr></thead>
+              <tbody id="ls-tech-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel: Select Date (who was on leave on a chosen date) -->
+      <div id="ls-panel-date" style="display:none">
+        <div class="tbl-card">
+          <div class="tbl-top" style="background:linear-gradient(90deg,#064e3b,#059669,#34d399)">
+            <span class="tbl-title" style="color:#fff;font-size:.88rem;font-weight:900;letter-spacing:.5px"><i class="fas fa-calendar-day"></i>&nbsp;Leave List By Date</span>
+          </div>
+          <div style="padding:16px 18px;border-bottom:1.5px solid #e8f0fe;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f8fafc">
+            <span style="font-family:'Montserrat',sans-serif;font-size:.68rem;font-weight:800;color:var(--blue);letter-spacing:.5px"><i class="fas fa-calendar-alt"></i>&nbsp;SELECT DATE</span>
+            <div style="position:relative;height:32px;display:inline-flex;align-items:center">
+              <span id="ls-pick-date-disp" onclick="_lsOpenDatePicker()" style="display:inline-flex;align-items:center;gap:7px;height:32px;padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-size:.8rem;font-weight:800;font-family:'Montserrat',sans-serif;color:var(--navy);cursor:pointer;user-select:none;min-width:140px">Select a date&nbsp;<i class="fas fa-calendar" style="font-size:.65rem;color:#2f9bff"></i></span>
+              <input type="date" id="ls-pick-date" onchange="onLsPickDateChange()" style="position:absolute;inset:0;opacity:0;pointer-events:none">
+            </div>
+            <button onclick="_lsClearPickDate()" style="height:30px;padding:0 12px;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#6b7280;font-size:.66rem;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'">Clear</button>
+          </div>
+          <div id="ls-date-results" style="padding:20px 18px">
+            <div class="empty-box"><span class="ei">📅</span><p>Select a date above to see who was on leave.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-users">
       <div class="form-card" style="padding:14px 18px;margin-bottom:0;flex-shrink:0">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
@@ -2905,6 +3123,12 @@ if (zoneBadge) {
     misReadonlyBanner.style.display = isAdmin ? 'none' : 'flex';
   }
 
+  // Show read-only notice banner on Leave Status page for engineers (view-only there)
+  const lsReadonlyBanner = document.getElementById('ls-readonly-banner');
+  if (lsReadonlyBanner) {
+    lsReadonlyBanner.style.display = isAdmin ? 'none' : 'flex';
+  }
+
   // Hide Download Task Report button for engineers
   const dlTaskReportBtn = document.getElementById('btn-download-task-report');
   if (dlTaskReportBtn) {
@@ -3342,7 +3566,8 @@ let tickets = [];
 const titles = {
   maindash:'Dashboard', workdash:'Dashboard', dashboard:'Ticket Entry', mytask:'My Task', taskreport:'Task Report',
   alltask:'All Completed Tasks', devices:'Used Devices', wifi:'WiFi Scoring', messages:'Team Messages',
-  users:'User Management', import:'Import Data', mis:'MIS Data Update', misreport:'MIS Task Report', engreport:'Engineer Report'
+  users:'User Management', import:'Import Data', mis:'MIS Data Update', misreport:'MIS Task Report', engreport:'Engineer Report',
+  leavestatus:'Leave Status'
 };
 
 function pad(n){return String(n).padStart(2,'0')}
@@ -3422,6 +3647,17 @@ function fmtDateDisp(iso){
   const year=p[0]; // full 4-digit year
   // dd/mm/yyyy — day first, then month, then year (no leading zeros)
   return day+'/'+mon+'/'+year;
+}
+// "24 Jul" style short display — used for the Leave Status table cells.
+const _LS_MONTH_ABBR=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDateShortMon(iso){
+  if(!iso) return '';
+  const p=iso.split('-');
+  if(p.length!==3) return '';
+  const day=parseInt(p[2],10);
+  const mon=_LS_MONTH_ABBR[parseInt(p[1],10)-1]||'';
+  if(!mon) return '';
+  return day+' '+mon;
 }
 // Date + a small time stamp underneath, for table cells. Time is derived from
 // the ticket's `id` (Date.now() at the moment it was submitted).
@@ -3528,6 +3764,7 @@ function showPage(pg,el){
   if(pg==='wifi')renderWifi();
   if(pg==='messages'){ renderContactList(); renderMessages(); markCurrentConvSeen(); updateMsgBadge(); }
   if(pg==='users')renderUserTable();
+  if(pg==='leavestatus'){ setLeavePanel('eng'); renderLeaveStatus(); }
   if(pg==='mis')renderMis();
   if(pg==='misreport')renderMis();
   if(pg==='engreport'){setThisMonthEng();renderEngReport();openErTaskTypeDefault();}
@@ -4917,7 +5154,131 @@ function engNameColWidth(engListForWidth){
   const maxLen = Math.max(8, ...engListForWidth.map(n => engDisplayName(n).length));
   return Math.max(Math.ceil(maxLen * 7.4) + 46, 90) + 'px';
 }
-const TECHNICIANS = ['Sohel Rana','Rafiqul Islam','Mahidur Rahman','Imam Hossain','Rabbi Ahmed','Shafayatullah','Mmahmudul Hasan','Masud Rana','Shahidul Islam','Mijanur Rahman','Al Mamun','Md. Emon','Amir Hossain','Hanifur Rahman','Didarul Islam','Abul Hasan','Md. Foysal','Md. Sumon','Md. Nayon','Zakir Hossen','Rahmat Miah','Sayeem Khan','Al-Amin (Robin)','Bijoy Nokrek','Abir Hasan','Mohidul Islam','Rayhan Howlader','Bacchu Gazi','Md Imram','Md. Akash','Alam Shikder','Md. Raju','Ratan Mia','Abdul Mannan','Asad Ullah','Ashikur Rahman Asif'];
+const TECHNICIANS_BASE = ['Sohel Rana','Rafiqul Islam','Mahidur Rahman','Imam Hossain','Rabbi Ahmed','Shafayatullah','Mmahmudul Hasan','Masud Rana','Shahidul Islam','Mijanur Rahman','Al Mamun','Md. Emon','Amir Hossain','Hanifur Rahman','Didarul Islam','Abul Hasan','Md. Foysal','Md. Sumon','Md. Nayon','Zakir Hossen','Rahmat Miah','Sayeem Khan','Al-Amin (Robin)','Bijoy Nokrek','Abir Hasan','Mohidul Islam','Rayhan Howlader','Bacchu Gazi','Md Imram','Md. Akash','Alam Shikder','Md. Raju','Ratan Mia','Abdul Mannan','Asad Ullah','Ashikur Rahman Asif'];
+// TECHNICIANS = preset base list + any names added later via the "Add Technician"
+// button on the Leave Status > Technician Leave tab (stored in Firebase under
+// technicianList/ and merged in live by _syncTechnicianList, mirroring how
+// ENGINEERS grows via syncEngineersFromUsers).
+let TECHNICIANS = [...TECHNICIANS_BASE];
+
+// Rebuild the two "Assigned Technician" <select> dropdowns (New Ticket form +
+// Edit Ticket modal) from the live TECHNICIANS array, preserving whatever was
+// already selected.
+function _rebuildTechnicianSelects(){
+  ['f-technician','et-technician'].forEach(id=>{
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">— None selected —</option>' +
+      TECHNICIANS.map(n=>'<option>'+n+'</option>').join('');
+    if(prev && TECHNICIANS.includes(prev)) sel.value = prev;
+  });
+}
+
+// Rebuild TECHNICIANS from scratch every time: preset base names + any
+// Firebase-added names, minus anything an admin has removed (technicianRemoved/).
+// Removal works on base AND added names alike, and is reflected everywhere the
+// technician list is used: dropdowns, Leave Status table, and the Technician
+// Task Report filter/table.
+function _syncTechnicianList(){
+  const extra = Object.values(window.TECHNICIAN_LIST_DATA || {});
+  const removedNames = Object.values(window.TECHNICIAN_REMOVED_DATA || {}).map(n=>(n||'').trim().toLowerCase());
+  const merged = [...TECHNICIANS_BASE, ...extra];
+  const seen = new Set();
+  TECHNICIANS = merged.filter(n=>{
+    if(!n) return false;
+    const low = n.trim().toLowerCase();
+    if(seen.has(low)) return false;
+    seen.add(low);
+    return !removedNames.includes(low);
+  });
+  _rebuildTechnicianSelects();
+  const trSel = document.getElementById('tr-tech-name');
+  if(trSel){
+    const prev = trSel.value;
+    trSel.innerHTML = '<option value="">All Technicians</option>' +
+      TECHNICIANS.map(n=>'<option value="'+n+'" style="background:#4c1d95;color:#fff">'+n+'</option>').join('');
+    if(prev && TECHNICIANS.includes(prev)) trSel.value = prev;
+  }
+  if(document.getElementById('page-leavestatus') && document.getElementById('page-leavestatus').classList.contains('active') && typeof renderLeaveStatus === 'function') renderLeaveStatus();
+  if(document.getElementById('page-taskreport') && document.getElementById('page-taskreport').classList.contains('active') && typeof renderTechnicianReport === 'function') renderTechnicianReport();
+  if(document.getElementById('ls-add-tech-modal') && document.getElementById('ls-add-tech-modal').style.display === 'flex') _populateRemoveTechSelect();
+}
+window._syncTechnicianList = _syncTechnicianList;
+
+// ===== ADD / REMOVE TECHNICIAN MODAL (admin only) =====
+function openAddTechnicianModal(){
+  if(!currentUser || currentUser.role !== 'admin'){ toast('❌ Only Admin can add/remove technicians!'); return; }
+  document.getElementById('ls-add-tech-name').value = '';
+  document.getElementById('ls-add-tech-err').style.display = 'none';
+  document.getElementById('ls-remove-tech-err').style.display = 'none';
+  _populateRemoveTechSelect();
+  setAddTechTab('add');
+  document.getElementById('ls-add-tech-modal').style.display = 'flex';
+}
+function closeAddTechnicianModal(){
+  document.getElementById('ls-add-tech-modal').style.display = 'none';
+}
+
+// Switches the modal between its "Add New" and "Remove Existing" sub-tabs.
+function setAddTechTab(tab){
+  const addBtn = document.getElementById('attm-tab-btn-add');
+  const removeBtn = document.getElementById('attm-tab-btn-remove');
+  const addPanel = document.getElementById('attm-panel-add');
+  const removePanel = document.getElementById('attm-panel-remove');
+  const activeStyle = {border:'1.5px solid #c084fc', background:'#f5f0ff', color:'#7c3aed'};
+  const inactiveStyle = {border:'1.5px solid var(--border)', background:'#f5f9ff', color:'var(--blue)'};
+  const apply = (btn, s) => { btn.style.border = s.border; btn.style.background = s.background; btn.style.color = s.color; };
+  if(tab === 'remove'){
+    addPanel.style.display = 'none'; removePanel.style.display = 'block';
+    apply(addBtn, inactiveStyle); apply(removeBtn, activeStyle);
+  } else {
+    addPanel.style.display = 'block'; removePanel.style.display = 'none';
+    apply(addBtn, activeStyle); apply(removeBtn, inactiveStyle);
+  }
+}
+
+// Fills the "Remove Existing" dropdown with the current live TECHNICIANS list.
+function _populateRemoveTechSelect(){
+  const sel = document.getElementById('ls-remove-tech-select');
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = TECHNICIANS.map(n=>'<option value="'+n+'">'+n+'</option>').join('');
+  if(prev && TECHNICIANS.includes(prev)) sel.value = prev;
+}
+
+async function doAddTechnician(){
+  if(!currentUser || currentUser.role !== 'admin'){ toast('❌ Only Admin can add technicians!'); return; }
+  const errEl = document.getElementById('ls-add-tech-err');
+  const name = document.getElementById('ls-add-tech-name').value.trim();
+  if(!name){ errEl.textContent = '❌ Please enter a technician name.'; errEl.style.display = 'block'; return; }
+  if(TECHNICIANS.some(n=>n.toLowerCase() === name.toLowerCase())){ errEl.textContent = '❌ This technician already exists in the list!'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+  if(typeof window._fbAddTechnician === 'function'){
+    const ok = await window._fbAddTechnician(name);
+    if(!ok){ errEl.textContent = '❌ Could not save — please try again.'; errEl.style.display = 'block'; return; }
+  }
+  closeAddTechnicianModal();
+  toast('✅ Technician added: ' + name);
+}
+
+// Permanently removes the selected technician everywhere: the Leave Status
+// table, Technician Task Report, and every Assigned Technician dropdown.
+async function doRemoveTechnician(){
+  if(!currentUser || currentUser.role !== 'admin'){ toast('❌ Only Admin can remove technicians!'); return; }
+  const errEl = document.getElementById('ls-remove-tech-err');
+  const sel = document.getElementById('ls-remove-tech-select');
+  const name = sel.value;
+  if(!name){ errEl.textContent = '❌ Please select a technician to remove.'; errEl.style.display = 'block'; return; }
+  if(!confirm(`Remove technician "${name}"? This will delete them from the Leave Status table, Technician Task Report, and every Assigned Technician dropdown. This cannot be undone.`)) return;
+  errEl.style.display = 'none';
+  if(typeof window._fbRemoveTechnician === 'function'){
+    const ok = await window._fbRemoveTechnician(name);
+    if(!ok){ errEl.textContent = '❌ Could not remove — please try again.'; errEl.style.display = 'block'; return; }
+  }
+  closeAddTechnicianModal();
+  toast('🗑️ Technician removed: ' + name);
+}
 
 // Names that should never show up in Engineer Report / Task Dashboard / charts,
 // even if a matching user account or uploaded MIS Excel row references them.
@@ -5107,10 +5468,10 @@ function renderReport(){
 
   // Build engineer summary — always show all engineers
   const sb=document.getElementById('tr-summary-tbody');
-  const engList = ENGINEERS.filter(n=>!EXCLUDED_ENGINEER_NAMES.includes(n));
-  let totalTS=0,totalIN=0,totalCR=0,totalSV=0,totalNT=0,totalTW=0,totalPS=0;
+  const engListRaw = ENGINEERS.filter(n=>!EXCLUDED_ENGINEER_NAMES.includes(n));
 
-  sb.innerHTML=engList.map(eng=>{
+  // Pre-compute all data first so we can sort by total for ranking
+  const engData = engListRaw.map(eng=>{
     const et=ranged.filter(t=>t.eng===eng);
     const ts=et.filter(t=>t.cat==='Troubleshoot').length;
     const ins=et.filter(t=>t.cat==='Installation').length;
@@ -5119,35 +5480,70 @@ function renderReport(){
     const nt=et.filter(t=>t.cat==='Non Ticket').length;
     const ps=et.filter(t=>t.tt==='Phone support').length;
     const tw = ts+ins+cr+sv+nt;
+    return { eng, ts, ins, cr, sv, nt, ps, tw };
+  });
 
+  // Sort by total work descending for rank display
+  engData.sort((a,b)=>b.tw-a.tw);
+
+  const maxTW = Math.max(1,...engData.map(e=>e.tw));
+
+  let totalTS=0,totalIN=0,totalCR=0,totalSV=0,totalNT=0,totalTW=0,totalPS=0;
+
+  // Rank badge (gold / silver / bronze / numbered)
+  const rankBadge = r=>{
+    if(r===0) return `<span style="display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#fbbf24,#d97706);font-size:.54rem;font-weight:900;color:#78350f;margin-right:6px;flex-shrink:0;box-shadow:0 2px 6px rgba(251,191,36,.55);border:1.5px solid #fde68a">1</span>`;
+    if(r===1) return `<span style="display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#e2e8f0,#94a3b8);font-size:.54rem;font-weight:900;color:#1e293b;margin-right:6px;flex-shrink:0;box-shadow:0 2px 5px rgba(0,0,0,.18);border:1.5px solid #cbd5e1">2</span>`;
+    if(r===2) return `<span style="display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#fed7aa,#f97316);font-size:.54rem;font-weight:900;color:#7c2d12;margin-right:6px;flex-shrink:0;box-shadow:0 2px 5px rgba(249,115,22,.38);border:1.5px solid #fdba74">3</span>`;
+    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:#f1f5f9;font-size:.52rem;font-weight:800;color:#64748b;margin-right:6px;flex-shrink:0;border:1.5px solid #e2e8f0">${r+1}</span>`;
+  };
+
+  const cell=(v)=>`<td style="text-align:center;font-family:'Outfit',sans-serif;padding:4px 3px;border-right:1px solid #e8f0f8;position:relative;overflow:hidden;background:${v>0?'rgba(239,246,255,.35)':'#fff'}">
+  ${v>0?`<div style="position:absolute;bottom:0;left:0;right:0;height:2.5px;background:linear-gradient(90deg,rgba(37,99,235,.4),rgba(99,102,241,.3));border-radius:0 0 1px 1px"></div>`:''}
+  <span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:22px;border-radius:7px;font-size:.76rem;font-weight:900;padding:0 5px;font-family:'Outfit',sans-serif;
+  background:${v>0?'rgba(37,99,235,.15)':'transparent'};
+  color:${v>0?'#1e3a8a':'#d1d5db'};
+  border:${v>0?'1.5px solid rgba(37,99,235,.25)':'none'};position:relative;z-index:1">${v>0?v:'—'}</span></td>`;
+
+  sb.innerHTML=engData.map(({eng,ts,ins,cr,sv,nt,ps,tw},rank)=>{
     totalTS+=ts;totalIN+=ins;totalCR+=cr;totalSV+=sv;totalNT+=nt;totalTW+=tw;totalPS+=ps;
-    const cell=(v)=>`<td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 4px;">
-  <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.7rem;font-weight:800;
-  background:${v>0?'linear-gradient(135deg,#dbeafe,#bfdbfe)':'#f1f5f9'};
-  color:${v>0?'#2452e8':'#b0bec5'};
-  border:1.5px solid ${v>0?'#93c5fd':'#e2e8f0'};">${v}</span></td>`;
-    return `<tr>
-      <td style="font-weight:800;font-family:'Outfit',sans-serif;color:var(--navy);font-size:.8rem;padding:3px 8px;">${engDisplayName(eng)}</td>
+    const isTop = rank===0 && tw>0;
+    const rowHoverReset = isTop ? 'rgba(254,252,232,.5)' : '';
+    return `<tr style="border-bottom:1px solid #eef2f8;transition:background .18s;${isTop?'background:rgba(254,252,232,.4);':''}" onmouseover="this.style.background='rgba(37,99,235,.07)'" onmouseout="this.style.background='${rowHoverReset}'">
+      <td style="padding:5px 6px;border-right:2.5px solid #c7d9f5;min-width:140px;position:relative">
+        <div style="display:flex;align-items:center;overflow:hidden">
+          ${rankBadge(rank)}
+          <span style="font-weight:700;font-family:'Outfit',sans-serif;color:var(--navy);font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${engDisplayName(eng)}</span>
+        </div>
+        ${isTop?'<i class="fas fa-crown" style="position:absolute;top:5px;right:5px;font-size:.56rem;color:#d97706;filter:drop-shadow(0 1px 2px rgba(217,119,6,.4))"></i>':''}
+        ${tw>0?`<div style="margin-top:3px;margin-left:25px;height:3px;background:#e8f0fd;border-radius:2px;overflow:hidden"><div style="height:3px;width:${Math.round((tw/maxTW)*100)}%;background:linear-gradient(90deg,#3b82f6,#6366f1);border-radius:2px;transition:width .5s ease"></div></div>`:''}
+      </td>
       ${cell(ts)}${cell(ins)}${cell(cr)}${cell(sv)}${cell(nt)}
-      <td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 4px;">
-  <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.74rem;font-weight:900;
-  background:${tw>0?'linear-gradient(135deg,#fed7aa,#fdba74)':'#f1f5f9'};
-  color:${tw>0?'#c2410c':'#90a4ae'};
-  border:2px solid ${tw>0?'#fb923c':'#e2e8f0'};">${tw}</span></td>
+      <td style="text-align:center;padding:4px 4px;background:${tw>0?'rgba(255,237,213,.5)':'#fafafa'}">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:23px;border-radius:7px;font-size:.78rem;font-weight:900;padding:0 7px;font-family:'Outfit',sans-serif;
+          background:${tw>0?'linear-gradient(135deg,#fb923c,#f97316)':'transparent'};
+          color:${tw>0?'#fff':'#d1d5db'};
+          box-shadow:${tw>0?'0 2px 8px rgba(249,115,22,.38)':'none'}">${tw>0?tw:'—'}</span>
+      </td>
       ${cell(ps)}
     </tr>`;
   }).join('');
 
   // Total row
-  sb.innerHTML+=`<tr style="background:linear-gradient(90deg,#f0fdf4,#dcfce7);border-top:2px solid #16a34a">
-    <td style="font-weight:900;font-family:'Outfit',sans-serif;color:#14532d;font-size:.76rem;letter-spacing:.4px;padding:3px 8px;">TOTAL</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalTS}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalIN}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalCR}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalSV}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalNT}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem;background:rgba(22,163,74,.15)">${totalTW}</td>
-    <td style="text-align:center;font-weight:900;color:#15803d;font-family:'Outfit',sans-serif;font-size:1rem">${totalPS}</td>
+  sb.innerHTML+=`<tr style="background:linear-gradient(90deg,#f0fdf4,#dcfce7);border-top:2.5px solid #22c55e">
+    <td style="padding:6px 12px;border-right:2.5px solid #86efac">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:6px;background:linear-gradient(135deg,#16a34a,#22c55e);flex-shrink:0"><i class="fas fa-sigma" style="font-size:.5rem;color:#fff"></i></span>
+        <span style="font-weight:900;font-family:'Montserrat',sans-serif;color:#14532d;font-size:.65rem;letter-spacing:.6px">TOTAL</span>
+      </div>
+    </td>
+    <td style="text-align:center;padding:4px 3px;border-right:1px solid #bbf7d0;background:rgba(220,252,231,.6)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:23px;border-radius:7px;font-size:.74rem;font-weight:900;color:#15803d;padding:0 5px;background:rgba(22,163,74,.18);border:1.5px solid #86efac;font-family:'Outfit',sans-serif">${totalTS>0?totalTS:'—'}</span></td>
+    <td style="text-align:center;padding:4px 3px;border-right:1px solid #bbf7d0;background:rgba(240,253,244,.5)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:23px;border-radius:7px;font-size:.74rem;font-weight:900;color:#15803d;padding:0 5px;background:rgba(22,163,74,.18);border:1.5px solid #86efac;font-family:'Outfit',sans-serif">${totalIN>0?totalIN:'—'}</span></td>
+    <td style="text-align:center;padding:4px 3px;border-right:1px solid #bbf7d0;background:rgba(220,252,231,.6)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:23px;border-radius:7px;font-size:.74rem;font-weight:900;color:#15803d;padding:0 5px;background:rgba(22,163,74,.18);border:1.5px solid #86efac;font-family:'Outfit',sans-serif">${totalCR>0?totalCR:'—'}</span></td>
+    <td style="text-align:center;padding:4px 3px;border-right:1px solid #bbf7d0;background:rgba(240,253,244,.5)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:23px;border-radius:7px;font-size:.74rem;font-weight:900;color:#15803d;padding:0 5px;background:rgba(22,163,74,.18);border:1.5px solid #86efac;font-family:'Outfit',sans-serif">${totalSV>0?totalSV:'—'}</span></td>
+    <td style="text-align:center;padding:4px 3px;border-right:1px solid #bbf7d0;background:rgba(220,252,231,.6)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:23px;border-radius:7px;font-size:.74rem;font-weight:900;color:#15803d;padding:0 5px;background:rgba(22,163,74,.18);border:1.5px solid #86efac;font-family:'Outfit',sans-serif">${totalNT>0?totalNT:'—'}</span></td>
+    <td style="text-align:center;padding:4px 4px;background:rgba(22,163,74,.18)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:23px;border-radius:7px;font-size:.82rem;font-weight:900;color:#14532d;padding:0 7px;background:rgba(22,163,74,.3);border:2px solid #4ade80;font-family:'Outfit',sans-serif;box-shadow:0 2px 8px rgba(22,163,74,.25)">${totalTW}</span></td>
+    <td style="text-align:center;padding:4px 3px;background:rgba(240,253,244,.5)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:23px;border-radius:7px;font-size:.74rem;font-weight:900;color:#15803d;padding:0 5px;background:rgba(22,163,74,.18);border:1.5px solid #86efac;font-family:'Outfit',sans-serif">${totalPS>0?totalPS:'—'}</span></td>
   </tr>`;
 }
 
@@ -5191,44 +5587,90 @@ function renderTechnicianReport(){
   const sb=document.getElementById('tr-tech-tbody');
   if(!sb) return;
 
-  let totalTS=0,totalIN=0,totalCR=0,totalSV=0,totalTW=0;
+  const listSource = filterName ? [filterName] : TECHNICIANS;
 
-  const cell=(v,pal)=>`<td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 4px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.7rem;font-weight:800;background:${v>0?pal.bg:'#f1f5f9'};color:${v>0?pal.col:'#b0bec5'};border:1.5px solid ${v>0?pal.bdr:'#e2e8f0'};">${v}</span></td>`;
-  const palettes={ts:{bg:'linear-gradient(135deg,#ede9fe,#ddd6fe)',col:'#6d28d9',bdr:'#c4b5fd'},ins:{bg:'linear-gradient(135deg,#dbeafe,#bfdbfe)',col:'#2452e8',bdr:'#93c5fd'},cr:{bg:'linear-gradient(135deg,#fce7f3,#fbcfe8)',col:'#be185d',bdr:'#f9a8d4'},sv:{bg:'linear-gradient(135deg,#d1fae5,#a7f3d0)',col:'#065f46',bdr:'#6ee7b7'}};
-
-  const listToRender = filterName ? [filterName] : TECHNICIANS;
-
-  sb.innerHTML = listToRender.map(tech=>{
-    const et = ranged.filter(t=>(t.technician||'')===tech);
+  // Pre-compute all data first so we can sort by total for ranking
+  const techData = listSource.map(tech=>{
+    const et=ranged.filter(t=>(t.technician||'')===tech);
     const ts=et.filter(t=>t.cat==='Troubleshoot').length;
     const ins=et.filter(t=>t.cat==='Installation').length;
     const cr=et.filter(t=>t.cat==='CR').length;
     const sv=et.filter(t=>t.cat==='Survey').length;
     const tw=ts+ins+cr+sv;
+    return { tech, ts, ins, cr, sv, tw };
+  });
+
+  // Sort by total work descending for rank display
+  // Only sort when showing all technicians; single-filter view keeps natural order
+  if(!filterName) techData.sort((a,b)=>b.tw-a.tw);
+
+  const maxTW = Math.max(1,...techData.map(e=>e.tw));
+
+  let totalTS=0,totalIN=0,totalCR=0,totalSV=0,totalTW=0;
+
+  // Rank badge — purple theme matching technician panel
+  const rankBadge = r=>{
+    if(r===0) return `<span style="display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#fbbf24,#d97706);font-size:.54rem;font-weight:900;color:#78350f;margin-right:6px;flex-shrink:0;box-shadow:0 2px 6px rgba(251,191,36,.55);border:1.5px solid #fde68a">1</span>`;
+    if(r===1) return `<span style="display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#e2e8f0,#94a3b8);font-size:.54rem;font-weight:900;color:#1e293b;margin-right:6px;flex-shrink:0;box-shadow:0 2px 5px rgba(0,0,0,.18);border:1.5px solid #cbd5e1">2</span>`;
+    if(r===2) return `<span style="display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#fed7aa,#f97316);font-size:.54rem;font-weight:900;color:#7c2d12;margin-right:6px;flex-shrink:0;box-shadow:0 2px 5px rgba(249,115,22,.38);border:1.5px solid #fdba74">3</span>`;
+    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:#f5f3ff;font-size:.52rem;font-weight:800;color:#7c3aed;margin-right:6px;flex-shrink:0;border:1.5px solid #ddd6fe">${r+1}</span>`;
+  };
+
+  // Heat-map cell — purple palette
+  const cell=(v)=>`<td style="text-align:center;padding:4px 3px;border-right:1px solid #f0ebff;position:relative;overflow:hidden;background:${v>0?'rgba(245,243,255,.4)':'#fff'}">
+    ${v>0?`<div style="position:absolute;bottom:0;left:0;right:0;height:2.5px;background:linear-gradient(90deg,rgba(124,58,237,.4),rgba(168,85,247,.3));border-radius:0 0 1px 1px"></div>`:''}
+    <span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:22px;border-radius:7px;font-size:.76rem;font-weight:900;padding:0 5px;font-family:'Outfit',sans-serif;
+    background:${v>0?'rgba(124,58,237,.15)':'transparent'};
+    color:${v>0?'#5b21b6':'#d1d5db'};
+    border:${v>0?'1.5px solid rgba(124,58,237,.25)':'none'};position:relative;z-index:1">${v>0?v:'—'}</span></td>`;
+
+  sb.innerHTML = techData.map(({tech,ts,ins,cr,sv,tw},rank)=>{
     totalTS+=ts;totalIN+=ins;totalCR+=cr;totalSV+=sv;totalTW+=tw;
-    return `<tr style="border-bottom:1px solid #ede9fe;transition:background .15s;cursor:pointer" onclick="openTechDetail('${tech.replace(/'/g,"\\'")}')" onmouseover="this.style.background='rgba(124,58,237,.08)'" onmouseout="this.style.background=''" title="Click to view assigned tickets">
-      <td style="font-weight:700;font-family:'Outfit',sans-serif;color:var(--navy);font-size:.8rem;padding:3px 10px;white-space:nowrap"><i class="fas fa-hard-hat" style="font-size:.65rem;color:#7c3aed;margin-right:5px"></i>${tech}</td>
-      ${cell(ts,palettes.ts)}${cell(ins,palettes.ins)}${cell(cr,palettes.cr)}${cell(sv,palettes.sv)}
-      <td style="text-align:center;font-family:'Outfit',sans-serif;padding:2px 4px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:.74rem;font-weight:900;background:${tw>0?'linear-gradient(135deg,#f3e8ff,#e9d5ff)':'#f1f5f9'};color:${tw>0?'#6d28d9':'#90a4ae'};border:2px solid ${tw>0?'#c084fc':'#e2e8f0'};">${tw}</span></td>
+    const isTop = rank===0 && tw>0 && !filterName;
+    const rowHoverReset = isTop ? 'rgba(254,252,232,.5)' : '';
+    const safeName = tech.replace(/'/g,"\\'");
+    return `<tr onclick="openTechDetail('${safeName}')" style="border-bottom:1px solid #f0ebff;transition:background .18s;cursor:pointer;${isTop?'background:rgba(254,252,232,.4);':''}" onmouseover="this.style.background='rgba(124,58,237,.08)'" onmouseout="this.style.background='${rowHoverReset}'" title="Click to view assigned tickets">
+      <td style="padding:5px 8px;border-right:2.5px solid #ddd6fe;min-width:200px;position:relative">
+        <div style="display:flex;align-items:center;overflow:hidden">
+          ${!filterName ? rankBadge(rank) : '<i class="fas fa-hard-hat" style="font-size:.62rem;color:#7c3aed;margin-right:8px;flex-shrink:0"></i>'}
+          <span style="font-weight:700;font-family:'Outfit',sans-serif;color:var(--navy);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${tech}</span>
+        </div>
+        ${isTop?'<i class="fas fa-crown" style="position:absolute;top:5px;right:5px;font-size:.56rem;color:#d97706;filter:drop-shadow(0 1px 2px rgba(217,119,6,.4))"></i>':''}
+        ${tw>0&&!filterName?`<div style="margin-top:3px;margin-left:25px;height:3px;background:#ede9fe;border-radius:2px;overflow:hidden"><div style="height:3px;width:${Math.round((tw/maxTW)*100)}%;background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:2px;transition:width .5s ease"></div></div>`:''}
+      </td>
+      ${cell(ts)}${cell(ins)}${cell(cr)}${cell(sv)}
+      <td style="text-align:center;padding:4px 4px;background:${tw>0?'rgba(245,208,254,.35)':'#fafafa'}">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:23px;border-radius:7px;font-size:.78rem;font-weight:900;padding:0 7px;font-family:'Outfit',sans-serif;
+          background:${tw>0?'linear-gradient(135deg,#7c3aed,#a855f7)':'transparent'};
+          color:${tw>0?'#fff':'#d1d5db'};
+          box-shadow:${tw>0?'0 2px 8px rgba(124,58,237,.38)':'none'}">${tw>0?tw:'—'}</span>
+      </td>
     </tr>`;
   }).join('');
 
-  sb.innerHTML+=`<tr style="background:linear-gradient(90deg,#f5f3ff,#ede9fe);border-top:2px solid #7c3aed">
-    <td style="font-weight:900;font-family:'Outfit',sans-serif;color:#4c1d95;font-size:.76rem;letter-spacing:.4px;padding:3px 10px;">TOTAL</td>
-    <td style="text-align:center;font-weight:900;color:#6d28d9;font-family:'Outfit',sans-serif;font-size:1rem">${totalTS}</td>
-    <td style="text-align:center;font-weight:900;color:#6d28d9;font-family:'Outfit',sans-serif;font-size:1rem">${totalIN}</td>
-    <td style="text-align:center;font-weight:900;color:#6d28d9;font-family:'Outfit',sans-serif;font-size:1rem">${totalCR}</td>
-    <td style="text-align:center;font-weight:900;color:#6d28d9;font-family:'Outfit',sans-serif;font-size:1rem">${totalSV}</td>
-    <td style="text-align:center;font-weight:900;color:#6d28d9;font-family:'Outfit',sans-serif;font-size:1rem;background:rgba(124,58,237,.12)">${totalTW}</td>
+  sb.innerHTML+=`<tr style="background:linear-gradient(90deg,#f5f3ff,#ede9fe);border-top:2.5px solid #7c3aed">
+    <td style="padding:6px 12px;border-right:2.5px solid #c4b5fd">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:6px;background:linear-gradient(135deg,#5b21b6,#7c3aed);flex-shrink:0"><i class="fas fa-sigma" style="font-size:.5rem;color:#fff"></i></span>
+        <span style="font-weight:900;font-family:'Montserrat',sans-serif;color:#3b0764;font-size:.65rem;letter-spacing:.6px">TOTAL</span>
+      </div>
+    </td>
+    <td style="text-align:center;padding:4px 3px;border-right:1px solid #ddd6fe;background:rgba(237,233,254,.6)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:23px;border-radius:7px;font-size:.74rem;font-weight:900;color:#5b21b6;padding:0 5px;background:rgba(124,58,237,.18);border:1.5px solid #c4b5fd;font-family:'Outfit',sans-serif">${totalTS>0?totalTS:'—'}</span></td>
+    <td style="text-align:center;padding:4px 3px;border-right:1px solid #ddd6fe;background:rgba(245,243,255,.5)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:23px;border-radius:7px;font-size:.74rem;font-weight:900;color:#5b21b6;padding:0 5px;background:rgba(124,58,237,.18);border:1.5px solid #c4b5fd;font-family:'Outfit',sans-serif">${totalIN>0?totalIN:'—'}</span></td>
+    <td style="text-align:center;padding:4px 3px;border-right:1px solid #ddd6fe;background:rgba(237,233,254,.6)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:23px;border-radius:7px;font-size:.74rem;font-weight:900;color:#5b21b6;padding:0 5px;background:rgba(124,58,237,.18);border:1.5px solid #c4b5fd;font-family:'Outfit',sans-serif">${totalCR>0?totalCR:'—'}</span></td>
+    <td style="text-align:center;padding:4px 3px;border-right:1px solid #ddd6fe;background:rgba(245,243,255,.5)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:23px;border-radius:7px;font-size:.74rem;font-weight:900;color:#5b21b6;padding:0 5px;background:rgba(124,58,237,.18);border:1.5px solid #c4b5fd;font-family:'Outfit',sans-serif">${totalSV>0?totalSV:'—'}</span></td>
+    <td style="text-align:center;padding:4px 4px;background:rgba(124,58,237,.18)"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:23px;border-radius:7px;font-size:.82rem;font-weight:900;color:#3b0764;padding:0 7px;background:rgba(124,58,237,.3);border:2px solid #a78bfa;font-family:'Outfit',sans-serif;box-shadow:0 2px 8px rgba(124,58,237,.25)">${totalTW}</span></td>
   </tr>`;
 }
 
 // ===== TASK REPORT TAB TOGGLE =====
 const _trTabColors = {
-  eng:  { offBg:'rgba(37,99,235,.18)',  offBorder:'rgba(99,179,255,.35)',   offColor:'rgba(147,197,253,.85)', offShadow:'none',
+  eng:  { offBg:'rgba(37,99,235,.18)',  offBorder:'rgba(99,179,255,.35)',   offColor:'#eaf3ff', offShadow:'none',
           onBg:'linear-gradient(135deg,#1d4ed8,#3b82f6)', onBorder:'#60a5fa', onColor:'#fff', onShadow:'0 4px 16px rgba(37,99,235,.5),0 0 0 2px rgba(96,165,250,.3)' },
-  tech: { offBg:'rgba(124,58,237,.18)', offBorder:'rgba(167,139,250,.35)',  offColor:'rgba(196,181,253,.8)',  offShadow:'none',
-          onBg:'linear-gradient(135deg,#7c3aed,#a855f7)', onBorder:'#c084fc', onColor:'#fff', onShadow:'0 4px 16px rgba(124,58,237,.5),0 0 0 2px rgba(192,132,252,.3)' }
+  tech: { offBg:'rgba(124,58,237,.18)', offBorder:'rgba(167,139,250,.35)',  offColor:'#f5f0ff',  offShadow:'none',
+          onBg:'linear-gradient(135deg,#7c3aed,#a855f7)', onBorder:'#c084fc', onColor:'#fff', onShadow:'0 4px 16px rgba(124,58,237,.5),0 0 0 2px rgba(192,132,252,.3)' },
+  date: { offBg:'rgba(22,163,74,.18)',  offBorder:'rgba(74,222,128,.35)',   offColor:'rgba(134,239,172,.85)', offShadow:'none',
+          onBg:'linear-gradient(135deg,#059669,#34d399)', onBorder:'#6ee7b7', onColor:'#fff', onShadow:'0 4px 16px rgba(5,150,105,.5),0 0 0 2px rgba(110,231,183,.3)' }
 };
 function setTrPanel(type){
   const panels={eng:'tr-panel-eng',tech:'tr-panel-tech'};
@@ -5248,7 +5690,257 @@ function setTrPanel(type){
       btn.style.color=c.offColor;   btn.style.boxShadow=c.offShadow;
     }
   });
+  // Render the newly visible panel so data is always fresh
+  if(type==='eng') renderReport();
+  else if(type==='tech') renderTechnicianReport();
 }
+function setLeavePanel(type){
+  const panels={eng:'ls-panel-eng',tech:'ls-panel-tech',date:'ls-panel-date'};
+  const btns={eng:'ls-tab-btn-eng',tech:'ls-tab-btn-tech',date:'ls-tab-btn-date'};
+  Object.keys(panels).forEach(k=>{
+    const panel=document.getElementById(panels[k]);
+    const btn=document.getElementById(btns[k]);
+    if(!panel||!btn) return;
+    const c=_trTabColors[k]||_trTabColors.eng;
+    if(k===type){
+      panel.style.display='block';
+      btn.style.background=c.onBg; btn.style.borderColor=c.onBorder;
+      btn.style.color=c.onColor;   btn.style.boxShadow=c.onShadow;
+    } else {
+      panel.style.display='none';
+      btn.style.background=c.offBg; btn.style.borderColor=c.offBorder;
+      btn.style.color=c.offColor;   btn.style.boxShadow=c.offShadow;
+    }
+  });
+}
+function toggleLeavePanel(type){
+  const panel=document.getElementById('ls-panel-'+type);
+  const btn=document.getElementById('ls-tab-btn-'+type);
+  if(!panel||!btn) return;
+  const c=_trTabColors[type]||_trTabColors.eng;
+  const nowVisible=panel.style.display!=='none';
+  if(nowVisible){
+    panel.style.display='none';
+    btn.style.background=c.offBg; btn.style.borderColor=c.offBorder;
+    btn.style.color=c.offColor;   btn.style.boxShadow=c.offShadow;
+  } else {
+    panel.style.display='block';
+    btn.style.background=c.onBg; btn.style.borderColor=c.onBorder;
+    btn.style.color=c.onColor;   btn.style.boxShadow=c.onShadow;
+  }
+}
+
+// ===== LEAVE STATUS (30 date slots per Engineer / Technician) =====
+function _lsSafeKey(name){ return String(name).replace(/[.#$\[\]\/]/g,'_'); }
+// Reliably opens the native date-picker for the input inside a .ls-date-wrap cell,
+// regardless of browser quirks around clicking transparent/overlaid date inputs.
+function _lsOpenPicker(wrap){
+  const inp = wrap.querySelector('input[type="date"]');
+  if(!inp) return;
+  if(typeof inp.showPicker === 'function'){
+    try{ inp.showPicker(); return; }catch(e){ /* fall through to legacy path */ }
+  }
+  inp.style.pointerEvents='auto';
+  inp.focus();
+  inp.click();
+  setTimeout(()=>{ inp.style.pointerEvents='none'; }, 0);
+}
+function _lsBuildHead(theadId, nameLabel){
+  const thead=document.getElementById(theadId);
+  if(!thead) return;
+  let h = '<th>'+(nameLabel||'Name')+'</th>';
+  for(let i=1;i<=30;i++) h += '<th>'+i+'</th>';
+  thead.innerHTML = h;
+}
+function _lsBuildBody(tbodyId, role, names){
+  const tbody=document.getElementById(tbodyId);
+  if(!tbody) return;
+  const data = (window.LEAVE_DATA && window.LEAVE_DATA[role]) || {};
+  const canEdit = currentUser && currentUser.role === 'admin';
+  let rows='';
+  names.forEach(name=>{
+    const key=_lsSafeKey(name);
+    const rec = data[key] || {};
+    rows += '<tr><td>'+name+'</td>';
+    for(let i=1;i<=30;i++){
+      const val = rec[i] || '';
+      const filledCls = val ? ' ls-filled' : '';
+      const dispText = val ? fmtDateShortMon(val) : '';
+      if(canEdit){
+        const wrapCls = val ? ' ls-has-val' : '';
+        const delBtn = val ? '<span class="ls-date-del" title="Clear date" onclick="event.stopPropagation();clearLeaveDate(\''+role+'\',\''+key+'\','+i+',this)"><i class="fas fa-times"></i></span>' : '';
+        rows += '<td><div class="ls-date-wrap'+wrapCls+'" onclick="_lsOpenPicker(this)"><span class="ls-date-disp'+filledCls+'">'+dispText+'</span>'+delBtn+'<input type="date" value="'+val+'" onchange="setLeaveDate(\''+role+'\',\''+key+'\','+i+',this)"></div></td>';
+      } else {
+        rows += '<td><div class="ls-date-wrap" style="cursor:default;pointer-events:none"><span class="ls-date-disp'+filledCls+'">'+dispText+'</span></div></td>';
+      }
+    }
+    rows += '</tr>';
+  });
+  tbody.innerHTML = rows;
+}
+function renderLeaveStatus(){
+  _lsBuildHead('ls-eng-thead','Engineer Name');
+  _lsBuildHead('ls-tech-thead','Technician Name');
+  _lsBuildBody('ls-eng-tbody','engineer', ENGINEERS);
+  _lsBuildBody('ls-tech-tbody','technician', TECHNICIANS);
+}
+// ===== SELECT DATE PANEL: who was on leave on a given date =====
+function _lsOpenDatePicker(){
+  const inp=document.getElementById('ls-pick-date');
+  if(!inp) return;
+  if(typeof inp.showPicker === 'function'){
+    try{ inp.showPicker(); return; }catch(e){ /* fall through */ }
+  }
+  inp.style.pointerEvents='auto';
+  inp.focus();
+  inp.click();
+  setTimeout(()=>{ inp.style.pointerEvents='none'; }, 0);
+}
+function _lsClearPickDate(){
+  const inp=document.getElementById('ls-pick-date');
+  if(inp) inp.value='';
+  const disp=document.getElementById('ls-pick-date-disp');
+  if(disp) disp.innerHTML='Select a date&nbsp;<i class="fas fa-calendar" style="font-size:.65rem;color:#2f9bff"></i>';
+  const cont=document.getElementById('ls-date-results');
+  if(cont) cont.innerHTML='<div class="empty-box"><span class="ei">📅</span><p>Select a date above to see who was on leave.</p></div>';
+}
+function onLsPickDateChange(){
+  const val=document.getElementById('ls-pick-date').value;
+  const disp=document.getElementById('ls-pick-date-disp');
+  if(!val){
+    disp.innerHTML='Select a date&nbsp;<i class="fas fa-calendar" style="font-size:.65rem;color:#2f9bff"></i>';
+    document.getElementById('ls-date-results').innerHTML='<div class="empty-box"><span class="ei">📅</span><p>Select a date above to see who was on leave.</p></div>';
+    return;
+  }
+  disp.innerHTML = fmtDateDisp(val)+'&nbsp;<i class="fas fa-calendar" style="font-size:.65rem;color:#2f9bff"></i>';
+  renderLeaveByDate(val);
+}
+function renderLeaveByDate(dateStr){
+  const cont=document.getElementById('ls-date-results');
+  if(!cont) return;
+  const data = window.LEAVE_DATA || {};
+  const findOnLeave = (role, names) => {
+    const roleData = data[role] || {};
+    return names.filter(name=>{
+      const rec = roleData[_lsSafeKey(name)] || {};
+      return Object.values(rec).some(d => d === dateStr);
+    });
+  };
+  const engOnLeave = findOnLeave('engineer', ENGINEERS);
+  const techOnLeave = findOnLeave('technician', TECHNICIANS);
+  const total = engOnLeave.length + techOnLeave.length;
+  const prettyDate = fmtDateDisp(dateStr) || dateStr;
+
+  if(!total){
+    cont.innerHTML = '<div class="empty-box"><span class="ei">✅</span><p>No one was on leave on '+prettyDate+'.</p></div>';
+    return;
+  }
+
+  const buildCol = (title, icon, color, arr) => {
+    let c = '<div style="flex:1;min-width:220px">';
+    c += '<div style="font-family:\'Montserrat\',sans-serif;font-size:.66rem;font-weight:900;letter-spacing:.5px;color:'+color+';margin-bottom:10px;text-transform:uppercase"><i class="fas '+icon+'"></i>&nbsp;'+title+' ('+arr.length+')</div>';
+    if(!arr.length){
+      c += '<div style="font-family:\'Outfit\',sans-serif;font-size:.76rem;color:#9ca3af;padding:8px 0">None on leave</div>';
+    } else {
+      c += '<div style="display:flex;flex-direction:column;gap:7px">';
+      arr.forEach(n=>{
+        c += '<div style="display:flex;align-items:center;gap:9px;padding:8px 12px;background:#f8fafc;border:1.5px solid #e5eefc;border-radius:9px">'
+           + '<i class="fas fa-user" style="color:'+color+';font-size:.7rem"></i>'
+           + '<span style="font-family:\'Outfit\',sans-serif;font-size:.8rem;font-weight:700;color:#1a2340">'+n+'</span>'
+           + '</div>';
+      });
+      c += '</div>';
+    }
+    c += '</div>';
+    return c;
+  };
+
+  let html = '<div style="font-family:\'Montserrat\',sans-serif;font-size:.72rem;font-weight:800;color:var(--muted);margin-bottom:16px">'
+           + total + (total===1?' person':' people') + ' on leave — ' + prettyDate + '</div>';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:26px">';
+  html += buildCol('Engineers', 'fa-users', '#2563eb', engOnLeave);
+  html += buildCol('Technicians', 'fa-user-hard-hat', '#7c3aed', techOnLeave);
+  html += '</div>';
+  cont.innerHTML = html;
+}
+async function setLeaveDate(role, safeKey, slot, inputEl){
+  // Extra safety net: only Admin can actually write leave data, even if this
+  // ever gets called from somewhere other than the (already admin-gated) UI.
+  if(!currentUser || currentUser.role !== 'admin'){ toast('❌ Only Admin can edit leave data!'); renderLeaveStatus(); return; }
+  const val = inputEl.value;
+  const disp = inputEl.previousElementSibling;
+  if(disp && disp.classList.contains('ls-date-disp')){
+    disp.textContent = val ? fmtDateShortMon(val) : '';
+    disp.classList.toggle('ls-filled', !!val);
+  }
+  if(typeof window._fbSetLeaveDate === 'function'){
+    await window._fbSetLeaveDate(role, safeKey, slot, val || null);
+  }
+}
+async function clearLeaveDate(role, safeKey, slot, btnEl){
+  if(!currentUser || currentUser.role !== 'admin'){ toast('❌ Only Admin can edit leave data!'); return; }
+  const wrap = btnEl.closest('.ls-date-wrap');
+  if(wrap){
+    const disp = wrap.querySelector('.ls-date-disp');
+    const inp = wrap.querySelector('input[type="date"]');
+    if(disp){ disp.textContent=''; disp.classList.remove('ls-filled'); }
+    if(inp) inp.value='';
+    wrap.classList.remove('ls-has-val');
+    btnEl.remove();
+  }
+  if(typeof window._fbSetLeaveDate === 'function'){
+    await window._fbSetLeaveDate(role, safeKey, slot, null);
+  }
+  toast('🗑 Leave date cleared');
+}
+
+// ===== RESET ALL LEAVE DATA (Admin-only, password confirm) =====
+function openLeaveResetModal(){
+  if(!currentUser || currentUser.role !== 'admin'){ toast('❌ Only Admin can reset leave data!'); return; }
+  const modal=document.getElementById('ls-reset-modal');
+  const errEl=document.getElementById('ls-reset-err');
+  const passEl=document.getElementById('ls-reset-pass');
+  if(errEl) errEl.style.display='none';
+  if(passEl) passEl.value='';
+  if(modal) modal.style.display='flex';
+  setTimeout(()=>{ if(passEl) passEl.focus(); }, 60);
+}
+function closeLeaveResetModal(){
+  const modal=document.getElementById('ls-reset-modal');
+  if(modal) modal.style.display='none';
+}
+async function doLeaveReset(){
+  const errEl=document.getElementById('ls-reset-err');
+  const passEl=document.getElementById('ls-reset-pass');
+  if(!currentUser || currentUser.role !== 'admin'){ toast('❌ Only Admin can reset leave data!'); closeLeaveResetModal(); return; }
+  const entered = passEl ? passEl.value : '';
+  if(!entered){
+    if(errEl){ errEl.textContent='Please enter your password.'; errEl.style.display='block'; }
+    return;
+  }
+  if(entered !== currentUser.pass){
+    if(errEl){ errEl.textContent='Incorrect password!'; errEl.style.display='block'; }
+    if(passEl){ passEl.value=''; passEl.focus(); }
+    return;
+  }
+  const btn = document.querySelector('#ls-reset-modal button[onclick="doLeaveReset()"]');
+  const origTxt = btn ? btn.innerHTML : '';
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Resetting...'; }
+  const ok = (typeof window._fbClearLeaveData === 'function') ? await window._fbClearLeaveData() : false;
+  if(btn){ btn.disabled=false; btn.innerHTML=origTxt; }
+  if(ok){
+    closeLeaveResetModal();
+    toast('✅ All leave data has been reset!');
+  } else {
+    if(errEl){ errEl.textContent='Reset failed — please try again.'; errEl.style.display='block'; }
+  }
+}
+// Close reset modal when clicking backdrop
+document.addEventListener('click', function(e){
+  const modal=document.getElementById('ls-reset-modal');
+  if(modal && e.target===modal) closeLeaveResetModal();
+});
+
 function toggleTrPanel(type){
   const panel=document.getElementById('tr-panel-'+type);
   const btn=document.getElementById('tr-tab-btn-'+type);

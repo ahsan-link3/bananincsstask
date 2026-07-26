@@ -5887,6 +5887,25 @@ async function setLeaveDate(role, safeKey, slot, inputEl){
   if(!currentUser || currentUser.role !== 'admin'){ toast('❌ Only Admin can edit leave data!'); renderLeaveStatus(); return; }
   const val = inputEl.value;
   const disp = inputEl.previousElementSibling;
+
+  // Duplicate-date guard: the same person cannot have the same leave date entered
+  // twice across their different slots. Check every other slot already saved for
+  // this person (role + safeKey) before accepting the new value.
+  if(val){
+    const personData = (window.LEAVE_DATA && window.LEAVE_DATA[role] && window.LEAVE_DATA[role][safeKey]) || {};
+    const isDup = Object.keys(personData).some(k => String(k) !== String(slot) && personData[k] === val);
+    if(isDup){
+      toast('❌ এই তারিখ ('+fmtDateShortMon(val)+') এই ব্যক্তির জন্য আগেই দেওয়া আছে! Duplicate date entry allowed না।');
+      inputEl.value = '';
+      if(disp){
+        const prevVal = personData[slot] || '';
+        disp.textContent = prevVal ? fmtDateShortMon(prevVal) : '';
+        disp.classList.toggle('ls-filled', !!prevVal);
+      }
+      return;
+    }
+  }
+
   if(disp && disp.classList.contains('ls-date-disp')){
     disp.textContent = val ? fmtDateShortMon(val) : '';
     disp.classList.toggle('ls-filled', !!val);

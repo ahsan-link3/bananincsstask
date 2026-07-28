@@ -1004,20 +1004,24 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
 .um-table th{font-family:'Montserrat',sans-serif;font-size:.66rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.5px;padding:6px 10px;background:linear-gradient(135deg,#0f2778 0%,#1a5dbf 55%,#0a8fd4 100%);border-bottom:3px solid rgba(255,255,255,.18);border-right:1px solid rgba(255,255,255,.15);text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.3)}
 .um-table td{padding:5px 10px;border-bottom:1px solid #deeaf7;font-size:.7rem;color:#1a2340;vertical-align:middle;font-family:'Outfit',sans-serif;transition:background .12s}
 .um-table td,.um-table td *{font-size:.7rem !important}
-.ls-table th{color:#fff;background:linear-gradient(90deg,#15318c,#1560ba);border-bottom:2px solid rgba(255,255,255,.25);text-align:center;font-family:'Montserrat',sans-serif;font-size:.64rem;padding:7px 1px;white-space:nowrap;position:sticky;top:0;width:38px}
+.ls-table th{color:#fff;background:linear-gradient(90deg,#4a6fa8,#5f93c9);border-bottom:2px solid rgba(255,255,255,.3);text-align:center;font-family:'Montserrat',sans-serif;font-size:.64rem;padding:7px 1px;white-space:nowrap;position:sticky;top:0;width:38px}
+#ls-eng-thead th{background:linear-gradient(90deg,#3f66a6,#5b93cf)}
+#ls-tech-thead th{background:linear-gradient(90deg,#7c62b8,#9c85d6)}
 .ls-table th:first-child{min-width:130px;width:130px;text-align:center;padding-left:0}
-.ls-table td{padding:3px 1px;text-align:center;border-bottom:1px solid #deeaf7;vertical-align:middle}
+.ls-table td{padding:3px 1px;text-align:center;border-bottom:1px solid #eaf1fb;vertical-align:middle;transition:background .15s}
 .ls-table td:first-child{text-align:left;padding-left:12px;font-weight:700;color:#1a2340;font-family:'Outfit',sans-serif;font-size:.74rem;white-space:nowrap}
+.ls-table tbody tr:nth-child(even) td{background:#f6f9fd}
+.ls-table tbody tr:hover td{background:#eef3fb}
 .ls-date-wrap{position:relative;width:40px;height:26px;margin:0 auto}
-.ls-date-disp{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--border);border-radius:5px;background:#eaf3ff;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:700;color:var(--navy);pointer-events:none;white-space:nowrap;overflow:hidden;padding:0 1px}
-.ls-date-wrap:hover .ls-date-disp{border-color:var(--blue);background:#dbeeff}
-.ls-date-wrap:hover .ls-date-disp.ls-filled{color:#000;text-shadow:none}
-.ls-date-disp.ls-filled{background:#000;border-color:#000;color:#fff;font-weight:900;border-radius:5px;box-shadow:0 2px 6px rgba(0,0,0,.5);text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.ls-date-disp{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border:1.5px solid #dbe8f9;border-radius:6px;background:#f2f7fd;font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:700;color:var(--navy);pointer-events:none;white-space:nowrap;overflow:hidden;padding:0 1px;transition:all .18s}
+.ls-date-wrap:hover .ls-date-disp{border-color:#7fb3e8;background:#e2eefc}
+.ls-date-wrap:hover .ls-date-disp.ls-filled{border-color:#a9c3e0;background:#e4eefa}
+.ls-date-disp.ls-filled{background:#eef3fa;border-color:#c3d6ec;color:#1a2340;font-weight:700;font-family:'Outfit',sans-serif;font-size:.74rem;border-radius:6px;box-shadow:0 1px 3px rgba(44,69,102,.1)}
 .ls-date-wrap input[type="date"]{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;background:transparent;padding:0;pointer-events:none}
 .ls-date-wrap{cursor:pointer}
-.ls-date-del{display:none;position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:#1f2937;color:#fff;font-size:.5rem;align-items:center;justify-content:center;cursor:pointer;z-index:5;box-shadow:0 1px 3px rgba(0,0,0,.4);pointer-events:auto}
+.ls-date-del{display:none;position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:#64748b;color:#fff;font-size:.5rem;align-items:center;justify-content:center;cursor:pointer;z-index:5;box-shadow:0 1px 3px rgba(0,0,0,.3);pointer-events:auto}
 .ls-date-wrap.ls-has-val:hover .ls-date-del{display:flex}
-.ls-date-del:hover{background:#dc2626}
+.ls-date-del:hover{background:#e05d5d}
 .um-table td .um-badge-admin,.um-table td .um-badge-eng{font-size:.58rem !important;padding:2px 9px !important}
 .um-table td button{font-size:.6rem !important;padding:4px 10px !important}
 .um-table tr:nth-child(odd) td{background:#ffffff}
@@ -2525,7 +2529,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       </div>
 
       <!-- Tab bar -->
-      <div style="background:linear-gradient(90deg,#06103a,#0d1f5c);padding:8px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-top:1px solid rgba(255,255,255,.1)">
+      <div style="background:linear-gradient(90deg,#1b2c56,#233a72);padding:8px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-top:1px solid rgba(255,255,255,.1)">
         <button id="ls-tab-btn-eng" onclick="setLeavePanel('eng')"
           style="height:30px;padding:0 16px;border-radius:7px;border:1.5px solid rgba(99,179,255,.35);background:rgba(37,99,235,.18);color:rgba(147,197,253,.85);font-size:.66rem;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .22s;letter-spacing:.4px;text-transform:uppercase">
           <i class="fas fa-users" style="font-size:.62rem"></i> Engineer Leave
@@ -2580,7 +2584,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <!-- Panel: Engineer Leave -->
       <div id="ls-panel-eng" style="display:none">
         <div class="tbl-card">
-          <div class="tbl-top" style="background:linear-gradient(90deg,#0a1642,#15318c,#2f9bff)">
+          <div class="tbl-top" style="background:linear-gradient(90deg,#2e4d85,#3f6fb0,#5b93cf)">
             <span class="tbl-title" style="color:#fff;font-size:.88rem;font-weight:900;letter-spacing:.5px"><i class="fas fa-users"></i>&nbsp;Engineer Leave Status</span>
           </div>
           <div class="tbl-wrap">
@@ -2595,7 +2599,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <!-- Panel: Technician Leave -->
       <div id="ls-panel-tech" style="display:none">
         <div class="tbl-card">
-          <div class="tbl-top" style="background:linear-gradient(90deg,#4c1d95,#7c3aed,#a855f7)">
+          <div class="tbl-top" style="background:linear-gradient(90deg,#5f4791,#7c62b8,#9c85d6)">
             <span class="tbl-title" style="color:#fff;font-size:.88rem;font-weight:900;letter-spacing:.5px"><i class="fas fa-user-hard-hat"></i>&nbsp;Technician Leave Status</span>
             <button id="ls-add-tech-btn" class="admin-only" onclick="openAddTechnicianModal()" style="display:none;background:rgba(255,255,255,.18);color:#fff;border:1.5px solid rgba(255,255,255,.5);padding:6px 13px;border-radius:8px;font-size:.68rem;font-weight:800;cursor:pointer;align-items:center;gap:6px;letter-spacing:.3px;font-family:'Montserrat',sans-serif;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.3)'" onmouseout="this.style.background='rgba(255,255,255,.18)'"><i class="fas fa-users-cog"></i> Add/Remove Technician</button>
           </div>
@@ -2611,7 +2615,7 @@ tbody tr:hover td{background:rgba(26,93,191,.09) !important;border-bottom-color:
       <!-- Panel: Select Date (who was on leave on a chosen date) -->
       <div id="ls-panel-date" style="display:none">
         <div class="tbl-card">
-          <div class="tbl-top" style="background:linear-gradient(90deg,#064e3b,#059669,#34d399)">
+          <div class="tbl-top" style="background:linear-gradient(90deg,#2b7d6f,#3ba892,#5cc9b8)">
             <span class="tbl-title" style="color:#fff;font-size:.88rem;font-weight:900;letter-spacing:.5px"><i class="fas fa-calendar-day"></i>&nbsp;Leave List By Date</span>
           </div>
           <div style="padding:16px 18px;border-bottom:1.5px solid #e8f0fe;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f8fafc">
@@ -5141,7 +5145,7 @@ function mtGoPage(p){
   document.getElementById('page-mytask').scrollTop=0;
 }
 
-const ENGINEERS = ['Md. Mostafizur Rahman','Nabiul Ahsan Bakshi','Md. Asad','Taibul Hoque Zehad','Subroto Saha','Abu Hasnat','Muhammed Rabiul Islam','Md. Azizul Haque Sojol','Ainul Hoque Rubel','Md Juel Hossain','Mrithunjoy Das','Mohammad Badrul Islam','Abir Roy','Syed Ash Shams'];
+const ENGINEERS = ['Md. Mostafizur Rahman','Nabiul Ahsan Bakshi','Md. Asad','Taibul Hoque Zehad','Subroto Saha','Abu Hasnat','Muhammed Rabiul Islam','Md. Azizul Haque Sojol','Ainul Hoque Rubel','Md Juel Hossain','Mrithunjoy Das','Mohammad Badrul Islam','Abir Roy','Syed Ash Shams','Sojib'];
 
 
 // Short display names used ONLY in the Engineer Report tables (so the Engineer column
@@ -5161,10 +5165,34 @@ const ENG_SHORT_NAME = {
   'Mrithunjoy Das':'Mrithunjoy Das',
   'Mohammad Badrul Islam':'Badrul Islam',
   'Abir Roy':'Abir Roy',
-  'Syed Ash Shams':'Ash Shams'
+  'Syed Ash Shams':'Ash Shams',
+  'Sojib':'Sojib'
 };
 function engDisplayName(fullName){
   return ENG_SHORT_NAME[fullName] || fullName;
+}
+// Display names used ONLY on the Leave Status page (Engineer Leave table) so
+// names show the way the user wants there — independent of ENG_SHORT_NAME,
+// which stays as-is for the Engineer Report tables.
+const LS_ENG_DISPLAY_NAME = {
+  'Md. Mostafizur Rahman':'Mostafizur Rahman',
+  'Nabiul Ahsan Bakshi':'Nabiul Ahsan Bakshi',
+  'Md. Asad':'Md. Asad',
+  'Taibul Hoque Zehad':'Taibul Hoque Zehad',
+  'Subroto Saha':'Subroto Saha',
+  'Abu Hasnat':'Abu Hasnat',
+  'Muhammed Rabiul Islam':'Rabiul Islam',
+  'Md. Azizul Haque Sojol':'Azizul Haque Sojol',
+  'Ainul Hoque Rubel':'Ainul Hoque Rubel',
+  'Md Juel Hossain':'Juel Hossain',
+  'Mrithunjoy Das':'Mrithunjoy Das',
+  'Mohammad Badrul Islam':'Badrul Islam',
+  'Abir Roy':'Abir Roy',
+  'Syed Ash Shams':'Ash Shams',
+  'Sojib':'Sojib'
+};
+function lsEngDisplayName(fullName){
+  return LS_ENG_DISPLAY_NAME[fullName] || fullName;
 }
 // Computes a tight column width (in px) that fits the longest displayed name
 // (plus rank badge + padding) for a given list of full engineer names.
@@ -5173,6 +5201,31 @@ function engNameColWidth(engListForWidth){
   return Math.max(Math.ceil(maxLen * 7.4) + 46, 90) + 'px';
 }
 const TECHNICIANS_BASE = ['Sohel Rana','Rafiqul Islam','Mahidur Rahman','Imam Hossain','Rabbi Ahmed','Shafayatullah','Mmahmudul Hasan','Masud Rana','Shahidul Islam','Mijanur Rahman','Al Mamun','Md. Emon','Amir Hossain','Hanifur Rahman','Didarul Islam','Abul Hasan','Md. Foysal','Md. Sumon','Md. Nayon','Zakir Hossen','Rahmat Miah','Sayeem Khan','Al-Amin (Robin)','Bijoy Nokrek','Abir Hasan','Mohidul Islam','Rayhan Howlader','Bacchu Gazi','Md Imram','Md. Akash','Alam Shikder','Md. Raju','Ratan Mia','Abdul Mannan','Asad Ullah','Ashikur Rahman Asif'];
+// IDs for the base technician list, in the exact same order as TECHNICIANS_BASE
+// above — used only to show "(ID)" next to a technician's name on the Leave
+// Status > Technician Leave table. Purely cosmetic/display, like ENG_SHORT_NAME.
+const TECHNICIAN_ID_BASE = ['L3T130','L3T578','L3T2211','L3T873','L3T311','L3T1792','L3C2065','L3T1633','L3T1791','L3C2020','L3T354','L3C2023','L3T269','L3T2142','L3T1582','L3T1870','L3T1495','L3T1496','L3T525','L3T342','L3T494','L3C2022','L3C1939','L3T1868','L3C2082','L3C1878','L3C1997','L3T123','L3T817','L3T1440','L3T1499','L3C2080','L3T1929','L3T1400','L3T281','L3C2081'];
+const TECHNICIAN_IDS = {};
+TECHNICIANS_BASE.forEach((n,i)=>{ TECHNICIAN_IDS[n] = TECHNICIAN_ID_BASE[i]; });
+// Engineer IDs, in the exact same order as ENGINEERS above — pulled from the
+// existing link3Id values already defined per engineer in USERS.
+const ENGINEER_IDS = {
+  'Md. Mostafizur Rahman':'L3T1141',
+  'Nabiul Ahsan Bakshi':'L3T1743',
+  'Md. Asad':'L3T2025',
+  'Taibul Hoque Zehad':'L3T1829',
+  'Subroto Saha':'L3T2083',
+  'Abu Hasnat':'L3T805',
+  'Muhammed Rabiul Islam':'L3T2503',
+  'Md. Azizul Haque Sojol':'L3T2141',
+  'Ainul Hoque Rubel':'L3T1971',
+  'Md Juel Hossain':'L3T1590',
+  'Mrithunjoy Das':'L3T2159',
+  'Mohammad Badrul Islam':'L3T002',
+  'Abir Roy':'L3T1907',
+  'Syed Ash Shams':'L3T1630',
+  'Sojib':'L3T317'
+};
 // TECHNICIANS = preset base list + any names added later via the "Add Technician"
 // button on the Leave Status > Technician Leave tab (stored in Firebase under
 // technicianList/ and merged in live by _syncTechnicianList, mirroring how
@@ -5776,10 +5829,14 @@ function _lsBuildBody(tbodyId, role, names){
   const data = (window.LEAVE_DATA && window.LEAVE_DATA[role]) || {};
   const canEdit = currentUser && currentUser.role === 'admin';
   let rows='';
+  const idMap = role === 'engineer' ? ENGINEER_IDS : TECHNICIAN_IDS;
   names.forEach(name=>{
     const key=_lsSafeKey(name);
     const rec = data[key] || {};
-    rows += '<tr><td>'+name+'</td>';
+    const pid = idMap[name];
+    const shownName = role === 'engineer' ? lsEngDisplayName(name) : name;
+    const dispName = pid ? (shownName+' ('+pid+')') : shownName;
+    rows += '<tr><td>'+dispName+'</td>';
     for(let i=1;i<=30;i++){
       const val = rec[i] || '';
       const filledCls = val ? ' ls-filled' : '';
@@ -5854,7 +5911,7 @@ function renderLeaveByDate(dateStr){
     return;
   }
 
-  const buildCol = (title, icon, color, arr) => {
+  const buildCol = (title, icon, color, arr, idMapForCol, role) => {
     let c = '<div style="flex:1;min-width:220px">';
     c += '<div style="font-family:\'Montserrat\',sans-serif;font-size:.66rem;font-weight:900;letter-spacing:.5px;color:'+color+';margin-bottom:10px;text-transform:uppercase"><i class="fas '+icon+'"></i>&nbsp;'+title+' ('+arr.length+')</div>';
     if(!arr.length){
@@ -5862,9 +5919,12 @@ function renderLeaveByDate(dateStr){
     } else {
       c += '<div style="display:flex;flex-direction:column;gap:7px">';
       arr.forEach(n=>{
+        const pid = idMapForCol[n];
+        const shownN = role === 'engineer' ? lsEngDisplayName(n) : n;
+        const dispN = pid ? (shownN+' ('+pid+')') : shownN;
         c += '<div style="display:flex;align-items:center;gap:9px;padding:8px 12px;background:#f8fafc;border:1.5px solid #e5eefc;border-radius:9px">'
            + '<i class="fas fa-user" style="color:'+color+';font-size:.7rem"></i>'
-           + '<span style="font-family:\'Outfit\',sans-serif;font-size:.8rem;font-weight:700;color:#1a2340">'+n+'</span>'
+           + '<span style="font-family:\'Outfit\',sans-serif;font-size:.8rem;font-weight:700;color:#1a2340">'+dispN+'</span>'
            + '</div>';
       });
       c += '</div>';
@@ -5876,8 +5936,8 @@ function renderLeaveByDate(dateStr){
   let html = '<div style="font-family:\'Montserrat\',sans-serif;font-size:.72rem;font-weight:800;color:var(--muted);margin-bottom:16px">'
            + total + (total===1?' person':' people') + ' on leave — ' + prettyDate + '</div>';
   html += '<div style="display:flex;flex-wrap:wrap;gap:26px">';
-  html += buildCol('Engineers', 'fa-users', '#2563eb', engOnLeave);
-  html += buildCol('Technicians', 'fa-user-hard-hat', '#7c3aed', techOnLeave);
+  html += buildCol('Engineers', 'fa-users', '#2563eb', engOnLeave, ENGINEER_IDS, 'engineer');
+  html += buildCol('Technicians', 'fa-user-hard-hat', '#7c3aed', techOnLeave, TECHNICIAN_IDS, 'technician');
   html += '</div>';
   cont.innerHTML = html;
 }
